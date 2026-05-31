@@ -7,7 +7,11 @@ ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action model
 
 ## Demos
 
-These GIFs are lightweight generated robot-motion demos of the current runtime paths. They show the API and system boundary, not real robot performance claims.
+This is a lightweight generated simulation of the runtime boundary. It shows a 2D arm with inverse kinematics, gripper attach/release, and action-vector tracing. It is not a real robot performance claim.
+
+![vla_zoo pick-and-place simulation GIF](docs/assets/simulation_pick_place.gif)
+
+The smaller GIFs below show the current runtime paths.
 
 | No GPU Robot Smoke Test | ROS2 Runtime |
 |---|---|
