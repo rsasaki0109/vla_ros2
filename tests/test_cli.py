@@ -30,4 +30,6 @@ def test_cli_compare_pybullet_help() -> None:
     result = CliRunner().invoke(app, ["compare", "pybullet", "--help"])
     assert result.exit_code == 0
     assert "--models" in result.output
+    assert "--remote-map" in result.output
     assert "--allow-local-heavy" in result.output
+    assert "--markdown-out" in result.output

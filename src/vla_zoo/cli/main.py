@@ -49,6 +49,28 @@ def _shorten(value: str | None, limit: int = 56) -> str:
     return f"{value[: limit - 3]}..."
 
 
+def _parse_remote_map(value: str | None) -> dict[str, str]:
+    if not value:
+        return {}
+    parsed: dict[str, str] = {}
+    for item in value.split(","):
+        if not item.strip():
+            continue
+        model, separator, url = item.partition("=")
+        if not separator or not model.strip() or not url.strip():
+            raise typer.BadParameter(
+                "Remote map entries must use model=url, for example "
+                "openvla=http://gpu-box:8001"
+            )
+        parsed[model.strip().lower()] = url.strip()
+    return parsed
+
+
+def _write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
 @app.command("list")
 def list_command() -> None:
     """List registered model adapters."""
@@ -178,6 +200,16 @@ def compare_pybullet(
     ] = "dummy,openvla,pi0,smolvla,groot",
     runtime: Annotated[str, typer.Option("--runtime")] = "local",
     remote_url: Annotated[str, typer.Option("--remote-url")] = "http://localhost:8000",
+    remote_map: Annotated[
+        str | None,
+        typer.Option(
+            "--remote-map",
+            help=(
+                "Comma-separated model=url overrides for remote comparisons, "
+                "for example openvla=http://gpu:8001,pi0=http://gpu:8002."
+            ),
+        ),
+    ] = None,
     instruction: Annotated[
         str,
         typer.Option("--instruction", "-i"),
@@ -195,26 +227,44 @@ def compare_pybullet(
         bool,
         typer.Option("--json", help="Emit machine-readable JSON instead of a table."),
     ] = False,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON results to this path."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write a README-ready Markdown table."),
+    ] = None,
 ) -> None:
     """Run one deterministic PyBullet smoke scene per adapter and compare runtime metrics."""
 
-    from vla_zoo.demo.pybullet import compare_pybullet_models
+    from vla_zoo.demo.pybullet import (
+        compare_pybullet_models,
+        format_pybullet_comparison_markdown,
+    )
 
     model_names = [item.strip() for item in models.split(",") if item.strip()]
     if not model_names:
         raise typer.BadParameter("At least one model name is required.")
+    remote_urls = _parse_remote_map(remote_map)
 
     results = compare_pybullet_models(
         model_names,
         runtime=runtime,
         remote_url=remote_url,
+        remote_urls=remote_urls or None,
         instruction=instruction,
         model_call_every=model_call_every,
         render_stride=render_stride,
         allow_local_heavy=allow_local_heavy,
     )
+    json_payload = json.dumps([asdict(result) for result in results], indent=2)
+    if out is not None:
+        _write_text(out, f"{json_payload}\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, format_pybullet_comparison_markdown(results))
     if json_output:
-        typer.echo(json.dumps([asdict(result) for result in results], indent=2))
+        typer.echo(json_payload)
         return
 
     typer.echo(
@@ -237,6 +287,10 @@ def compare_pybullet(
             f"{_format_optional_float(result.mean_abs_action):>9} "
             f"{_shorten(result.last_error)}"
         )
+    if out is not None:
+        typer.echo(f"\nJSON written to {out}")
+    if markdown_out is not None:
+        typer.echo(f"Markdown written to {markdown_out}")
 
 
 @demo_app.command("pybullet")

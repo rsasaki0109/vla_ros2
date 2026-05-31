@@ -79,6 +79,7 @@ class PyBulletComparisonResult:
     model_name: str
     runtime: str
     ok: bool
+    remote_url: str | None = None
     frames: int = 0
     adapter_queries: int = 0
     adapter_errors: int = 0
@@ -489,6 +490,7 @@ def summarize_pybullet_samples(
     runtime: str,
     samples: list[RenderSample],
     *,
+    remote_url: str | None = None,
     last_error: str | None = None,
 ) -> PyBulletComparisonResult:
     fresh_samples = [sample for sample in samples if sample.adapter_query_fresh]
@@ -516,6 +518,7 @@ def summarize_pybullet_samples(
         model_name=model_name,
         runtime=runtime,
         ok=bool(samples) and query_count > 0 and not error_samples and observed_error is None,
+        remote_url=remote_url,
         frames=len(samples),
         adapter_queries=query_count,
         adapter_errors=len(error_samples),
@@ -531,6 +534,7 @@ def compare_pybullet_models(
     *,
     runtime: str = "local",
     remote_url: str = "http://localhost:8000",
+    remote_urls: dict[str, str] | None = None,
     instruction: str = "pick up the red block",
     model_call_every: int = 8,
     render_stride: int = 12,
@@ -541,12 +545,14 @@ def compare_pybullet_models(
         canonical = model_name.strip().lower()
         if not canonical:
             continue
+        selected_remote_url = (remote_urls or {}).get(canonical, remote_url)
         if runtime == "local" and canonical in HEAVY_LOCAL_MODELS and not allow_local_heavy:
             results.append(
                 PyBulletComparisonResult(
                     model_name=model_name,
                     runtime=runtime,
                     ok=False,
+                    remote_url=None,
                     last_error=(
                         "local heavy adapter skipped to avoid model download; "
                         "use --allow-local-heavy or --runtime remote"
@@ -558,7 +564,7 @@ def compare_pybullet_models(
         config = PyBulletDemoConfig(
             model_name=model_name,
             runtime=runtime,
-            remote_url=remote_url,
+            remote_url=selected_remote_url,
             instruction=instruction,
             model_call_every=model_call_every,
             render_stride=render_stride,
@@ -571,12 +577,57 @@ def compare_pybullet_models(
                     model_name=model_name,
                     runtime=runtime,
                     ok=False,
+                    remote_url=selected_remote_url if runtime == "remote" else None,
                     last_error=str(exc),
                 )
             )
             continue
-        results.append(summarize_pybullet_samples(model_name, runtime, samples))
+        results.append(
+            summarize_pybullet_samples(
+                model_name,
+                runtime,
+                samples,
+                remote_url=selected_remote_url if runtime == "remote" else None,
+            )
+        )
     return results
+
+
+def format_pybullet_comparison_markdown(
+    results: list[PyBulletComparisonResult],
+    *,
+    title: str = "PyBullet VLA Runtime Comparison",
+) -> str:
+    lines = [
+        f"## {title}",
+        "",
+        "| Model | Runtime | Endpoint | OK | Frames | Queries | Errors | "
+        "Mean latency ms | Mean abs action | Note |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---|",
+    ]
+    for result in results:
+        endpoint = result.remote_url or "-"
+        mean_latency = (
+            f"{result.mean_latency_ms:0.2f}" if result.mean_latency_ms is not None else "-"
+        )
+        mean_action = (
+            f"{result.mean_abs_action:0.3f}" if result.mean_abs_action is not None else "-"
+        )
+        note = (result.last_error or "-").replace("|", "\\|")
+        lines.append(
+            f"| `{result.model_name}` | `{result.runtime}` | {endpoint} | "
+            f"{str(result.ok).lower()} | {result.frames} | {result.adapter_queries} | "
+            f"{result.adapter_errors} | {mean_latency} | {mean_action} | {note} |"
+        )
+    lines.extend(
+        [
+            "",
+            "This is a runtime smoke comparison on the same deterministic PyBullet scene. "
+            "It measures adapter availability, query behavior, errors, latency, and action "
+            "magnitude; it is not a model-quality benchmark.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
 
 
 def render_pybullet_demo(config: PyBulletDemoConfig) -> dict[str, object]:
