@@ -104,6 +104,14 @@ vla-zoo compare pybullet --manifest examples/compare/pybullet_dummy_remote.json
 
 The manifest path writes JSON, Markdown, and a self-contained HTML report under `results/`.
 
+Build an interactive dashboard from one or more comparison result files:
+
+```bash
+vla-zoo compare dashboard \
+  --results results/vla_runtime_comparison.json \
+  --out results/vla_runtime_dashboard.html
+```
+
 ## What works today
 
 - `load_model("dummy")` runs without a GPU or model download.
