@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import math
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from html import escape
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -665,6 +667,230 @@ def format_pybullet_comparison_markdown(
         ]
     )
     return "\n".join(lines) + "\n"
+
+
+def _html_metric(value: float | None, precision: int = 2) -> str:
+    if value is None:
+        return "-"
+    return f"{value:.{precision}f}"
+
+
+def _html_bar(value: float | None, maximum: float, color: str) -> str:
+    width = (
+        0.0
+        if value is None or maximum <= 0
+        else clamp((value / maximum) * 100.0, 0.0, 100.0)
+    )
+    return (
+        '<div class="meter">'
+        f'<span style="width:{width:.1f}%;background:{escape(color)}"></span>'
+        "</div>"
+    )
+
+
+def format_pybullet_comparison_html(
+    results: list[PyBulletComparisonResult],
+    *,
+    title: str = "PyBullet VLA Runtime Comparison",
+) -> str:
+    ok_count = sum(1 for result in results if result.ok)
+    total_queries = sum(result.adapter_queries for result in results)
+    total_errors = sum(result.adapter_errors for result in results)
+    latencies = [
+        result.mean_latency_ms for result in results if result.mean_latency_ms is not None
+    ]
+    actions = [
+        result.mean_abs_action for result in results if result.mean_abs_action is not None
+    ]
+    max_latency = max(latencies, default=0.0)
+    max_action = max(actions, default=0.0)
+    payload = json.dumps([asdict(result) for result in results], indent=2).replace(
+        "</",
+        "<\\/",
+    )
+
+    rows = []
+    for result in results:
+        status = "ok" if result.ok else "error"
+        note = result.last_error or "-"
+        latency = _html_metric(result.mean_latency_ms)
+        action = _html_metric(result.mean_abs_action, precision=3)
+        rows.append(
+            "<tr>"
+            f"<td><code>{escape(result.model_name)}</code></td>"
+            f"<td><code>{escape(result.runtime)}</code></td>"
+            f"<td>{escape(result.remote_url or '-')}</td>"
+            f'<td><span class="badge {status}">{status}</span></td>'
+            f"<td>{result.frames}</td>"
+            f"<td>{result.adapter_queries}</td>"
+            f"<td>{result.adapter_errors}</td>"
+            f"<td>{latency}{_html_bar(result.mean_latency_ms, max_latency, '#22c55e')}</td>"
+            f"<td>{action}{_html_bar(result.mean_abs_action, max_action, '#38bdf8')}</td>"
+            f"<td>{escape(note)}</td>"
+            "</tr>"
+        )
+
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{escape(title)}</title>
+  <style>
+    :root {{
+      color-scheme: light;
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --muted: #5b687a;
+      --text: #172033;
+      --line: #d7dee8;
+      --ok: #16a34a;
+      --error: #e11d48;
+      --accent: #0284c7;
+    }}
+    body {{
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }}
+    main {{
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 36px 20px 48px;
+    }}
+    h1 {{
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: 0;
+    }}
+    p {{
+      color: var(--muted);
+      line-height: 1.55;
+    }}
+    .cards {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 24px 0;
+    }}
+    .card {{
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+    }}
+    .label {{
+      color: var(--muted);
+      font-size: 13px;
+    }}
+    .value {{
+      margin-top: 8px;
+      font-size: 26px;
+      font-weight: 700;
+    }}
+    table {{
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }}
+    th, td {{
+      border-bottom: 1px solid var(--line);
+      padding: 11px 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }}
+    th {{
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }}
+    code {{
+      color: #075985;
+    }}
+    .badge {{
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }}
+    .badge.ok {{
+      color: #052e16;
+      background: var(--ok);
+    }}
+    .badge.error {{
+      color: #4c0519;
+      background: var(--error);
+    }}
+    .meter {{
+      height: 6px;
+      margin-top: 6px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }}
+    .meter span {{
+      display: block;
+      height: 100%;
+    }}
+    details {{
+      margin-top: 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 12px 14px;
+    }}
+    pre {{
+      overflow: auto;
+      color: #334155;
+    }}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>{escape(title)}</h1>
+    <p>
+      Static VLA runtime report generated from the deterministic PyBullet smoke scene.
+      It is useful for comparing adapter availability, remote server wiring, latency, and
+      action magnitude. It is not a model-quality benchmark.
+    </p>
+    <section class="cards">
+      <div class="card"><div class="label">models</div><div class="value">{len(results)}</div></div>
+      <div class="card"><div class="label">ok</div><div class="value">{ok_count}</div></div>
+      <div class="card">
+        <div class="label">adapter queries</div><div class="value">{total_queries}</div>
+      </div>
+      <div class="card">
+        <div class="label">adapter errors</div><div class="value">{total_errors}</div>
+      </div>
+    </section>
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th><th>Runtime</th><th>Endpoint</th><th>Status</th>
+          <th>Frames</th><th>Queries</th><th>Errors</th>
+          <th>Mean latency ms</th><th>Mean abs action</th><th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {"".join(rows)}
+      </tbody>
+    </table>
+    <details>
+      <summary>Raw JSON</summary>
+      <pre>{escape(payload)}</pre>
+    </details>
+  </main>
+</body>
+</html>
+"""
 
 
 def render_pybullet_demo(config: PyBulletDemoConfig) -> dict[str, object]:

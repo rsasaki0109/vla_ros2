@@ -85,7 +85,8 @@ vla-zoo compare pybullet \
   --runtime remote \
   --remote-map "openvla=http://gpu-box:8001,pi0=http://gpu-box:8002,smolvla=http://gpu-box:8003,groot=http://gpu-box:8004" \
   --out results/vla_runtime_comparison.json \
-  --markdown-out results/vla_runtime_comparison.md
+  --markdown-out results/vla_runtime_comparison.md \
+  --html-out results/vla_runtime_comparison.html
 ```
 
 The same setup can be checked into a JSON manifest:
@@ -100,6 +101,8 @@ For a no-GPU remote smoke test, run a dummy server and use the smoke manifest:
 vla-zoo serve --model dummy --host 127.0.0.1 --port 8010
 vla-zoo compare pybullet --manifest examples/compare/pybullet_dummy_remote.json
 ```
+
+The manifest path writes JSON, Markdown, and a self-contained HTML report under `results/`.
 
 ## What works today
 

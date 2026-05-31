@@ -12,6 +12,7 @@
   ],
   "outputs": {
     "json": "results/dummy_remote_comparison.json",
-    "markdown": "results/dummy_remote_comparison.md"
+    "markdown": "results/dummy_remote_comparison.md",
+    "html": "results/dummy_remote_comparison.html"
   }
 }

@@ -12,6 +12,7 @@
 - ROS2 node, messages, launch files, and dry-run configs
 - PyBullet pick-and-place smoke demo with generated GIF
 - Adapter comparison CLI with per-model remote endpoint manifests
+- Self-contained HTML runtime comparison reports
 - Smoke benchmark abstraction and placeholder backends
 - Safety-first docs: no direct actuation by default
 
@@ -56,4 +57,5 @@ ros2 launch vla_zoo dummy.launch.py
 - [ ] `vla-zoo predict --model dummy --instruction "hello"`
 - [ ] `vla-zoo compare adapters`
 - [ ] `vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif`
+- [ ] `vla-zoo compare pybullet --models dummy --html-out /tmp/vla_zoo_report.html`
 - [ ] optional ROS2 smoke build

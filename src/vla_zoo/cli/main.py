@@ -346,12 +346,17 @@ def compare_pybullet(
         Path | None,
         typer.Option("--markdown-out", help="Write a README-ready Markdown table."),
     ] = None,
+    html_out: Annotated[
+        Path | None,
+        typer.Option("--html-out", help="Write a self-contained HTML comparison report."),
+    ] = None,
 ) -> None:
     """Run one deterministic PyBullet smoke scene per adapter and compare runtime metrics."""
 
     from vla_zoo.demo.pybullet import (
         compare_pybullet_models,
         compare_pybullet_targets,
+        format_pybullet_comparison_html,
         format_pybullet_comparison_markdown,
     )
 
@@ -374,6 +379,7 @@ def compare_pybullet(
         markdown_title = _manifest_string(manifest_payload, "title", markdown_title)
         out = _manifest_output_path(manifest_payload, "json", out)
         markdown_out = _manifest_output_path(manifest_payload, "markdown", markdown_out)
+        html_out = _manifest_output_path(manifest_payload, "html", html_out)
         results = compare_pybullet_targets(
             targets,
             instruction=instruction,
@@ -405,6 +411,11 @@ def compare_pybullet(
             markdown_out,
             format_pybullet_comparison_markdown(results, title=markdown_title),
         )
+    if html_out is not None:
+        _write_text(
+            html_out,
+            format_pybullet_comparison_html(results, title=markdown_title),
+        )
     if json_output:
         typer.echo(json_payload)
         return
@@ -433,6 +444,8 @@ def compare_pybullet(
         typer.echo(f"\nJSON written to {out}")
     if markdown_out is not None:
         typer.echo(f"Markdown written to {markdown_out}")
+    if html_out is not None:
+        typer.echo(f"HTML written to {html_out}")
 
 
 @demo_app.command("pybullet")

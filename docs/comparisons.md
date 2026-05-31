@@ -42,7 +42,8 @@ vla-zoo compare pybullet \
   --models openvla,pi0,smolvla,groot \
   --runtime remote \
   --remote-map "openvla=http://gpu-box:8001,pi0=http://gpu-box:8002,smolvla=http://gpu-box:8003,groot=http://gpu-box:8004" \
-  --markdown-out results/vla_runtime_comparison.md
+  --markdown-out results/vla_runtime_comparison.md \
+  --html-out results/vla_runtime_comparison.html
 ```
 
 For repeatable comparisons, prefer a manifest:
@@ -52,5 +53,7 @@ vla-zoo compare pybullet --manifest examples/compare/pybullet_vla_remote.json
 ```
 
 The manifest records the instruction, query cadence, render stride, each model endpoint, and output files. Keep real comparison outputs under `results/` or attach them to an issue; do not commit fabricated model numbers.
+
+The HTML output is self-contained, so it can be attached to issues, release notes, or static docs without a server.
 
 The comparison output is intentionally runtime-centric: frames, adapter query count, adapter errors, latency, and action magnitude. It is not a claim of task success or model quality.
