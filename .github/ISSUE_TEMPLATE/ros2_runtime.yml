@@ -1,0 +1,33 @@
+name: ROS2 runtime issue
+description: Report or request ROS2 node, launch, topic, QoS, or diagnostics behavior.
+title: "ROS2: "
+labels: ["enhancement", "help wanted"]
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Robot or runtime scenario
+      placeholder: "Robot laptop calling remote GPU server; dry-run action publisher..."
+    validations:
+      required: true
+  - type: textarea
+    id: topics
+    attributes:
+      label: Topics and message types
+      placeholder: "/camera/image_raw sensor_msgs/Image, /vla/instruction std_msgs/String..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "Node should publish VLAAction at 5 Hz without blocking image callbacks."
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety constraints
+      placeholder: "dry_run default, stale action timeout, watchdog, no direct actuation."
+    validations:
+      required: true

@@ -93,6 +93,31 @@ vla-zoo compare pybullet --manifest examples/compare/pybullet_dummy_remote.json
 - `ros2 launch vla_zoo dummy.launch.py` starts a dry-run ROS2 runtime node.
 - Third-party adapters can be added through Python entry points.
 
+## What to Run Next
+
+```bash
+pip install -e ".[dev,cli,server,sim]"
+vla-zoo predict --model dummy --instruction "hello"
+vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
+vla-zoo compare adapters
+```
+
+For remote-runtime smoke testing:
+
+```bash
+vla-zoo serve --model dummy --host 127.0.0.1 --port 8010
+vla-zoo compare pybullet --manifest examples/compare/pybullet_dummy_remote.json
+```
+
+For ROS2 dry-run testing:
+
+```bash
+pip install -e .
+colcon build --base-paths ros2 --symlink-install
+source install/setup.bash
+ros2 launch vla_zoo dummy.launch.py
+```
+
 ## Why vla_zoo?
 
 VLA models are arriving quickly, but real robots need stable runtime interfaces:
@@ -239,3 +264,10 @@ The benchmark runner uses the same `BaseVLA.predict()` interface as Python, ROS2
 ## Contributing
 
 Good first adapters include SmolVLA, openpi remote inference, GR00T experiments, LIBERO smoke tasks, SimplerEnv smoke tasks, ROS bag replay loading, MoveIt Servo bridges, ros2_control bridges, Jetson deployment notes, and SO-101 or ALOHA launch examples.
+
+Good first issue areas:
+
+- model adapters: SmolVLA, openpi/pi0 remote inference, GR00T remote inference
+- benchmarks: LIBERO, SimplerEnv, ROS bag replay, Genesis, Isaac
+- ROS2 runtime: diagnostics, lifecycle node, action bridge examples
+- deployment docs: Jetson, remote GPU, SO-101, ALOHA

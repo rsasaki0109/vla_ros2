@@ -1,0 +1,51 @@
+name: Adapter request
+description: Propose or implement a VLA model adapter.
+title: "Add adapter: "
+labels: ["enhancement", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for OpenVLA variants, SmolVLA, openpi/pi0, GR00T-style systems, or external VLA adapters.
+  - type: input
+    id: model
+    attributes:
+      label: Model or project
+      description: Name and upstream link for the VLA model or runtime.
+      placeholder: "SmolVLA / openpi / GR00T / my_robot_vla"
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Preferred runtime
+      options:
+        - remote first
+        - local first
+        - both local and remote
+    validations:
+      required: true
+  - type: textarea
+    id: inputs
+    attributes:
+      label: Inputs required
+      description: Images, cameras, instruction format, proprioception, task metadata.
+      placeholder: "primary image, wrist image, joint state, language instruction..."
+    validations:
+      required: true
+  - type: textarea
+    id: action_spec
+    attributes:
+      label: Output action spec
+      description: Action space, shape, frame, control rate, chunking, normalization.
+      placeholder: "eef_delta shape=(7,), control_hz=5, normalized=true..."
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and license caveats
+      description: Heavy packages, model weights, upstream license, hardware assumptions.
+      placeholder: "Requires torch/transformers; weights are not redistributed by vla_zoo."
+    validations:
+      required: true
