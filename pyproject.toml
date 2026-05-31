@@ -51,9 +51,10 @@ dev = [
 all = ["vla_zoo[server,cli,openvla,bench]"]
 
 [project.urls]
-Homepage = "https://github.com/vla-zoo/vla_zoo"
-Documentation = "https://github.com/vla-zoo/vla_zoo/tree/main/docs"
-Issues = "https://github.com/vla-zoo/vla_zoo/issues"
+Homepage = "https://github.com/rsasaki0109/vla_zoo"
+Documentation = "https://github.com/rsasaki0109/vla_zoo/tree/main/docs"
+Issues = "https://github.com/rsasaki0109/vla_zoo/issues"
+Repository = "https://github.com/rsasaki0109/vla_zoo"
 
 [project.scripts]
 vla-zoo = "vla_zoo.cli.main:app"
