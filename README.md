@@ -7,9 +7,16 @@ ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action model
 
 ## Demos
 
-This is a lightweight generated simulation of the runtime boundary. It shows a 2D arm with inverse kinematics, gripper attach/release, and action-vector tracing. It is not a real robot performance claim.
+This GIF is rendered from a PyBullet simulation: Franka Panda URDF, cube, gravity, inverse kinematics, gripper command, and a fixed grasp constraint. It is still a demo scene, not a real robot performance claim.
 
 ![vla_zoo pick-and-place simulation GIF](docs/assets/simulation_pick_place.gif)
+
+Regenerate it locally with:
+
+```bash
+pip install -e ".[sim]"
+python scripts/generate_simulation_gif.py
+```
 
 The smaller GIFs below show the current runtime paths.
 

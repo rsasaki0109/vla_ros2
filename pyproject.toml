@@ -36,6 +36,7 @@ openpi = []
 smolvla = []
 groot = []
 bench = ["pandas", "tqdm"]
+sim = ["pybullet>=3.2"]
 dev = [
   "pytest",
   "pytest-cov",
