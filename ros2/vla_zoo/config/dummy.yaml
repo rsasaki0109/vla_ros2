@@ -9,9 +9,18 @@ vla_runtime_node:
     action_topic: "/vla/action"
     action_chunk_topic: "/vla/action_chunk"
     status_topic: "/vla/status"
+    diagnostics_topic: "/diagnostics"
     publish_action_chunk: true
+    publish_diagnostics: true
+    publish_actions_in_dry_run: false
     control_hz: 5.0
     max_queue_size: 1
+    require_image: false
+    stale_image_timeout_sec: 1.0
+    stale_instruction_timeout_sec: 5.0
+    clip_actions: true
+    action_low: ""
+    action_high: ""
     device: "cuda:0"
     pretrained: "openvla/openvla-7b"
     unnorm_key: "bridge_orig"

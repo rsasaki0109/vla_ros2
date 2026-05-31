@@ -122,7 +122,7 @@ vla-zoo compare dashboard \
 - `load_model("dummy")` runs without a GPU or model download.
 - `vla-zoo predict --model dummy --instruction "hello"` returns a typed `VLAAction`.
 - `vla-zoo serve --model dummy --port 8000` exposes `/health`, `/v1/models`, and `/v1/predict`.
-- `ros2 launch vla_zoo dummy.launch.py` starts a dry-run ROS2 runtime node.
+- `ros2 launch vla_zoo dummy.launch.py` starts a dry-run ROS2 runtime node with status and diagnostics.
 - Third-party adapters can be added through Python entry points.
 
 ## What to Run Next
@@ -148,6 +148,18 @@ pip install -e .
 colcon build --base-paths ros2 --symlink-install
 source install/setup.bash
 ros2 launch vla_zoo dummy.launch.py
+```
+
+If ROS2 is using a different Python interpreter than your editable install, make the core package visible before launching:
+
+```bash
+export PYTHONPATH="$PWD/src:$PYTHONPATH"
+```
+
+Dry-run suppresses action publications by default. For demo logging, opt in:
+
+```bash
+ros2 launch vla_zoo dummy.launch.py publish_actions_in_dry_run:=true
 ```
 
 ## Why vla_zoo?
@@ -216,7 +228,7 @@ source install/setup.bash
 ros2 launch vla_zoo dummy.launch.py
 ```
 
-The launchable runtime publishes actions. It does not directly command hardware.
+The launchable runtime can publish actions, status, and diagnostics. In dry-run mode it suppresses action messages unless `publish_actions_in_dry_run:=true` is set, and it never directly commands hardware.
 
 ```bash
 ros2 launch vla_zoo openvla.launch.py dry_run:=true
@@ -283,14 +295,14 @@ The benchmark runner uses the same `BaseVLA.predict()` interface as Python, ROS2
 
 ## Safety
 
-`vla_zoo` is safe by default: actions are published as messages, not sent directly to actuators. Real robots should add watchdogs, stale-action timeouts, action clipping, emergency stop integration, and a high-rate deterministic controller downstream of the low-rate VLA policy.
+`vla_zoo` is safe by default: dry-run is enabled in ROS2 configs, dry-run suppresses action publications unless explicitly overridden, and the runtime reports status plus diagnostics. The node includes input freshness watchdogs and optional action clipping, but real robots still need hardware-specific bridges, emergency stop integration, physical limit checks, and a high-rate deterministic controller downstream of the low-rate VLA policy.
 
 ## Roadmap
 
 - v0.1: Python API, dummy adapter, OpenVLA scaffold, remote server/client, ROS2 node, smoke benchmark
 - v0.2: SmolVLA adapter, openpi remote adapter, GR00T scaffold, ROS bag replay benchmark
 - v0.3: LIBERO and SimplerEnv runners, reproducible metrics, latency reports
-- v0.4: Lifecycle node, diagnostics, watchdogs, bridge examples for MoveIt Servo and ros2_control
+- v0.4: Lifecycle node, richer diagnostics, watchdog components, bridge examples for MoveIt Servo and ros2_control
 - v0.5: external adapter registry, model cards, community benchmarks
 
 ## Contributing
@@ -303,5 +315,5 @@ Good first issue areas:
 
 - model adapters: SmolVLA, openpi/pi0 remote inference, GR00T remote inference
 - benchmarks: LIBERO, SimplerEnv, ROS bag replay, Genesis, Isaac
-- ROS2 runtime: diagnostics, lifecycle node, action bridge examples
+- ROS2 runtime: lifecycle node, action bridge examples, richer diagnostics
 - deployment docs: Jetson, remote GPU, SO-101, ALOHA

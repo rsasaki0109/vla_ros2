@@ -62,6 +62,7 @@ Outputs:
 - `/vla/action`: `vla_zoo_msgs/msg/VLAAction`
 - `/vla/action_chunk`: `vla_zoo_msgs/msg/VLAActionChunk`
 - `/vla/status`: `vla_zoo_msgs/msg/VLAStatus`
+- `/diagnostics`: `diagnostic_msgs/msg/DiagnosticArray`
 
 ## Runtime Modes
 
@@ -73,8 +74,8 @@ Benchmarks use the same `BaseVLA.predict()` boundary as ROS2 and the server. The
 
 ## Safety Model
 
-The core package only publishes action messages. Hardware-specific bridges must add clipping, stale-action timeouts, emergency stop handling, and controller-specific validation.
+The core package only publishes action messages. The ROS2 node includes dry-run action suppression, input freshness watchdogs, optional action clipping, and diagnostics. Hardware-specific bridges must still add stale-action timeouts, emergency stop handling, physical limit validation, and controller-specific checks.
 
 ## Extension Roadmap
 
-External packages can register adapters through the `vla_zoo.adapters` Python entry point group. Future ROS2 work should add lifecycle nodes, diagnostics, watchdog components, and bridge examples.
+External packages can register adapters through the `vla_zoo.adapters` Python entry point group. Future ROS2 work should add lifecycle nodes, richer diagnostics, watchdog components, and bridge examples.
