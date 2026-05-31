@@ -8,6 +8,27 @@
     name="description"
     content="ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models."
   >
+  <meta property="og:title" content="vla_zoo">
+  <meta
+    property="og:description"
+    content="ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models."
+  >
+  <meta
+    property="og:image"
+    content="https://rsasaki0109.github.io/vla_zoo/assets/social_preview.png"
+  >
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rsasaki0109.github.io/vla_zoo/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="vla_zoo">
+  <meta
+    name="twitter:description"
+    content="ROS2-native runtime, benchmark, and adapter hub for VLA models."
+  >
+  <meta
+    name="twitter:image"
+    content="https://rsasaki0109.github.io/vla_zoo/assets/social_preview.png"
+  >
   <style>
     :root {
       color-scheme: light;
@@ -153,6 +174,32 @@
       padding: 14px;
       line-height: 1.5;
     }
+    .command-block {
+      position: relative;
+    }
+    .copy-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      min-height: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #0f172a;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .preview-image {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         "Liberation Mono", monospace;
@@ -249,7 +296,11 @@
 
     <section class="section">
       <h2>Run It Locally</h2>
-      <pre><code>pip install -e ".[dev,cli,server,sim]"
+      <div class="command-block">
+        <button class="copy-button" type="button" data-copy-target="local-command">
+          Copy
+        </button>
+        <pre><code id="local-command">pip install -e ".[dev,cli,server,sim]"
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 vla-zoo compare pybullet --models dummy,openvla,pi0,smolvla,groot \
@@ -258,6 +309,19 @@ vla-zoo compare pybullet --models dummy,openvla,pi0,smolvla,groot \
 vla-zoo compare dashboard \
   --results results/vla_runtime_comparison.json \
   --out results/vla_runtime_dashboard.html</code></pre>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Dashboard Preview</h2>
+      <p class="lead">
+        The dashboard is generated from comparison JSON and can be shared as a static artifact.
+      </p>
+      <img
+        class="preview-image"
+        src="assets/dashboard_preview.png"
+        alt="vla_zoo runtime dashboard preview"
+      >
     </section>
 
     <section class="section">
@@ -321,5 +385,17 @@ vla-zoo compare dashboard \
     vla_zoo is infrastructure for running and comparing external VLA models. It does not
     redistribute model weights or claim zero-shot robot success.
   </footer>
+  <script>
+    for (const button of document.querySelectorAll("[data-copy-target]")) {
+      button.addEventListener("click", async () => {
+        const target = document.getElementById(button.dataset.copyTarget);
+        if (!target) return;
+        await navigator.clipboard.writeText(target.innerText);
+        const previous = button.innerText;
+        button.innerText = "Copied";
+        window.setTimeout(() => { button.innerText = previous; }, 1200);
+      });
+    }
+  </script>
 </body>
 </html>
