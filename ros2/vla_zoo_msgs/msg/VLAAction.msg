@@ -1,0 +1,12 @@
+std_msgs/Header header
+string model_name
+string adapter_name
+string action_space
+string control_mode
+string frame_id
+float32 dt
+float32[] data
+string[] names
+float32 confidence
+uint32 chunk_index
+string metadata_json

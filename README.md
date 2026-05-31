@@ -1,0 +1,177 @@
+# vla_zoo
+
+ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models.
+
+> VLA models are moving fast. Robots still need stable runtime interfaces.  
+> vla_zoo connects camera + instruction + robot state to actions through ROS2-native adapters.
+
+## Demos
+
+These GIFs are lightweight generated demos of the current runtime paths. They show the API and system boundary, not real robot performance claims.
+
+| No GPU Python API | ROS2 Runtime |
+|---|---|
+| ![No GPU dummy adapter demo](docs/assets/readme_no_gpu_demo.gif) | ![ROS2 runtime topic flow](docs/assets/readme_ros2_runtime.gif) |
+
+| Remote GPU Path | Benchmark Smoke Test |
+|---|---|
+| ![Remote GPU inference path](docs/assets/readme_remote_gpu.gif) | ![Smoke benchmark demo](docs/assets/readme_benchmark.gif) |
+
+| Adapter Hub |
+|---|
+| ![Adapter hub demo](docs/assets/readme_adapter_hub.gif) |
+
+## What works today
+
+- `load_model("dummy")` runs without a GPU or model download.
+- `vla-zoo predict --model dummy --instruction "hello"` returns a typed `VLAAction`.
+- `vla-zoo serve --model dummy --port 8000` exposes `/health`, `/v1/models`, and `/v1/predict`.
+- `ros2 launch vla_zoo dummy.launch.py` starts a dry-run ROS2 runtime node.
+- Third-party adapters can be added through Python entry points.
+
+## Why vla_zoo?
+
+VLA models are arriving quickly, but real robots need stable runtime interfaces:
+
+```text
+camera + instruction + state -> action
+```
+
+`vla_zoo` is not a training framework and it does not redistribute model weights. It is a runtime boundary for local or remote VLA inference, ROS2 topic integration, action-space metadata, and benchmark orchestration.
+
+## Quickstart
+
+```bash
+pip install vla_zoo
+```
+
+```python
+from vla_zoo import load_model
+
+model = load_model("dummy")
+action = model.predict(image=None, instruction="hello")
+print(action)
+```
+
+For local development:
+
+```bash
+pip install -e ".[dev,cli,server]"
+pytest
+vla-zoo list
+vla-zoo predict --model dummy --instruction "hello"
+```
+
+## OpenVLA
+
+OpenVLA is an external project. Install its heavy dependencies only when needed:
+
+```bash
+pip install "vla_zoo[openvla]"
+```
+
+```python
+from PIL import Image
+from vla_zoo import load_model
+
+image = Image.open("examples/assets/example.png").convert("RGB")
+model = load_model(
+    "openvla",
+    pretrained="openvla/openvla-7b",
+    device="cuda:0",
+    dtype="bfloat16",
+    unnorm_key="bridge_orig",
+)
+action = model.predict(image=image, instruction="pick up the red block")
+print(action)
+```
+
+## ROS2
+
+```bash
+pip install -e .
+colcon build --base-paths ros2 --symlink-install
+source install/setup.bash
+ros2 launch vla_zoo dummy.launch.py
+```
+
+The launchable runtime publishes actions. It does not directly command hardware.
+
+```bash
+ros2 launch vla_zoo openvla.launch.py dry_run:=true
+ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000
+```
+
+## Remote GPU Runtime
+
+Run a server on the GPU machine:
+
+```bash
+vla-zoo serve --model dummy --host 0.0.0.0 --port 8000
+```
+
+Use the same API from a robot CPU:
+
+```python
+from vla_zoo import load_model
+
+model = load_model("dummy", runtime="remote", remote_url="http://gpu-box:8000")
+print(model.predict(image=None, instruction="test"))
+```
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Camera[/sensor_msgs Image/] --> ROSNode[vla_runtime_node]
+  Instr[/Instruction/] --> ROSNode
+  State[/JointState optional/] --> ROSNode
+  ROSNode --> Runtime{Runtime}
+  Runtime --> Local[Local Adapter]
+  Runtime --> Remote[Remote Server]
+  Local --> Action[VLAAction]
+  Remote --> Action
+  Action --> Topic[/vla/action/]
+```
+
+## Supported Adapters
+
+| Adapter | Status | Notes |
+|---|---|---|
+| `dummy` | available | Always returns neutral 7-DoF actions for tests, docs, and dry runs |
+| `openvla` | optional | Hugging Face OpenVLA adapter, installed with `vla_zoo[openvla]` |
+| `pi0`, `openpi`, `pi0-fast`, `pi05` | experimental | Remote-first scaffold for openpi/pi0 integration |
+| `smolvla`, `lerobot-smolvla` | experimental | Placeholder for LeRobot SmolVLA action-chunk policies |
+| `groot`, `gr00t`, `isaac-groot` | experimental | Placeholder for humanoid/generalist GR00T-style stacks |
+
+## Benchmarks
+
+```bash
+vla-zoo bench --model dummy --benchmark smoke --episodes 3
+```
+
+The benchmark runner uses the same `BaseVLA.predict()` interface as Python, ROS2, and the HTTP server.
+
+## Known Limitations
+
+- vla_zoo does not train VLA models.
+- vla_zoo does not guarantee zero-shot success on your robot.
+- Real hardware deployment requires robot-specific action bridges and safety checks.
+- Model adapters may require large GPU memory and external model licenses.
+- The base package intentionally avoids heavy ML dependencies.
+
+## Safety
+
+`vla_zoo` is safe by default: actions are published as messages, not sent directly to actuators. Real robots should add watchdogs, stale-action timeouts, action clipping, emergency stop integration, and a high-rate deterministic controller downstream of the low-rate VLA policy.
+
+## Roadmap
+
+- v0.1: Python API, dummy adapter, OpenVLA scaffold, remote server/client, ROS2 node, smoke benchmark
+- v0.2: SmolVLA adapter, openpi remote adapter, GR00T scaffold, ROS bag replay benchmark
+- v0.3: LIBERO and SimplerEnv runners, reproducible metrics, latency reports
+- v0.4: Lifecycle node, diagnostics, watchdogs, bridge examples for MoveIt Servo and ros2_control
+- v0.5: external adapter registry, model cards, community benchmarks
+
+## Contributing
+
+Good first adapters include SmolVLA, openpi remote inference, GR00T experiments, LIBERO smoke tasks, SimplerEnv smoke tasks, ROS bag replay loading, MoveIt Servo bridges, ros2_control bridges, Jetson deployment notes, and SO-101 or ALOHA launch examples.

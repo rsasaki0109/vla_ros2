@@ -1,0 +1,11 @@
+std_msgs/Header header
+string model_name
+string adapter_name
+bool ready
+bool dry_run
+float32 last_latency_ms
+float32 avg_latency_ms
+float32 action_rate_hz
+uint32 dropped_frames
+string status_text
+string metadata_json

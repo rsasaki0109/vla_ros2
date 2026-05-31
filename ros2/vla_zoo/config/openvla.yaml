@@ -1,0 +1,18 @@
+vla_runtime_node:
+  ros__parameters:
+    model_name: "openvla"
+    runtime: "local"
+    dry_run: true
+    image_topic: "/camera/image_raw"
+    instruction_topic: "/vla/instruction"
+    joint_state_topic: "/joint_states"
+    action_topic: "/vla/action"
+    action_chunk_topic: "/vla/action_chunk"
+    status_topic: "/vla/status"
+    publish_action_chunk: true
+    control_hz: 5.0
+    max_queue_size: 1
+    device: "cuda:0"
+    pretrained: "openvla/openvla-7b"
+    unnorm_key: "bridge_orig"
+    remote_url: "http://localhost:8000"

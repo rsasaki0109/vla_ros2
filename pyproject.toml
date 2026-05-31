@@ -1,0 +1,89 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vla_zoo"
+version = "0.1.0"
+description = "ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "vla_zoo contributors"}]
+keywords = ["robotics", "ros2", "vision-language-action", "vla", "embodied-ai"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "numpy>=1.24",
+  "pydantic>=2",
+  "pillow>=10",
+  "typing-extensions>=4.8",
+]
+
+[project.optional-dependencies]
+server = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "httpx>=0.27"]
+cli = ["typer>=0.12", "rich>=13"]
+openvla = ["torch", "transformers", "timm", "tokenizers", "accelerate", "einops"]
+openpi = []
+smolvla = []
+groot = []
+bench = ["pandas", "tqdm"]
+dev = [
+  "pytest",
+  "pytest-cov",
+  "ruff",
+  "mypy",
+  "types-Pillow",
+  "setuptools",
+  "lark",
+  "jinja2",
+  "typeguard",
+]
+all = ["vla_zoo[server,cli,openvla,bench]"]
+
+[project.urls]
+Homepage = "https://github.com/vla-zoo/vla_zoo"
+Documentation = "https://github.com/vla-zoo/vla_zoo/tree/main/docs"
+Issues = "https://github.com/vla-zoo/vla_zoo/issues"
+
+[project.scripts]
+vla-zoo = "vla_zoo.cli.main:app"
+
+[project.entry-points."vla_zoo.adapters"]
+dummy = "vla_zoo.adapters.dummy:DummyAdapter"
+openvla = "vla_zoo.adapters.openvla:OpenVLAAdapter"
+pi0 = "vla_zoo.adapters.pi0:Pi0Adapter"
+smolvla = "vla_zoo.adapters.smolvla:SmolVLAAdapter"
+groot = "vla_zoo.adapters.groot:GR00TAdapter"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vla_zoo"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B008"]
+
+[tool.mypy]
+python_version = "3.10"
+packages = ["vla_zoo"]
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_subclassing_any = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
