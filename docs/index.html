@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>vla_zoo demo</title>
+  <meta
+    name="description"
+    content="ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models."
+  >
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7fafc;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #5b687a;
+      --line: #d7dee8;
+      --blue: #0369a1;
+      --green: #16a34a;
+      --red: #e11d48;
+      --ink: #0f172a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+    a { color: inherit; }
+    .hero {
+      min-height: 76vh;
+      display: grid;
+      align-items: end;
+      position: relative;
+      isolation: isolate;
+      background: #111827 url("assets/simulation_pick_place.gif") center / cover no-repeat;
+      color: #fff;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: rgba(3, 7, 18, 0.54);
+    }
+    .hero-inner {
+      width: min(1120px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 80px 0 52px;
+    }
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 14px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.34);
+      border-radius: 999px;
+      color: #dbeafe;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    h1 {
+      margin: 0;
+      max-width: 760px;
+      font-size: clamp(46px, 8vw, 92px);
+      line-height: 0.94;
+      letter-spacing: 0;
+    }
+    .hero p {
+      max-width: 680px;
+      margin: 20px 0 0;
+      color: #e2e8f0;
+      font-size: clamp(17px, 2vw, 22px);
+      line-height: 1.45;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+    .button {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .button.primary {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    main {
+      width: min(1120px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+    .section {
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: clamp(24px, 3vw, 34px);
+      letter-spacing: 0;
+    }
+    .lead {
+      max-width: 820px;
+      color: var(--muted);
+      line-height: 1.58;
+      margin: 0 0 18px;
+    }
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .tile {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+    }
+    .tile h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+    .tile p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .tile a {
+      color: var(--blue);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    pre {
+      overflow: auto;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 14px;
+      line-height: 1.5;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", monospace;
+      font-size: 13px;
+    }
+    .status-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .status-table th,
+    .status-table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    .status-table th {
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .ok { background: #bbf7d0; color: #14532d; }
+    .planned { background: #e0f2fe; color: #075985; }
+    .blocked { background: #ffe4e6; color: #881337; }
+    footer {
+      width: min(1120px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 24px 0 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    @media (max-width: 720px) {
+      .hero { min-height: 72vh; }
+      .status-table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="eyebrow">ROS2-native VLA runtime infrastructure</span>
+      <h1>vla_zoo</h1>
+      <p>
+        Runtime boundary, ROS2 node, remote inference server, PyBullet smoke demo,
+        and adapter comparison tools for Vision-Language-Action policies.
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" href="assets/sample_runtime_dashboard.html">Open dashboard</a>
+        <a class="button" href="assets/sample_runtime_report.html">Open report</a>
+        <a class="button" href="https://github.com/rsasaki0109/vla_zoo">GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section">
+      <h2>What This Shows</h2>
+      <p class="lead">
+        This demo page is generated from the repository's no-GPU path. The PyBullet scene is
+        deterministic; the selected adapter is queried through the same `BaseVLA.predict()`
+        boundary used by Python, HTTP server, ROS2, and benchmarks.
+      </p>
+      <div class="quick-grid">
+        <div class="tile">
+          <h3>No GPU demo</h3>
+          <p>Run the dummy adapter and verify the runtime API without downloading weights.</p>
+          <a href="assets/sample_runtime_comparison.json">View sample JSON</a>
+        </div>
+        <div class="tile">
+          <h3>Runtime report</h3>
+          <p>Static HTML table for adapter status, query counts, errors, latency, and action scale.</p>
+          <a href="assets/sample_runtime_report.html">Open report</a>
+        </div>
+        <div class="tile">
+          <h3>Interactive dashboard</h3>
+          <p>Filter and sort comparison JSON in a self-contained browser dashboard.</p>
+          <a href="assets/sample_runtime_dashboard.html">Open dashboard</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Run It Locally</h2>
+      <pre><code>pip install -e ".[dev,cli,server,sim]"
+vla-zoo predict --model dummy --instruction "hello"
+vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
+vla-zoo compare pybullet --models dummy,openvla,pi0,smolvla,groot \
+  --out results/vla_runtime_comparison.json \
+  --html-out results/vla_runtime_comparison.html
+vla-zoo compare dashboard \
+  --results results/vla_runtime_comparison.json \
+  --out results/vla_runtime_dashboard.html</code></pre>
+    </section>
+
+    <section class="section">
+      <h2>Adapter Status</h2>
+      <table class="status-table">
+        <thead>
+          <tr>
+            <th>Adapter</th>
+            <th>Status</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>dummy</code></td>
+            <td><span class="badge ok">available</span></td>
+            <td>No-GPU dry-run adapter for CI, docs, ROS2 launch, and demos.</td>
+          </tr>
+          <tr>
+            <td><code>openvla</code></td>
+            <td><span class="badge planned">optional</span></td>
+            <td>Lazy Hugging Face OpenVLA integration behind <code>vla_zoo[openvla]</code>.</td>
+          </tr>
+          <tr>
+            <td><code>pi0</code>, <code>smolvla</code>, <code>groot</code></td>
+            <td><span class="badge planned">scaffold</span></td>
+            <td>Remote-first adapter paths for external heavy VLA stacks.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Safety Boundary</h2>
+      <p class="lead">
+        vla_zoo publishes typed action messages. It does not directly command hardware by default.
+        Real robot deployments should add watchdogs, stale-action timeouts, action clipping, and
+        deterministic high-rate controllers downstream of the low-rate VLA policy.
+      </p>
+      <div class="quick-grid">
+        <div class="tile">
+          <a href="https://github.com/rsasaki0109/vla_zoo/blob/main/docs/architecture.md">
+            Architecture
+          </a>
+        </div>
+        <div class="tile">
+          <a href="https://github.com/rsasaki0109/vla_zoo/blob/main/docs/ros2_integration.md">
+            ROS2 Integration
+          </a>
+        </div>
+        <div class="tile">
+          <a href="https://github.com/rsasaki0109/vla_zoo/blob/main/docs/safety.md">
+            Safety Model
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    vla_zoo is infrastructure for running and comparing external VLA models. It does not
+    redistribute model weights or claim zero-shot robot success.
+  </footer>
+</body>
+</html>

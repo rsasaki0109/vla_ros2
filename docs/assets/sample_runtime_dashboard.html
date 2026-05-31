@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>vla_zoo Sample Runtime Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7fafc;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #d8e0ea;
+      --accent: #0369a1;
+      --ok: #16a34a;
+      --error: #e11d48;
+      --warn: #ca8a04;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+    main {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    header {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 46px);
+      letter-spacing: 0;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 180px 180px;
+      gap: 10px;
+      margin: 22px 0;
+    }
+    input, select {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      padding: 8px 10px;
+      font: inherit;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 15px;
+    }
+    .card span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .card strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 26px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .panel h2 {
+      margin: 0;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th {
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    code { color: #075985; }
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .ok { background: #bbf7d0; color: #14532d; }
+    .error { background: #fecdd3; color: #881337; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 140px 1fr 82px;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 14px;
+    }
+    .bar {
+      height: 12px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar span {
+      display: block;
+      height: 100%;
+      min-width: 1px;
+      background: var(--accent);
+    }
+    .bar.error span { background: var(--error); }
+    .bar.action span { background: #0891b2; }
+    .note {
+      max-width: 420px;
+      color: #334155;
+    }
+    details {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    pre {
+      overflow: auto;
+      color: #334155;
+    }
+    @media (max-width: 760px) {
+      .controls { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>vla_zoo Sample Runtime Dashboard</h1>
+      <p>
+        Interactive static dashboard for VLA runtime comparison results.
+        Filter by model, inspect failed adapters, and compare latency/error/action metrics.
+      </p>
+    </header>
+    <section class="controls">
+      <input id="search" placeholder="Filter model, runtime, endpoint, note">
+      <select id="status">
+        <option value="all">all statuses</option>
+        <option value="ok">ok only</option>
+        <option value="error">errors only</option>
+      </select>
+      <select id="sort">
+        <option value="latency">sort by latency</option>
+        <option value="errors">sort by errors</option>
+        <option value="action">sort by action magnitude</option>
+        <option value="model">sort by model</option>
+      </select>
+    </section>
+    <section class="cards" id="summary"></section>
+    <section class="grid">
+      <div class="panel">
+        <h2>Latency</h2>
+        <div id="latencyChart"></div>
+      </div>
+      <div class="panel">
+        <h2>Errors</h2>
+        <div id="errorChart"></div>
+      </div>
+      <div class="panel">
+        <h2>Action Magnitude</h2>
+        <div id="actionChart"></div>
+      </div>
+      <div class="panel">
+        <h2>Records</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th><th>Runtime</th><th>Endpoint</th><th>Status</th>
+              <th>Frames</th><th>Queries</th><th>Errors</th>
+              <th>Mean latency</th><th>Mean abs action</th><th>Note</th>
+            </tr>
+          </thead>
+          <tbody id="records"></tbody>
+        </table>
+      </div>
+    </section>
+    <details>
+      <summary>Raw JSON</summary>
+      <pre id="raw"></pre>
+    </details>
+  </main>
+  <script>
+    const records = [
+  {
+    "model_name": "dummy",
+    "runtime": "local",
+    "ok": true,
+    "source": "docs/assets/sample_runtime_comparison.json",
+    "remote_url": null,
+    "frames": 14,
+    "adapter_queries": 2,
+    "adapter_errors": 0,
+    "mean_latency_ms": 0.03192148869857192,
+    "max_latency_ms": 0.036056037060916424,
+    "mean_abs_action": 0.0,
+    "last_error": null
+  },
+  {
+    "model_name": "openvla",
+    "runtime": "local",
+    "ok": false,
+    "source": "docs/assets/sample_runtime_comparison.json",
+    "remote_url": null,
+    "frames": 0,
+    "adapter_queries": 0,
+    "adapter_errors": 0,
+    "mean_latency_ms": null,
+    "max_latency_ms": null,
+    "mean_abs_action": null,
+    "last_error": "local heavy adapter skipped to avoid model download; use --allow-local-heavy or --runtime remote"
+  },
+  {
+    "model_name": "pi0",
+    "runtime": "local",
+    "ok": false,
+    "source": "docs/assets/sample_runtime_comparison.json",
+    "remote_url": null,
+    "frames": 14,
+    "adapter_queries": 2,
+    "adapter_errors": 2,
+    "mean_latency_ms": null,
+    "max_latency_ms": null,
+    "mean_abs_action": null,
+    "last_error": "Local pi0/openpi inference is not implemented in vla_zoo MVP. Run pi0 in a dedicated server and load it with runtime='remote'."
+  },
+  {
+    "model_name": "smolvla",
+    "runtime": "local",
+    "ok": false,
+    "source": "docs/assets/sample_runtime_comparison.json",
+    "remote_url": null,
+    "frames": 14,
+    "adapter_queries": 2,
+    "adapter_errors": 2,
+    "mean_latency_ms": null,
+    "max_latency_ms": null,
+    "mean_abs_action": null,
+    "last_error": "Local SmolVLA inference is not implemented in vla_zoo MVP. Install LeRobot in a dedicated environment or use a remote adapter."
+  },
+  {
+    "model_name": "groot",
+    "runtime": "local",
+    "ok": false,
+    "source": "docs/assets/sample_runtime_comparison.json",
+    "remote_url": null,
+    "frames": 14,
+    "adapter_queries": 2,
+    "adapter_errors": 2,
+    "mean_latency_ms": null,
+    "max_latency_ms": null,
+    "mean_abs_action": null,
+    "last_error": "Isaac GR00T dependencies are not installed. Install NVIDIA's GR00T stack in the serving environment before using this adapter."
+  }
+];
+
+    const fmt = (value, digits = 2) =>
+      value === null || value === undefined ? "-" : Number(value).toFixed(digits);
+    const text = value => value === null || value === undefined ? "" : String(value);
+    const esc = value => text(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+
+    function filteredRecords() {
+      const query = document.getElementById("search").value.toLowerCase();
+      const status = document.getElementById("status").value;
+      const sort = document.getElementById("sort").value;
+      let rows = records.filter(record => {
+        const blob = [
+          record.model_name,
+          record.runtime,
+          record.remote_url,
+          record.last_error,
+          record.source
+        ].join(" ").toLowerCase();
+        const statusOk = status === "all" ||
+          (status === "ok" && record.ok) ||
+          (status === "error" && !record.ok);
+        return statusOk && blob.includes(query);
+      });
+      rows = [...rows].sort((a, b) => {
+        if (sort === "errors") return b.adapter_errors - a.adapter_errors;
+        if (sort === "action") {
+          return (b.mean_abs_action ?? -1) - (a.mean_abs_action ?? -1);
+        }
+        if (sort === "model") return text(a.model_name).localeCompare(text(b.model_name));
+        return (b.mean_latency_ms ?? -1) - (a.mean_latency_ms ?? -1);
+      });
+      return rows;
+    }
+
+    function renderSummary(rows) {
+      const ok = rows.filter(record => record.ok).length;
+      const queries = rows.reduce((sum, record) => sum + record.adapter_queries, 0);
+      const errors = rows.reduce((sum, record) => sum + record.adapter_errors, 0);
+      const latencies = rows
+        .map(record => record.mean_latency_ms)
+        .filter(value => value !== null && value !== undefined);
+      const avgLatency = latencies.length
+        ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length
+        : null;
+      document.getElementById("summary").innerHTML = [
+        ["models", rows.length],
+        ["ok", ok],
+        ["adapter queries", queries],
+        ["adapter errors", errors],
+        ["avg latency ms", fmt(avgLatency)]
+      ].map(([label, value]) =>
+        `<div class="card"><span>${label}</span><strong>${value}</strong></div>`
+      ).join("");
+    }
+
+    function renderBarChart(id, rows, metric, digits, className = "") {
+      const values = rows.map(record => Number(record[metric] ?? 0));
+      const maxValue = Math.max(0, ...values);
+      document.getElementById(id).innerHTML = rows.map(record => {
+        const value = Number(record[metric] ?? 0);
+        const width = maxValue > 0 ? Math.max(2, value / maxValue * 100) : 0;
+        return `<div class="bar-row">
+          <code>${esc(record.model_name)}</code>
+          <div class="bar ${className}"><span style="width:${width}%"></span></div>
+          <strong>${fmt(value, digits)}</strong>
+        </div>`;
+      }).join("");
+    }
+
+    function renderRows(rows) {
+      document.getElementById("records").innerHTML = rows.map(record => {
+        const badge = record.ok
+          ? '<span class="badge ok">ok</span>'
+          : '<span class="badge error">error</span>';
+        return `<tr>
+          <td><code>${esc(record.model_name)}</code></td>
+          <td><code>${esc(record.runtime)}</code></td>
+          <td>${esc(record.remote_url || "-")}</td>
+          <td>${badge}</td>
+          <td>${record.frames}</td>
+          <td>${record.adapter_queries}</td>
+          <td>${record.adapter_errors}</td>
+          <td>${fmt(record.mean_latency_ms)} ms</td>
+          <td>${fmt(record.mean_abs_action, 3)}</td>
+          <td class="note">${esc(record.last_error || "-")}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function render() {
+      const rows = filteredRecords();
+      renderSummary(rows);
+      renderBarChart("latencyChart", rows, "mean_latency_ms", 2);
+      renderBarChart("errorChart", rows, "adapter_errors", 0, "error");
+      renderBarChart("actionChart", rows, "mean_abs_action", 3, "action");
+      renderRows(rows);
+      document.getElementById("raw").textContent = JSON.stringify(rows, null, 2);
+    }
+
+    document.getElementById("search").addEventListener("input", render);
+    document.getElementById("status").addEventListener("change", render);
+    document.getElementById("sort").addEventListener("change", render);
+    render();
+  </script>
+</body>
+</html>
