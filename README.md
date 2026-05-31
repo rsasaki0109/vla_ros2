@@ -7,19 +7,19 @@ ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action model
 
 ## Demos
 
-These GIFs are lightweight generated demos of the current runtime paths. They show the API and system boundary, not real robot performance claims.
+These GIFs are lightweight generated robot-motion demos of the current runtime paths. They show the API and system boundary, not real robot performance claims.
 
-| No GPU Python API | ROS2 Runtime |
+| No GPU Robot Smoke Test | ROS2 Runtime |
 |---|---|
-| ![No GPU dummy adapter demo](docs/assets/readme_no_gpu_demo.gif) | ![ROS2 runtime topic flow](docs/assets/readme_ros2_runtime.gif) |
+| ![No GPU dummy adapter robot motion demo](docs/assets/readme_no_gpu_demo.gif) | ![ROS2 runtime robot action flow](docs/assets/readme_ros2_runtime.gif) |
 
 | Remote GPU Path | Benchmark Smoke Test |
 |---|---|
-| ![Remote GPU inference path](docs/assets/readme_remote_gpu.gif) | ![Smoke benchmark demo](docs/assets/readme_benchmark.gif) |
+| ![Remote GPU robot inference path](docs/assets/readme_remote_gpu.gif) | ![Smoke benchmark robot motion demo](docs/assets/readme_benchmark.gif) |
 
 | Adapter Hub |
 |---|
-| ![Adapter hub demo](docs/assets/readme_adapter_hub.gif) |
+| ![Adapter hub robot motion demo](docs/assets/readme_adapter_hub.gif) |
 
 ## What works today
 
