@@ -18,20 +18,6 @@ pip install -e ".[sim]"
 python scripts/generate_simulation_gif.py
 ```
 
-The smaller GIFs below show the current runtime paths.
-
-| No GPU Robot Smoke Test | ROS2 Runtime |
-|---|---|
-| ![No GPU dummy adapter robot motion demo](docs/assets/readme_no_gpu_demo.gif) | ![ROS2 runtime robot action flow](docs/assets/readme_ros2_runtime.gif) |
-
-| Remote GPU Path | Benchmark Smoke Test |
-|---|---|
-| ![Remote GPU robot inference path](docs/assets/readme_remote_gpu.gif) | ![Smoke benchmark robot motion demo](docs/assets/readme_benchmark.gif) |
-
-| Adapter Hub |
-|---|
-| ![Adapter hub robot motion demo](docs/assets/readme_adapter_hub.gif) |
-
 ## What works today
 
 - `load_model("dummy")` runs without a GPU or model download.
