@@ -1,0 +1,17 @@
+{
+  "title": "Dummy Remote PyBullet Runtime Smoke",
+  "instruction": "pick up the red block",
+  "model_call_every": 8,
+  "render_stride": 48,
+  "models": [
+    {
+      "name": "dummy",
+      "runtime": "remote",
+      "remote_url": "http://127.0.0.1:8010"
+    }
+  ],
+  "outputs": {
+    "json": "results/dummy_remote_comparison.json",
+    "markdown": "results/dummy_remote_comparison.md"
+  }
+}

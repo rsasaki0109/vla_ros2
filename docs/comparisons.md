@@ -45,4 +45,12 @@ vla-zoo compare pybullet \
   --markdown-out results/vla_runtime_comparison.md
 ```
 
+For repeatable comparisons, prefer a manifest:
+
+```bash
+vla-zoo compare pybullet --manifest examples/compare/pybullet_vla_remote.json
+```
+
+The manifest records the instruction, query cadence, render stride, each model endpoint, and output files. Keep real comparison outputs under `results/` or attach them to an issue; do not commit fabricated model numbers.
+
 The comparison output is intentionally runtime-centric: frames, adapter query count, adapter errors, latency, and action magnitude. It is not a claim of task success or model quality.

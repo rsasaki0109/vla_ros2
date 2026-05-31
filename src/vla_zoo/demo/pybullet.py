@@ -89,6 +89,14 @@ class PyBulletComparisonResult:
     last_error: str | None = None
 
 
+@dataclass(frozen=True)
+class PyBulletComparisonTarget:
+    model_name: str
+    runtime: str = "local"
+    remote_url: str = "http://localhost:8000"
+    adapter_kwargs: dict[str, Any] | None = None
+
+
 def import_pybullet() -> tuple[Any, Any]:
     try:
         import pybullet as p
@@ -540,12 +548,40 @@ def compare_pybullet_models(
     render_stride: int = 12,
     allow_local_heavy: bool = False,
 ) -> list[PyBulletComparisonResult]:
+    remote_url_overrides = remote_urls or {}
+    targets = [
+        PyBulletComparisonTarget(
+            model_name=model_name,
+            runtime=runtime,
+            remote_url=remote_url_overrides.get(model_name.strip().lower(), remote_url),
+        )
+        for model_name in model_names
+        if model_name.strip()
+    ]
+    return compare_pybullet_targets(
+        targets,
+        instruction=instruction,
+        model_call_every=model_call_every,
+        render_stride=render_stride,
+        allow_local_heavy=allow_local_heavy,
+    )
+
+
+def compare_pybullet_targets(
+    targets: list[PyBulletComparisonTarget],
+    *,
+    instruction: str = "pick up the red block",
+    model_call_every: int = 8,
+    render_stride: int = 12,
+    allow_local_heavy: bool = False,
+) -> list[PyBulletComparisonResult]:
     results: list[PyBulletComparisonResult] = []
-    for model_name in model_names:
+    for target in targets:
+        model_name = target.model_name
+        runtime = target.runtime
         canonical = model_name.strip().lower()
         if not canonical:
             continue
-        selected_remote_url = (remote_urls or {}).get(canonical, remote_url)
         if runtime == "local" and canonical in HEAVY_LOCAL_MODELS and not allow_local_heavy:
             results.append(
                 PyBulletComparisonResult(
@@ -564,10 +600,11 @@ def compare_pybullet_models(
         config = PyBulletDemoConfig(
             model_name=model_name,
             runtime=runtime,
-            remote_url=selected_remote_url,
+            remote_url=target.remote_url,
             instruction=instruction,
             model_call_every=model_call_every,
             render_stride=render_stride,
+            adapter_kwargs=target.adapter_kwargs,
         )
         try:
             samples = run_simulation(config)
@@ -577,7 +614,7 @@ def compare_pybullet_models(
                     model_name=model_name,
                     runtime=runtime,
                     ok=False,
-                    remote_url=selected_remote_url if runtime == "remote" else None,
+                    remote_url=target.remote_url if runtime == "remote" else None,
                     last_error=str(exc),
                 )
             )
@@ -587,7 +624,7 @@ def compare_pybullet_models(
                 model_name,
                 runtime,
                 samples,
-                remote_url=selected_remote_url if runtime == "remote" else None,
+                remote_url=target.remote_url if runtime == "remote" else None,
             )
         )
     return results

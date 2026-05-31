@@ -72,6 +72,19 @@ vla-zoo compare pybullet \
   --markdown-out results/vla_runtime_comparison.md
 ```
 
+The same setup can be checked into a JSON manifest:
+
+```bash
+vla-zoo compare pybullet --manifest examples/compare/pybullet_vla_remote.json
+```
+
+For a no-GPU remote smoke test, run a dummy server and use the smoke manifest:
+
+```bash
+vla-zoo serve --model dummy --host 127.0.0.1 --port 8010
+vla-zoo compare pybullet --manifest examples/compare/pybullet_dummy_remote.json
+```
+
 ## What works today
 
 - `load_model("dummy")` runs without a GPU or model download.

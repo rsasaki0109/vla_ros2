@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
 
@@ -12,6 +12,9 @@ from vla_zoo.benchmark.runner import run_smoke_benchmark
 from vla_zoo.core.errors import MissingDependencyError, VLAZooError
 from vla_zoo.core.registry import get_adapter_info, list_models, load_model
 from vla_zoo.core.types import VLAAction, VLAActionChunk
+
+if TYPE_CHECKING:
+    from vla_zoo.demo.pybullet import PyBulletComparisonTarget
 
 app = typer.Typer(
     help="ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models.",
@@ -69,6 +72,107 @@ def _parse_remote_map(value: str | None) -> dict[str, str]:
 def _write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _load_json_manifest(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise typer.BadParameter(f"Could not read manifest {path}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise typer.BadParameter(f"Manifest {path} is not valid JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise typer.BadParameter("Comparison manifest must be a JSON object.")
+    return payload
+
+
+def _manifest_string(payload: dict[str, Any], key: str, default: str) -> str:
+    value = payload.get(key, default)
+    if not isinstance(value, str):
+        raise typer.BadParameter(f"Manifest field {key!r} must be a string.")
+    return value
+
+
+def _manifest_int(payload: dict[str, Any], key: str, default: int) -> int:
+    value = payload.get(key, default)
+    if not isinstance(value, int):
+        raise typer.BadParameter(f"Manifest field {key!r} must be an integer.")
+    return value
+
+
+def _manifest_bool(payload: dict[str, Any], key: str, default: bool) -> bool:
+    value = payload.get(key, default)
+    if not isinstance(value, bool):
+        raise typer.BadParameter(f"Manifest field {key!r} must be a boolean.")
+    return value
+
+
+def _manifest_output_path(
+    payload: dict[str, Any],
+    output_name: str,
+    explicit_path: Path | None,
+) -> Path | None:
+    if explicit_path is not None:
+        return explicit_path
+    outputs = payload.get("outputs", {})
+    if outputs == {}:
+        return None
+    if not isinstance(outputs, dict):
+        raise typer.BadParameter("Manifest field 'outputs' must be an object.")
+    value = outputs.get(output_name)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise typer.BadParameter(f"Manifest output {output_name!r} must be a string path.")
+    return Path(value)
+
+
+def _manifest_targets(payload: dict[str, Any]) -> list[PyBulletComparisonTarget]:
+    from vla_zoo.demo.pybullet import PyBulletComparisonTarget
+
+    raw_targets = payload.get("models", payload.get("targets"))
+    if not isinstance(raw_targets, list) or not raw_targets:
+        raise typer.BadParameter("Comparison manifest must contain a non-empty 'models' list.")
+
+    default_runtime = _manifest_string(payload, "runtime", "local")
+    default_remote_url = _manifest_string(payload, "remote_url", "http://localhost:8000")
+    targets: list[PyBulletComparisonTarget] = []
+    for index, raw_target in enumerate(raw_targets):
+        if isinstance(raw_target, str):
+            targets.append(
+                PyBulletComparisonTarget(
+                    model_name=raw_target,
+                    runtime=default_runtime,
+                    remote_url=default_remote_url,
+                )
+            )
+            continue
+        if not isinstance(raw_target, dict):
+            raise typer.BadParameter(f"Manifest model entry {index} must be a string or object.")
+
+        name = raw_target.get("name", raw_target.get("model"))
+        if not isinstance(name, str) or not name.strip():
+            raise typer.BadParameter(f"Manifest model entry {index} needs a non-empty name.")
+        runtime = raw_target.get("runtime", default_runtime)
+        remote_url = raw_target.get("remote_url", default_remote_url)
+        adapter_kwargs = raw_target.get("adapter_kwargs")
+        if not isinstance(runtime, str):
+            raise typer.BadParameter(f"Manifest model entry {index} runtime must be a string.")
+        if not isinstance(remote_url, str):
+            raise typer.BadParameter(f"Manifest model entry {index} remote_url must be a string.")
+        if adapter_kwargs is not None and not isinstance(adapter_kwargs, dict):
+            raise typer.BadParameter(
+                f"Manifest model entry {index} adapter_kwargs must be an object."
+            )
+        targets.append(
+            PyBulletComparisonTarget(
+                model_name=name,
+                runtime=runtime,
+                remote_url=remote_url,
+                adapter_kwargs=dict(adapter_kwargs) if adapter_kwargs is not None else None,
+            )
+        )
+    return targets
 
 
 @app.command("list")
@@ -198,6 +302,13 @@ def compare_pybullet(
             help="Comma-separated adapters to compare in the same PyBullet smoke scene.",
         ),
     ] = "dummy,openvla,pi0,smolvla,groot",
+    manifest: Annotated[
+        Path | None,
+        typer.Option(
+            "--manifest",
+            help="JSON manifest with per-model runtime and endpoint settings.",
+        ),
+    ] = None,
     runtime: Annotated[str, typer.Option("--runtime")] = "local",
     remote_url: Annotated[str, typer.Option("--remote-url")] = "http://localhost:8000",
     remote_map: Annotated[
@@ -240,29 +351,60 @@ def compare_pybullet(
 
     from vla_zoo.demo.pybullet import (
         compare_pybullet_models,
+        compare_pybullet_targets,
         format_pybullet_comparison_markdown,
     )
 
-    model_names = [item.strip() for item in models.split(",") if item.strip()]
-    if not model_names:
-        raise typer.BadParameter("At least one model name is required.")
-    remote_urls = _parse_remote_map(remote_map)
+    markdown_title = "PyBullet VLA Runtime Comparison"
+    if manifest is not None:
+        manifest_payload = _load_json_manifest(manifest)
+        targets = _manifest_targets(manifest_payload)
+        instruction = _manifest_string(manifest_payload, "instruction", instruction)
+        model_call_every = _manifest_int(
+            manifest_payload,
+            "model_call_every",
+            model_call_every,
+        )
+        render_stride = _manifest_int(manifest_payload, "render_stride", render_stride)
+        allow_local_heavy = _manifest_bool(
+            manifest_payload,
+            "allow_local_heavy",
+            allow_local_heavy,
+        )
+        markdown_title = _manifest_string(manifest_payload, "title", markdown_title)
+        out = _manifest_output_path(manifest_payload, "json", out)
+        markdown_out = _manifest_output_path(manifest_payload, "markdown", markdown_out)
+        results = compare_pybullet_targets(
+            targets,
+            instruction=instruction,
+            model_call_every=model_call_every,
+            render_stride=render_stride,
+            allow_local_heavy=allow_local_heavy,
+        )
+    else:
+        model_names = [item.strip() for item in models.split(",") if item.strip()]
+        if not model_names:
+            raise typer.BadParameter("At least one model name is required.")
+        remote_urls = _parse_remote_map(remote_map)
+        results = compare_pybullet_models(
+            model_names,
+            runtime=runtime,
+            remote_url=remote_url,
+            remote_urls=remote_urls or None,
+            instruction=instruction,
+            model_call_every=model_call_every,
+            render_stride=render_stride,
+            allow_local_heavy=allow_local_heavy,
+        )
 
-    results = compare_pybullet_models(
-        model_names,
-        runtime=runtime,
-        remote_url=remote_url,
-        remote_urls=remote_urls or None,
-        instruction=instruction,
-        model_call_every=model_call_every,
-        render_stride=render_stride,
-        allow_local_heavy=allow_local_heavy,
-    )
     json_payload = json.dumps([asdict(result) for result in results], indent=2)
     if out is not None:
         _write_text(out, f"{json_payload}\n")
     if markdown_out is not None:
-        _write_text(markdown_out, format_pybullet_comparison_markdown(results))
+        _write_text(
+            markdown_out,
+            format_pybullet_comparison_markdown(results, title=markdown_title),
+        )
     if json_output:
         typer.echo(json_payload)
         return
