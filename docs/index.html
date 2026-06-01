@@ -321,13 +321,15 @@ vla-zoo compare suite --out-dir results/vla_compare_suite</code></pre>
       <p class="lead">
         Heavyweight VLA inference should run on CUDA locally or on a GPU workstation
         serving the robot-side ROS2 process over the same prediction boundary.
+        The smoke command runs a real torch CUDA matmul before model weights are loaded.
       </p>
       <div class="command-block">
         <button class="copy-button" type="button" data-copy-target="gpu-command">
           Copy
         </button>
-        <pre><code id="gpu-command">pip install -e ".[cli,server,sim,openvla]"
+        <pre><code id="gpu-command">pip install -e ".[cli,server,sim,gpu,openvla]"
 vla-zoo doctor --no-ros
+vla-zoo gpu smoke --device cuda:0 --dtype float16
 vla-zoo serve --model openvla \
   --host 0.0.0.0 \
   --port 8000 \

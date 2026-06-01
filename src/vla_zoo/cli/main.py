@@ -26,9 +26,11 @@ app = typer.Typer(
 demo_app = typer.Typer(help="Generate runnable demos.")
 compare_app = typer.Typer(help="Compare VLA adapters and runtime paths.")
 report_app = typer.Typer(help="Package runtime logs and report artifacts.")
+gpu_app = typer.Typer(help="Check CUDA runtime paths.")
 app.add_typer(demo_app, name="demo")
 app.add_typer(compare_app, name="compare")
 app.add_typer(report_app, name="report")
+app.add_typer(gpu_app, name="gpu")
 
 
 def _adapter_status(name: str) -> str:
@@ -397,6 +399,42 @@ def serve(
     except MissingDependencyError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
+
+
+@gpu_app.command("smoke")
+def gpu_smoke(
+    device: Annotated[
+        str,
+        typer.Option("--device", help="CUDA device to exercise."),
+    ] = "cuda:0",
+    dtype: Annotated[
+        str,
+        typer.Option("--dtype", help="Tensor dtype: float16, bfloat16, or float32."),
+    ] = "float16",
+    matrix_size: Annotated[
+        int,
+        typer.Option("--matrix-size", help="Square matrix size for the CUDA matmul."),
+    ] = 512,
+    iterations: Annotated[
+        int,
+        typer.Option("--iterations", help="Number of matmul iterations to time."),
+    ] = 8,
+) -> None:
+    """Run a small torch CUDA matmul and print JSON."""
+
+    from vla_zoo.runtime.gpu import run_cuda_smoke
+
+    try:
+        result = run_cuda_smoke(
+            device=device,
+            dtype=dtype,
+            matrix_size=matrix_size,
+            iterations=iterations,
+        )
+    except VLAZooError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(json.dumps(result.to_dict(), indent=2))
 
 
 @app.command()

@@ -75,14 +75,20 @@ Use GPU for real VLA inference. For OpenVLA, install the optional ML stack and l
 the model on CUDA:
 
 ```bash
-pip install -e ".[cli,server,sim,openvla]"
+pip install -e ".[cli,server,sim,gpu,openvla]"
 vla-zoo doctor --no-ros
+vla-zoo gpu smoke --device cuda:0 --dtype float16
 python examples/python/load_openvla.py \
   --pretrained openvla/openvla-7b \
   --device cuda:0 \
   --dtype bfloat16 \
   --unnorm-key bridge_orig
 ```
+
+`vla-zoo gpu smoke` runs a small torch CUDA matmul. It does not download model
+weights, so it is the fast check before loading OpenVLA. The JSON output reports
+the CUDA device name, torch build, elapsed time, allocated VRAM, and a finite
+sample value from the GPU result tensor.
 
 For robot-side ROS2, run heavyweight inference on a GPU workstation and keep the
 robot process lightweight:
@@ -326,6 +332,7 @@ vla-zoo report bundle \
 | Goal | Command |
 |---|---|
 | Check local health | `vla-zoo doctor --no-ros` |
+| Run CUDA smoke matmul | `vla-zoo gpu smoke --device cuda:0` |
 | Predict a typed action | `vla-zoo predict --model dummy --instruction "hello"` |
 | Render the PyBullet GIF | `vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif` |
 | Compare method profiles | `vla-zoo compare methods` |
