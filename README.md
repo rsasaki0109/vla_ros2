@@ -2,8 +2,24 @@
 
 ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models.
 
+[![CI](https://github.com/rsasaki0109/vla_zoo/actions/workflows/ci.yml/badge.svg)](https://github.com/rsasaki0109/vla_zoo/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+[![ROS2](https://img.shields.io/badge/ROS2-native-22314E)](docs/ros2_integration.md)
+
 > VLA models are moving fast. Robots still need stable runtime interfaces.  
 > vla_zoo connects camera + instruction + robot state to actions through ROS2-native adapters.
+
+## 30 Second Demo
+
+```bash
+pip install -e ".[dev,cli,server,sim]"
+vla-zoo predict --model dummy --instruction "hello"
+vla-zoo compare adapters
+vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
+```
+
+No GPU, model download, or ROS2 install is required for the dummy path.
 
 ## Demos
 
@@ -262,6 +278,8 @@ The benchmark runner uses the same `BaseVLA.predict()` interface as Python, ROS2
 - v0.5: external adapter registry, model cards, community benchmarks
 
 ## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [CHANGELOG.md](CHANGELOG.md). The v0.1.0 release checklist lives in [docs/release_v0.1.0.md](docs/release_v0.1.0.md).
 
 Good first adapters include SmolVLA, openpi remote inference, GR00T experiments, LIBERO smoke tasks, SimplerEnv smoke tasks, ROS bag replay loading, MoveIt Servo bridges, ros2_control bridges, Jetson deployment notes, and SO-101 or ALOHA launch examples.
 

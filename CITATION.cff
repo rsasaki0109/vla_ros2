@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: "vla_zoo"
+message: "If you use vla_zoo in research or robotics infrastructure, please cite this software."
+type: software
+authors:
+  - name: "vla_zoo contributors"
+repository-code: "https://github.com/rsasaki0109/vla_zoo"
+url: "https://github.com/rsasaki0109/vla_zoo"
+license: "Apache-2.0"
+version: "0.1.0"
+abstract: "ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models."
+keywords:
+  - robotics
+  - ros2
+  - vision-language-action
+  - embodied-ai
+  - robot-learning
