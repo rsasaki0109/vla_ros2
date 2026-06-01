@@ -16,6 +16,23 @@ Live demo and reports: https://rsasaki0109.github.io/vla_zoo/
 
 ![vla_zoo social preview](docs/assets/social_preview.png)
 
+## Open First
+
+| What to inspect | Link |
+|---|---|
+| Runtime truth by model | [VLA evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html) |
+| PyBullet simulation GIFs | [GIF gallery](https://rsasaki0109.github.io/vla_zoo/assets/gif_suite/) |
+| Runtime comparison dashboard | [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
+| ROS2 remote path | [ROS2 remote dummy evidence](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros2_remote_dummy/remote_smoke_check.md) |
+
+The GIFs below are checked-in PyBullet runtime artifacts generated through
+`vla_zoo` adapters. They demonstrate runtime plumbing and action visualization;
+they are not real-robot skill claims.
+
+| Scripted baseline | Dummy baseline | Random baseline |
+|---|---|---|
+| ![scripted PyBullet pick red block](docs/assets/gif_suite/simulation_pick_red_block_scripted.gif) | ![dummy PyBullet pick red block](docs/assets/gif_suite/simulation_pick_red_block_dummy.gif) | ![random PyBullet pick red block](docs/assets/gif_suite/simulation_pick_red_block_random.gif) |
+
 ## Why vla_zoo?
 
 Most VLA repositories focus on model code, training, checkpoints, or task demos.
