@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from importlib.util import find_spec
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -15,6 +16,8 @@ app = typer.Typer(
     help="ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models.",
     no_args_is_help=True,
 )
+demo_app = typer.Typer(help="Generate runnable demos.")
+app.add_typer(demo_app, name="demo")
 
 
 def _adapter_status(name: str) -> str:
@@ -128,6 +131,39 @@ def bench(
         raise typer.BadParameter("Only the smoke benchmark is implemented in the MVP.")
     loaded = load_model(model)
     typer.echo(json.dumps(run_smoke_benchmark(loaded, episodes=episodes, seed=seed), indent=2))
+
+
+@demo_app.command("pybullet")
+def demo_pybullet(
+    model: Annotated[str, typer.Option("--model", "-m")] = "dummy",
+    runtime: Annotated[str, typer.Option("--runtime")] = "local",
+    remote_url: Annotated[str, typer.Option("--remote-url")] = "http://localhost:8000",
+    instruction: Annotated[str, typer.Option("--instruction", "-i")] = "pick up the red block",
+    out: Annotated[Path, typer.Option("--out", "-o")] = Path(
+        "docs/assets/simulation_pick_place.gif"
+    ),
+    model_call_every: Annotated[int, typer.Option("--model-call-every")] = 8,
+) -> None:
+    """Render the PyBullet pick-and-place demo with any VLA adapter."""
+
+    from vla_zoo.demo.pybullet import PyBulletDemoConfig, render_pybullet_demo
+
+    try:
+        result = render_pybullet_demo(
+            PyBulletDemoConfig(
+                model_name=model,
+                runtime=runtime,
+                remote_url=remote_url,
+                instruction=instruction,
+                out=out,
+                model_call_every=model_call_every,
+            )
+        )
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    typer.echo(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":

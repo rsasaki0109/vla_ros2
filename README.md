@@ -11,11 +11,31 @@ This GIF is rendered from a PyBullet simulation: Franka Panda URDF, cube, gravit
 
 ![vla_zoo pick-and-place simulation GIF](docs/assets/simulation_pick_place.gif)
 
+The PyBullet controller keeps the scene deterministic, while the selected VLA adapter is queried on rendered observations and its action output is overlaid. That makes the same smoke scene usable for `dummy`, local OpenVLA, or remote pi0/SmolVLA/GR00T-style servers.
+
 Regenerate it locally with:
 
 ```bash
 pip install -e ".[sim]"
-python scripts/generate_simulation_gif.py
+vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
+```
+
+Use the same demo loop with any adapter that implements `predict()`:
+
+```bash
+# local OpenVLA, if the optional ML dependencies and weights are available
+vla-zoo demo pybullet --model openvla --instruction "pick up the red block"
+
+# remote VLA server on a GPU workstation
+vla-zoo demo pybullet \
+  --model openvla \
+  --runtime remote \
+  --remote-url http://gpu-box:8000
+
+# future remote adapters
+vla-zoo demo pybullet --model pi0 --runtime remote --remote-url http://gpu-box:8000
+vla-zoo demo pybullet --model smolvla --runtime remote --remote-url http://gpu-box:8000
+vla-zoo demo pybullet --model groot --runtime remote --remote-url http://gpu-box:8000
 ```
 
 ## What works today

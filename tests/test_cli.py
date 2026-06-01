@@ -10,3 +10,10 @@ def test_cli_list() -> None:
     assert result.exit_code == 0
     assert "dummy" in result.output
     assert "openvla" in result.output
+
+
+def test_cli_demo_pybullet_help() -> None:
+    result = CliRunner().invoke(app, ["demo", "pybullet", "--help"])
+    assert result.exit_code == 0
+    assert "--model" in result.output
+    assert "--runtime" in result.output
