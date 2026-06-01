@@ -21,10 +21,10 @@ Live demo page: https://rsasaki0109.github.io/vla_zoo/
 | Surface | What works now |
 |---|---|
 | Python API | `load_model("dummy")`, typed `VLAAction`, adapter registry |
-| Runtime baselines | `dummy`, `scripted`, and `random` adapters for no-GPU validation |
-| VLA adapters | OpenVLA local scaffold; pi0, SmolVLA, and GR00T remote-first placeholders |
+| Runtime baselines | `dummy`, `scripted`, and `random` adapters for lightweight smoke validation |
+| VLA adapters | OpenVLA local CUDA scaffold; pi0, SmolVLA, and GR00T remote-first placeholders |
 | ROS2 runtime | dry-run launch files, action/status topics, diagnostics, log recorder |
-| Remote inference | FastAPI server/client with the same `predict()` boundary |
+| GPU inference | CUDA readiness checks, local OpenVLA path, and remote GPU server/client |
 | Simulation demo | real PyBullet Franka pick-and-place scene with adapter action overlay |
 | Comparison artifacts | method profiles, PyBullet metrics, HTML report, interactive dashboard |
 
@@ -39,16 +39,16 @@ The base install stays light. Heavy VLA stacks remain optional and external.
 | `dummy` | implemented baseline | yes | yes | neutral 7-DoF action for CI, docs, and dry-run ROS2 |
 | `scripted` | implemented baseline | yes | yes | phase-aware rule baseline for the bundled PyBullet smoke scene |
 | `random` | implemented baseline | yes | yes | seeded random action baseline for plumbing and visualization checks |
-| `openvla` | adapter scaffold | optional deps required | yes | OpenVLA-style 7-DoF action, model/robot unnormalization dependent |
+| `openvla` | adapter scaffold | CUDA + optional deps | yes | OpenVLA-style 7-DoF action, model/robot unnormalization dependent |
 | `pi0` / `openpi` | remote-first placeholder | no | yes | policy-specific action/chunk interface to be provided by a serving stack |
 | `smolvla` | remote-first placeholder | no | yes | multi-camera/state/action-chunk policy interface to be provided by LeRobot |
 | `groot` / `gr00t` | experimental placeholder | no | yes | humanoid/generalist action interface, adapter-specific |
 
-The shipped GIFs below are no-GPU runtime baselines. They prove that the observation,
+The shipped GIFs below are lightweight runtime baselines. They prove that the observation,
 adapter, action, visualization, and reporting path works. They are not VLA model
 performance demonstrations.
 
-## 30 Second No-GPU Path
+## 30 Second Smoke Path
 
 ```bash
 pip install -e ".[dev,cli,server,sim]"
@@ -66,7 +66,43 @@ action = model.predict(image=None, instruction="pick up the red block")
 print(action)
 ```
 
-No GPU, model download, or ROS2 install is required for this path.
+This path validates the runtime without downloading model weights. On GPU machines,
+`vla-zoo doctor` also reports `nvidia-smi` and `torch.cuda` readiness.
+
+## GPU VLA Path
+
+Use GPU for real VLA inference. For OpenVLA, install the optional ML stack and load
+the model on CUDA:
+
+```bash
+pip install -e ".[cli,server,sim,openvla]"
+vla-zoo doctor --no-ros
+python examples/python/load_openvla.py \
+  --pretrained openvla/openvla-7b \
+  --device cuda:0 \
+  --dtype bfloat16 \
+  --unnorm-key bridge_orig
+```
+
+For robot-side ROS2, run heavyweight inference on a GPU workstation and keep the
+robot process lightweight:
+
+```bash
+# GPU workstation
+vla-zoo serve --model openvla \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --pretrained openvla/openvla-7b \
+  --device cuda:0 \
+  --dtype bfloat16 \
+  --unnorm-key bridge_orig
+
+# robot or ROS2 machine
+ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000
+```
+
+The CPU smoke path exists for CI and reproducibility. It is not the recommended
+path for running heavyweight VLA policies.
 
 ## PyBullet Runtime Smoke Demo
 
@@ -89,7 +125,7 @@ pip install -e ".[sim]"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 ```
 
-### No-GPU Baseline GIF Gallery
+### Runtime Baseline GIF Gallery
 
 These are all generated from real PyBullet runs. The robot scene is the same, but
 the selected baseline adapter is queried through the runtime and its `VLAAction`
@@ -217,7 +253,7 @@ This method profile table summarizes input requirements, action shape, action ch
 proprioception expectations, local/remote runtime support, dependency profile, and license
 caveats for baselines, OpenVLA, pi0/openpi, SmolVLA, and GR00T-style adapters.
 
-Run the same deterministic PyBullet smoke scene across the no-GPU baseline adapters:
+Run the same deterministic PyBullet smoke scene across the lightweight baseline adapters:
 
 ```bash
 vla-zoo compare pybullet --models dummy,scripted,random
@@ -225,7 +261,7 @@ vla-zoo compare pybullet --models dummy,scripted,random
 
 The comparison records runtime metrics plus scripted-scene telemetry: whether the cube was lifted, final distance to the goal, cube travel distance, grasp-attached frames, and phase completion. The smoke task treats placement inside a 15 cm goal zone as success. This makes reports useful for smoke-testing the full observation-to-action path, but it is still not a claim of model skill because the PyBullet controller keeps the scene deterministic.
 
-The `dummy`, `scripted`, and `random` adapters are no-GPU baselines for validating
+The `dummy`, `scripted`, and `random` adapters are lightweight baselines for validating
 the runtime, visualization, and metrics pipeline before comparing heavyweight VLA
 policies. Use remote GPU servers for real cross-model runtime checks:
 
@@ -254,7 +290,7 @@ The same setup can be checked into a JSON manifest:
 vla-zoo compare pybullet --manifest examples/compare/pybullet_vla_remote.json
 ```
 
-For a no-GPU remote smoke test, run a dummy server and use the smoke manifest:
+For a lightweight remote smoke test, run a dummy server and use the smoke manifest:
 
 ```bash
 vla-zoo serve --model dummy --host 127.0.0.1 --port 8010
@@ -413,7 +449,13 @@ ros2 launch vla_zoo log_recorder.launch.py output_dir:=results
 Run a server on the GPU machine:
 
 ```bash
-vla-zoo serve --model dummy --host 0.0.0.0 --port 8000
+vla-zoo serve --model openvla \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --pretrained openvla/openvla-7b \
+  --device cuda:0 \
+  --dtype bfloat16 \
+  --unnorm-key bridge_orig
 ```
 
 Use the same API from a robot CPU:
@@ -421,8 +463,8 @@ Use the same API from a robot CPU:
 ```python
 from vla_zoo import load_model
 
-model = load_model("dummy", runtime="remote", remote_url="http://gpu-box:8000")
-print(model.predict(image=None, instruction="test"))
+model = load_model("openvla", runtime="remote", remote_url="http://gpu-box:8000")
+print(model.predict(image=pil_image, instruction="pick up the red block"))
 ```
 
 ## Architecture

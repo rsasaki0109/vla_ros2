@@ -8,6 +8,8 @@ def test_run_doctor_includes_dummy_predict() -> None:
     names = {check.name for check in checks}
 
     assert "python" in names
+    assert "gpu.nvidia_smi" in names
+    assert "gpu.torch_cuda" in names
     assert "adapter.dummy.predict" in names
     assert any(check.name == "adapter.dummy.predict" and check.ok for check in checks)
 

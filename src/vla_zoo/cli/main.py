@@ -74,6 +74,25 @@ def _parse_remote_map(value: str | None) -> dict[str, str]:
     return parsed
 
 
+def _model_load_kwargs(
+    *,
+    pretrained: str | None,
+    device: str | None,
+    dtype: str | None,
+    unnorm_key: str | None,
+) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {}
+    if pretrained:
+        kwargs["pretrained"] = pretrained
+    if device:
+        kwargs["device"] = device
+    if dtype:
+        kwargs["dtype"] = dtype
+    if unnorm_key:
+        kwargs["unnorm_key"] = unnorm_key
+    return kwargs
+
+
 def _parse_paths(value: str) -> list[Path]:
     paths = [Path(item.strip()) for item in value.split(",") if item.strip()]
     if not paths:
@@ -232,6 +251,10 @@ def doctor(
         bool,
         typer.Option("--no-ros", help="Skip ros2 and colcon command checks."),
     ] = False,
+    no_gpu: Annotated[
+        bool,
+        typer.Option("--no-gpu", help="Skip nvidia-smi and torch CUDA checks."),
+    ] = False,
     remote_url: Annotated[
         str | None,
         typer.Option("--remote-url", help="Check a remote vla-zoo server /health endpoint."),
@@ -245,7 +268,7 @@ def doctor(
 
     from vla_zoo.runtime.doctor import format_doctor_table, run_doctor, summarize_checks
 
-    checks = run_doctor(include_ros=not no_ros, remote_url=remote_url)
+    checks = run_doctor(include_ros=not no_ros, include_gpu=not no_gpu, remote_url=remote_url)
     summary = summarize_checks(checks)
     if json_output:
         typer.echo(
@@ -267,11 +290,38 @@ def doctor(
 def predict(
     model: Annotated[str, typer.Option("--model", "-m")] = "dummy",
     instruction: Annotated[str, typer.Option("--instruction", "-i")] = "test",
+    pretrained: Annotated[
+        str | None,
+        typer.Option(
+            "--pretrained",
+            help="Model checkpoint/repository for adapters such as OpenVLA.",
+        ),
+    ] = None,
+    device: Annotated[
+        str | None,
+        typer.Option("--device", help="Device passed to local adapters, for example cuda:0."),
+    ] = None,
+    dtype: Annotated[
+        str | None,
+        typer.Option("--dtype", help="Model dtype for local adapters, for example bfloat16."),
+    ] = None,
+    unnorm_key: Annotated[
+        str | None,
+        typer.Option("--unnorm-key", help="Dataset/action unnormalization key for adapters."),
+    ] = None,
 ) -> None:
     """Run one prediction and print JSON."""
 
     try:
-        loaded = load_model(model)
+        loaded = load_model(
+            model,
+            **_model_load_kwargs(
+                pretrained=pretrained,
+                device=device,
+                dtype=dtype,
+                unnorm_key=unnorm_key,
+            ),
+        )
         action = loaded.predict(image=None, instruction=instruction)
     except VLAZooError as exc:
         typer.echo(str(exc), err=True)
@@ -308,13 +358,42 @@ def serve(
     model: Annotated[str, typer.Option("--model", "-m")] = "dummy",
     host: Annotated[str, typer.Option("--host")] = "0.0.0.0",
     port: Annotated[int, typer.Option("--port")] = 8000,
+    pretrained: Annotated[
+        str | None,
+        typer.Option(
+            "--pretrained",
+            help="Model checkpoint/repository for adapters such as OpenVLA.",
+        ),
+    ] = None,
+    device: Annotated[
+        str | None,
+        typer.Option("--device", help="Device passed to local adapters, for example cuda:0."),
+    ] = None,
+    dtype: Annotated[
+        str | None,
+        typer.Option("--dtype", help="Model dtype for local adapters, for example bfloat16."),
+    ] = None,
+    unnorm_key: Annotated[
+        str | None,
+        typer.Option("--unnorm-key", help="Dataset/action unnormalization key for adapters."),
+    ] = None,
 ) -> None:
     """Start the optional FastAPI inference server."""
 
     from vla_zoo.runtime.server import run_server
 
     try:
-        run_server(model_name=model, host=host, port=port)
+        run_server(
+            model_name=model,
+            host=host,
+            port=port,
+            **_model_load_kwargs(
+                pretrained=pretrained,
+                device=device,
+                dtype=dtype,
+                unnorm_key=unnorm_key,
+            ),
+        )
     except MissingDependencyError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc

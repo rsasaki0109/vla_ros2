@@ -28,7 +28,19 @@ def test_cli_doctor_json() -> None:
     assert result.exit_code == 0
     payload = json.loads(result.output)
     assert payload["summary"]["ok"] >= 1
+    assert any(check["name"] == "gpu.nvidia_smi" for check in payload["checks"])
+    assert any(check["name"] == "gpu.torch_cuda" for check in payload["checks"])
     assert any(check["name"] == "adapter.dummy.predict" for check in payload["checks"])
+
+
+def test_cli_serve_help_exposes_gpu_options() -> None:
+    result = CliRunner().invoke(app, ["serve", "--help"])
+
+    assert result.exit_code == 0
+    assert "--device" in result.output
+    assert "--dtype" in result.output
+    assert "--pretrained" in result.output
+    assert "--unnorm-key" in result.output
 
 
 def test_cli_compare_adapters() -> None:
