@@ -42,6 +42,7 @@ def generate_launch_description():
             DeclareLaunchArgument("instruction", default_value="pick up the red block"),
             DeclareLaunchArgument("task_id", default_value="ros2_smoke_pick_red_block"),
             DeclareLaunchArgument("output_dir", default_value="results/ros2_smoke"),
+            DeclareLaunchArgument("action_log_name", default_value="vla_actions.jsonl"),
             DeclareLaunchArgument("status_log_name", default_value="vla_status.jsonl"),
             DeclareLaunchArgument("diagnostics_log_name", default_value="vla_diagnostics.jsonl"),
             DeclareLaunchArgument("max_records", default_value="0"),
@@ -93,14 +94,19 @@ def generate_launch_description():
                 output="screen",
                 parameters=[
                     {
+                        "action_topic": action_topic,
                         "status_topic": status_topic,
                         "diagnostics_topic": diagnostics_topic,
+                        "action_log_path": PathJoinSubstitution(
+                            [output_dir, LaunchConfiguration("action_log_name")]
+                        ),
                         "status_log_path": PathJoinSubstitution(
                             [output_dir, LaunchConfiguration("status_log_name")]
                         ),
                         "diagnostics_log_path": PathJoinSubstitution(
                             [output_dir, LaunchConfiguration("diagnostics_log_name")]
                         ),
+                        "record_actions": True,
                         "record_status": True,
                         "record_diagnostics": True,
                         "max_records": LaunchConfiguration("max_records"),

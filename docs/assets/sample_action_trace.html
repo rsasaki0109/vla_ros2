@@ -1,0 +1,1648 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>vla_zoo Sample Action Trace</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #d8e2ee;
+      --accent: #0f6f9f;
+      --green: #12843b;
+      --red: #c51f46;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 30px 18px 46px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: 0;
+    }
+    p { margin: 7px 0 0; color: var(--muted); line-height: 1.55; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      padding: 4px 10px;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .card {
+      min-height: 92px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 13px;
+    }
+    .card span { color: var(--muted); font-size: 13px; }
+    .card strong { display: block; margin-top: 8px; font-size: 24px; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .panel h2 {
+      margin: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 13px 15px;
+      font-size: 16px;
+    }
+    .panel-body { padding: 14px; }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 320px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 12px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    input[type="range"] { width: 100%; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th { color: #475569; font-size: 12px; text-transform: uppercase; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+    .detail {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 10px;
+      color: #334155;
+      font-size: 14px;
+    }
+    .detail strong { color: var(--text); }
+    @media (max-width: 860px) {
+      header { display: block; }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .controls, .detail { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>vla_zoo Sample Action Trace</h1>
+        <p>Static replay of VLA action messages recorded from ROS2.</p>
+      </div>
+      <span class="pill" id="model-pill">no model</span>
+    </header>
+
+    <section class="cards">
+      <div class="card"><span>Actions</span><strong id="count">0</strong></div>
+      <div class="card"><span>Duration</span><strong id="duration">0.00s</strong></div>
+      <div class="card"><span>Mean |action|</span><strong id="mean-mag">-</strong></div>
+      <div class="card"><span>Max |action|</span><strong id="max-mag">-</strong></div>
+      <div class="card"><span>Action Space</span><strong id="space">-</strong></div>
+    </section>
+
+    <section class="panel">
+      <h2>Action Timeline</h2>
+      <div class="panel-body">
+        <canvas id="chart" width="1200" height="360"></canvas>
+        <div class="controls">
+          <input id="scrubber" type="range" min="0" max="0" value="0">
+          <span class="pill" id="scrub-label">event 0 / 0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Selected Action</h2>
+      <div class="panel-body detail" id="detail"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Recent Events</h2>
+      <div class="panel-body">
+        <table>
+          <thead>
+            <tr>
+              <th>t</th>
+              <th>model</th>
+              <th>space</th>
+              <th>|action|</th>
+              <th>data</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const trace = {
+  "summary": {
+    "action_count": 39,
+    "duration_sec": 15.200025796890259,
+    "model_names": [
+      "dummy"
+    ],
+    "action_spaces": [
+      "eef_delta"
+    ],
+    "mean_magnitude": 0.0,
+    "max_magnitude": 0.0
+  },
+  "events": [
+    {
+      "timestamp_sec": 1780373336.0716684,
+      "relative_sec": 0.0,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373336.4716773,
+      "relative_sec": 0.4000089168548584,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373336.8723547,
+      "relative_sec": 0.8006863594055176,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373337.2718077,
+      "relative_sec": 1.2001392841339111,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373337.6732812,
+      "relative_sec": 1.6016128063201904,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373338.0723264,
+      "relative_sec": 2.0006580352783203,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373338.5279155,
+      "relative_sec": 2.456247091293335,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373338.8799102,
+      "relative_sec": 2.808241844177246,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373339.2743254,
+      "relative_sec": 3.2026569843292236,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373339.6717927,
+      "relative_sec": 3.6001243591308594,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373340.0720048,
+      "relative_sec": 4.000336408615112,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373340.4716907,
+      "relative_sec": 4.400022268295288,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373340.8730092,
+      "relative_sec": 4.801340818405151,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373341.2717006,
+      "relative_sec": 5.2000322341918945,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373341.672333,
+      "relative_sec": 5.6006646156311035,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373342.0716534,
+      "relative_sec": 5.999984979629517,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373342.4893563,
+      "relative_sec": 6.417687892913818,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373342.8717175,
+      "relative_sec": 6.800049066543579,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373343.2723076,
+      "relative_sec": 7.200639247894287,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373343.6723294,
+      "relative_sec": 7.600661039352417,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373344.0717862,
+      "relative_sec": 8.000117778778076,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373344.4717255,
+      "relative_sec": 8.400057077407837,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373344.8716996,
+      "relative_sec": 8.800031185150146,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373345.271694,
+      "relative_sec": 9.20002555847168,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373345.6717265,
+      "relative_sec": 9.60005807876587,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373346.071622,
+      "relative_sec": 9.999953508377075,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373346.4716592,
+      "relative_sec": 10.399990797042847,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373346.87168,
+      "relative_sec": 10.80001163482666,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373347.271697,
+      "relative_sec": 11.200028657913208,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373347.6716886,
+      "relative_sec": 11.600020170211792,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373348.0717049,
+      "relative_sec": 12.000036478042603,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373348.4716918,
+      "relative_sec": 12.400023460388184,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373348.8720102,
+      "relative_sec": 12.800341844558716,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373349.2716343,
+      "relative_sec": 13.199965953826904,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373349.6749346,
+      "relative_sec": 13.60326623916626,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373350.07169,
+      "relative_sec": 14.000021696090698,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373350.4716861,
+      "relative_sec": 14.400017738342285,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373350.871693,
+      "relative_sec": 14.800024509429932,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp_sec": 1780373351.2716942,
+      "relative_sec": 15.200025796890259,
+      "model_name": "dummy",
+      "adapter_name": "DummyAdapter",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true
+      }
+    }
+  ]
+};
+    const events = trace.events || [];
+    const summary = trace.summary || {};
+    const fmt = (value, digits = 2) => Number.isFinite(value) ? value.toFixed(digits) : "-";
+
+    document.getElementById("count").textContent = summary.action_count ?? 0;
+    document.getElementById("duration").textContent = `${fmt(summary.duration_sec || 0)}s`;
+    document.getElementById("mean-mag").textContent = fmt(summary.mean_magnitude);
+    document.getElementById("max-mag").textContent = fmt(summary.max_magnitude);
+    document.getElementById("space").textContent = (summary.action_spaces || []).join(", ") || "-";
+    document.getElementById("model-pill").textContent =
+      (summary.model_names || []).join(", ") || "no model";
+
+    const scrubber = document.getElementById("scrubber");
+    scrubber.max = Math.max(0, events.length - 1);
+
+    function magnitude(event) {
+      return (event.data || []).reduce((sum, value) => sum + Math.abs(Number(value) || 0), 0);
+    }
+
+    function draw(selectedIndex = 0) {
+      const canvas = document.getElementById("chart");
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      const pad = 42;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fbfdff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "#d8e2ee";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 5; i += 1) {
+        const y = pad + i * ((height - pad * 2) / 4);
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(width - pad, y);
+        ctx.stroke();
+      }
+      if (!events.length) {
+        ctx.fillStyle = "#64748b";
+        ctx.font = "18px sans-serif";
+        ctx.fillText("No action records", pad, height / 2);
+        return;
+      }
+      const maxT = Math.max(...events.map((event) => event.relative_sec || 0), 1);
+      const mags = events.map(magnitude);
+      const maxM = Math.max(...mags, 1e-6);
+      ctx.strokeStyle = "#0f6f9f";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      events.forEach((event, index) => {
+        const x = pad + ((event.relative_sec || 0) / maxT) * (width - pad * 2);
+        const y = height - pad - (mags[index] / maxM) * (height - pad * 2);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      events.forEach((event, index) => {
+        const x = pad + ((event.relative_sec || 0) / maxT) * (width - pad * 2);
+        const y = height - pad - (mags[index] / maxM) * (height - pad * 2);
+        ctx.fillStyle = index === selectedIndex ? "#c51f46" : "#12843b";
+        ctx.beginPath();
+        ctx.arc(x, y, index === selectedIndex ? 6 : 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = "#64748b";
+      ctx.font = "13px sans-serif";
+      ctx.fillText("time", width - pad - 24, height - 12);
+      ctx.fillText("|action|", 10, pad - 14);
+    }
+
+    function showDetail(index) {
+      const event = events[index];
+      document.getElementById("scrub-label").textContent =
+        events.length ? `event ${index + 1} / ${events.length}` : "event 0 / 0";
+      if (!event) {
+        document.getElementById("detail").innerHTML = "<p>No event selected.</p>";
+        return;
+      }
+      const named = (event.data || []).map((value, itemIndex) => {
+        const name = (event.names || [])[itemIndex] || `a${itemIndex}`;
+        return `${name}: ${Number(value).toFixed(4)}`;
+      });
+      document.getElementById("detail").innerHTML = `
+        <div>Time</div><strong>${fmt(event.relative_sec, 3)}s</strong>
+        <div>Model</div><strong>${event.model_name} / ${event.adapter_name || "-"}</strong>
+        <div>Action space</div><strong>${event.action_space}</strong>
+        <div>Magnitude</div><strong>${fmt(magnitude(event), 4)}</strong>
+        <div>Confidence</div><strong>${fmt(event.confidence, 3)}</strong>
+        <div>Data</div><code>${named.join(" | ")}</code>
+      `;
+    }
+
+    function renderRows() {
+      const rows = document.getElementById("rows");
+      rows.innerHTML = events.slice(-80).reverse().map((event) => `
+        <tr>
+          <td>${fmt(event.relative_sec, 3)}s</td>
+          <td>${event.model_name}</td>
+          <td>${event.action_space}</td>
+          <td>${fmt(magnitude(event), 4)}</td>
+          <td><code>${
+            (event.data || []).map((value) => Number(value).toFixed(4)).join(", ")
+          }</code></td>
+        </tr>
+      `).join("");
+    }
+
+    scrubber.addEventListener("input", () => {
+      const index = Number(scrubber.value);
+      draw(index);
+      showDetail(index);
+    });
+    draw(0);
+    showDetail(0);
+    renderRows();
+  </script>
+</body>
+</html>

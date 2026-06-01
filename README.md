@@ -111,6 +111,9 @@ To record runtime logs for a static dashboard:
 vla-zoo ros smoke-report --output-dir results/ros2_smoke
 ```
 
+This writes status, diagnostics, and action JSONL logs, then generates
+`dashboard.html`, `action_trace.html`, and `report_bundle.zip`.
+
 | Topic | Type | Direction |
 |---|---|---|
 | `/camera/image_raw` | `sensor_msgs/msg/Image` | input |
@@ -151,6 +154,7 @@ Live samples:
 - PyBullet report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html
 - Runtime dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/runtime_dashboard.html
 - ROS2 dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html
+- Action trace: https://rsasaki0109.github.io/vla_zoo/assets/sample_action_trace.html
 
 ## Adapters
 

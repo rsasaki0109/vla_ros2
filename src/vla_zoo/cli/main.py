@@ -939,6 +939,37 @@ def report_bundle(
     typer.echo(f"Report bundle written to {out}")
 
 
+@ros_app.command("action-trace")
+def ros_action_trace(
+    action_log: Annotated[
+        Path,
+        typer.Option("--action-log", help="ROS2 VLAAction JSONL path."),
+    ],
+    out: Annotated[
+        Path,
+        typer.Option("--out", "-o", help="Output HTML action trace path."),
+    ] = Path("results/ros2_smoke/action_trace.html"),
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Action trace title."),
+    ] = "vla_zoo Action Trace",
+) -> None:
+    """Build a static HTML action trace from recorded ROS2 VLAAction JSONL."""
+
+    from vla_zoo.runtime.action_trace import format_action_trace_html, load_action_trace_events
+
+    try:
+        events = load_action_trace_events(action_log)
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    if not events:
+        typer.echo(f"No action records found in {action_log}", err=True)
+        raise typer.Exit(1)
+    _write_text(out, format_action_trace_html(events, title=title))
+    typer.echo(f"Action trace written to {out}")
+
+
 @ros_app.command("smoke-report")
 def ros_smoke_report(
     output_dir: Annotated[
@@ -951,7 +982,7 @@ def ros_smoke_report(
             "--duration-sec",
             help="How long to run smoke_record.launch.py before generating reports.",
         ),
-    ] = 20.0,
+    ] = 30.0,
     skip_launch: Annotated[
         bool,
         typer.Option(
@@ -978,6 +1009,10 @@ def ros_smoke_report(
         str,
         typer.Option("--task-id", help="Typed instruction task_id for the smoke run."),
     ] = "ros2_smoke_pick_red_block",
+    action_log_name: Annotated[
+        str,
+        typer.Option("--action-log-name", help="Action JSONL filename inside output-dir."),
+    ] = "vla_actions.jsonl",
     status_log_name: Annotated[
         str,
         typer.Option("--status-log-name", help="Status JSONL filename inside output-dir."),
@@ -997,6 +1032,10 @@ def ros_smoke_report(
         str,
         typer.Option("--bundle-name", help="Zip report bundle filename inside output-dir."),
     ] = "report_bundle.zip",
+    action_trace_name: Annotated[
+        str,
+        typer.Option("--action-trace-name", help="Action trace HTML filename inside output-dir."),
+    ] = "action_trace.html",
     launch_log_name: Annotated[
         str,
         typer.Option("--launch-log-name", help="ROS2 launch log filename inside output-dir."),
@@ -1012,10 +1051,12 @@ def ros_smoke_report(
         raise typer.BadParameter("--duration-sec must be positive unless --skip-launch is used.")
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    action_log = output_dir / action_log_name
     status_log = output_dir / status_log_name
     diagnostics_log = output_dir / diagnostics_log_name
     dashboard_out = output_dir / dashboard_name
     bundle_out = output_dir / bundle_name
+    action_trace_out = output_dir / action_trace_name
     launch_log = output_dir / launch_log_name
 
     if not skip_launch:
@@ -1028,7 +1069,15 @@ def ros_smoke_report(
             )
             raise typer.Exit(1)
         if overwrite:
-            for path in (status_log, diagnostics_log, dashboard_out, bundle_out, launch_log):
+            for path in (
+                action_log,
+                status_log,
+                diagnostics_log,
+                dashboard_out,
+                bundle_out,
+                action_trace_out,
+                launch_log,
+            ):
                 _unlink_if_exists(path)
 
         env = os.environ.copy()
@@ -1040,6 +1089,7 @@ def ros_smoke_report(
             "vla_zoo",
             "smoke_record.launch.py",
             f"output_dir:={output_dir}",
+            f"action_log_name:={action_log_name}",
             f"status_log_name:={status_log_name}",
             f"diagnostics_log_name:={diagnostics_log_name}",
             f"instruction:={instruction}",
@@ -1086,6 +1136,14 @@ def ros_smoke_report(
         out=bundle_out,
         title=title,
     )
+    if _path_has_content(action_log):
+        ros_action_trace(action_log=action_log, out=action_trace_out, title=f"{title}: Actions")
+        if bundle_out.exists():
+            with ZipFile(bundle_out, "a", compression=ZIP_DEFLATED) as bundle:
+                bundle.write(action_log, "inputs/actions/00_vla_actions.jsonl")
+                bundle.write(action_trace_out, "action_trace.html")
+    else:
+        typer.echo(f"Warning: action log is empty or missing: {action_log}", err=True)
     typer.echo(f"ROS2 smoke report written to {output_dir}")
 
 
