@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,6 +20,9 @@ YELLOW = (245, 158, 11)
 RED = (248, 113, 113)
 PURPLE = (167, 139, 250)
 CYAN = (34, 211, 238)
+STEEL = (124, 139, 161)
+FLOOR = (31, 41, 55)
+CUBE = (239, 68, 68)
 
 
 @dataclass(frozen=True)
@@ -101,72 +105,211 @@ def frame(title: str, subtitle: str) -> tuple[Image.Image, ImageDraw.ImageDraw]:
     return image, draw
 
 
-def no_gpu_demo(progress: int) -> Image.Image:
-    image, draw = frame("No GPU demo", "The dummy adapter proves the install and API path.")
-    typed = [
-        "$ from vla_zoo import load_model",
-        "$ model = load_model('dummy')",
-        "$ model.predict(image=None, instruction='hello')",
-        "VLAAction(action_space='eef_delta', data=[0,0,0,0,0,0,0])",
+def lerp(start: float, end: float, t: float) -> float:
+    return start + (end - start) * max(0.0, min(1.0, t))
+
+
+def ease(t: float) -> float:
+    t = max(0.0, min(1.0, t))
+    return t * t * (3.0 - 2.0 * t)
+
+
+def ik_arm(
+    base: tuple[float, float],
+    wrist: tuple[float, float],
+    *,
+    upper: float = 150.0,
+    lower: float = 135.0,
+) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
+    bx, by = base
+    wx, wy = wrist
+    dx = wx - bx
+    dy = wy - by
+    distance = max(30.0, min(math.hypot(dx, dy), upper + lower - 4.0))
+    angle = math.atan2(dy, dx)
+    cos_elbow = (upper * upper + distance * distance - lower * lower) / (2.0 * upper * distance)
+    elbow_angle = angle - math.acos(max(-1.0, min(1.0, cos_elbow)))
+    elbow = (bx + upper * math.cos(elbow_angle), by + upper * math.sin(elbow_angle))
+    return base, elbow, wrist
+
+
+def draw_workspace(draw: ImageDraw.ImageDraw) -> None:
+    draw.rounded_rectangle((42, 118, 858, 418), radius=22, fill=(17, 24, 34))
+    draw.rectangle((42, 340, 858, 418), fill=FLOOR)
+    for x in range(70, 850, 70):
+        draw.line((x, 342, x - 32, 418), fill=(42, 52, 67), width=1)
+    draw.line((42, 340, 858, 340), fill=(73, 89, 111), width=2)
+
+
+def draw_camera(draw: ImageDraw.ImageDraw, origin: tuple[int, int], pulse: float) -> None:
+    x, y = origin
+    draw.rounded_rectangle((x, y, x + 74, y + 42), radius=10, fill=(45, 55, 72))
+    draw.ellipse((x + 45, y + 9, x + 67, y + 31), fill=BLUE)
+    cone = [
+        (x + 58, y + 42),
+        (x + 190, y + 216),
+        (x + 28, y + 216),
     ]
-    terminal(draw, (44, 130, 856, 410), typed[: max(1, progress)])
-    pill(draw, (44, 430), "pip install -e .", BLUE)
-    pill(draw, (226, 430), "pytest friendly", GREEN)
-    pill(draw, (410, 430), "no model download", YELLOW)
+    color = (33, 121, 190) if pulse < 0.5 else (36, 150, 220)
+    draw.polygon(cone, fill=color)
+    draw.text((x, y - 28), "camera", fill=BLUE, font=STYLE.small)
+
+
+def draw_block(
+    draw: ImageDraw.ImageDraw,
+    center: tuple[float, float],
+    label: str = "red block",
+) -> None:
+    x, y = center
+    draw.rounded_rectangle((x - 28, y - 28, x + 28, y + 28), radius=6, fill=CUBE)
+    draw.polygon(
+        [(x - 28, y - 28), (x - 8, y - 46), (x + 48, y - 46), (x + 28, y - 28)],
+        fill=(248, 113, 113),
+    )
+    draw.polygon(
+        [(x + 28, y - 28), (x + 48, y - 46), (x + 48, y + 10), (x + 28, y + 28)],
+        fill=(185, 28, 28),
+    )
+    draw.text((int(x - 42), int(y + 36)), label, fill=MUTED, font=STYLE.small)
+
+
+def draw_robot_arm(
+    draw: ImageDraw.ImageDraw,
+    wrist: tuple[float, float],
+    *,
+    gripper_closed: bool,
+    base: tuple[float, float] = (235.0, 337.0),
+) -> None:
+    base_pt, elbow, hand = ik_arm(base, wrist)
+    draw.rounded_rectangle(
+        (base[0] - 66, base[1] - 16, base[0] + 66, base[1] + 36),
+        radius=12,
+        fill=(55, 65, 82),
+    )
+    draw.ellipse((base[0] - 31, base[1] - 31, base[0] + 31, base[1] + 31), fill=PURPLE)
+    draw.line((base_pt, elbow), fill=STEEL, width=28)
+    draw.line((elbow, hand), fill=(148, 163, 184), width=24)
+    for joint in (base_pt, elbow, hand):
+        x, y = joint
+        draw.ellipse((x - 18, y - 18, x + 18, y + 18), fill=(226, 232, 240))
+        draw.ellipse((x - 8, y - 8, x + 8, y + 8), fill=(75, 85, 99))
+    hx, hy = hand
+    gap = 11 if gripper_closed else 25
+    draw.line((hx, hy, hx + 36, hy - gap), fill=TEXT, width=7)
+    draw.line((hx, hy, hx + 36, hy + gap), fill=TEXT, width=7)
+
+
+def draw_action_bars(draw: ImageDraw.ImageDraw, xy: tuple[int, int], pulse: float) -> None:
+    x, y = xy
+    rounded(draw, (x, y, x + 230, y + 124), PANEL)
+    draw.text((x + 18, y + 16), "VLAAction", fill=TEXT, font=STYLE.body)
+    for index, name in enumerate(("dx", "dy", "dz")):
+        row_y = y + 56 + index * 22
+        draw.text((x + 18, row_y - 8), name, fill=MUTED, font=STYLE.small)
+        width = int(46 + 80 * abs(math.sin(pulse + index)))
+        draw.rounded_rectangle((x + 64, row_y, x + 64 + width, row_y + 10), radius=5, fill=CYAN)
+
+
+def robot_motion(
+    progress: int,
+    frame_count: int,
+) -> tuple[tuple[float, float], tuple[float, float], bool]:
+    phase = progress / max(1, frame_count - 1)
+    reach = ease(min(phase / 0.45, 1.0))
+    closed = phase > 0.48
+    lift = ease((phase - 0.55) / 0.35)
+    block_start = (590.0, 312.0)
+    wrist_reach = (block_start[0] - 36.0, block_start[1] - 12.0)
+    wrist_lift = (block_start[0] - 36.0, 216.0)
+    wrist = (
+        lerp(355.0, wrist_reach[0], reach),
+        lerp(235.0, lerp(wrist_reach[1], wrist_lift[1], lift), reach),
+    )
+    block = block_start if not closed else (wrist[0] + 58.0, wrist[1] + 12.0)
+    return wrist, block, closed
+
+
+def no_gpu_demo(progress: int) -> Image.Image:
+    frame_count = 9
+    image, draw = frame("No GPU demo", "A robot-shaped smoke path with the dummy adapter.")
+    draw_workspace(draw)
+    wrist, block, closed = robot_motion(progress, frame_count)
+    draw_camera(draw, (84, 148), progress / frame_count)
+    draw_block(draw, block)
+    draw_robot_arm(draw, wrist, gripper_closed=closed)
+    draw_action_bars(draw, (630, 156), progress * 0.8)
+    typed = [
+        "$ load_model('dummy')",
+        "$ predict('pick up red block')",
+        "VLAAction: eef_delta[7]",
+    ]
+    line_start = max(0, min(progress // 3, 2))
+    terminal(draw, (44, 424, 856, 492), typed[line_start : min(3, line_start + 2)])
+    pill(draw, (42, 92), "no GPU", GREEN)
+    pill(draw, (170, 92), "no model download", YELLOW)
     return image
 
 
 def ros2_runtime(progress: int) -> Image.Image:
+    frame_count = 9
     image, draw = frame(
         "ROS2 runtime",
-        "Camera and instruction become published VLAAction messages.",
+        "A dry-run node publishes actions while the robot visualization moves.",
     )
-    boxes = [
-        ((54, 175, 234, 255), "camera", BLUE),
-        ((54, 300, 234, 380), "instruction", GREEN),
-        ((355, 235, 575, 320), "vla_runtime_node", PURPLE),
-        ((690, 235, 850, 320), "/vla/action", CYAN),
-    ]
-    for box, label, color in boxes:
-        rounded(draw, box, PANEL)
-        draw.text((box[0] + 22, box[1] + 26), label, fill=color, font=STYLE.body)
-    arrow(draw, (234, 215), (355, 262), BLUE)
-    arrow(draw, (234, 340), (355, 292), GREEN)
-    arrow(draw, (575, 278), (690, 278), CYAN)
-    for index in range(progress):
-        x = 270 + index * 85
-        draw.ellipse((x, 270, x + 18, 288), fill=CYAN)
+    draw_workspace(draw)
+    wrist, block, closed = robot_motion(progress, frame_count)
+    draw_block(draw, block)
+    draw_robot_arm(draw, wrist, gripper_closed=closed)
+    rounded(draw, (54, 132, 252, 208), PANEL)
+    rounded(draw, (350, 132, 570, 208), PANEL)
+    rounded(draw, (662, 132, 842, 208), PANEL)
+    draw.text((78, 154), "/camera", fill=BLUE, font=STYLE.body)
+    draw.text((370, 154), "vla_runtime_node", fill=PURPLE, font=STYLE.small)
+    draw.text((690, 154), "/vla/action", fill=CYAN, font=STYLE.small)
+    arrow(draw, (252, 170), (350, 170), BLUE, width=4)
+    arrow(draw, (570, 170), (662, 170), CYAN, width=4)
+    packet_x = 270 + (progress % frame_count) * 42
+    draw.ellipse((packet_x, 161, packet_x + 18, 179), fill=CYAN)
     pill(draw, (54, 420), "dry_run:=true", GREEN)
     pill(draw, (238, 420), "publishes actions", CYAN)
     return image
 
 
 def remote_gpu(progress: int) -> Image.Image:
-    image, draw = frame("Remote GPU path", "Robot CPU can call a GPU workstation over HTTP.")
-    rounded(draw, (54, 185, 282, 330), PANEL)
-    rounded(draw, (618, 185, 846, 330), PANEL)
-    draw.text((92, 220), "robot CPU", fill=TEXT, font=STYLE.body)
-    draw.text((82, 260), "ROS2 node", fill=MUTED, font=STYLE.small)
-    draw.text((650, 220), "GPU server", fill=TEXT, font=STYLE.body)
-    draw.text((646, 260), "vla-zoo serve", fill=MUTED, font=STYLE.small)
-    arrow(draw, (282, 250), (618, 250), BLUE)
-    arrow(draw, (618, 295), (282, 295), GREEN)
-    for index in range(progress):
-        x = 332 + index * 54
-        draw.ellipse((x, 241, x + 16, 257), fill=BLUE)
+    frame_count = 10
+    image, draw = frame("Remote GPU path", "Robot CPU streams observations to a GPU box.")
+    draw_workspace(draw)
+    wrist, block, closed = robot_motion(progress, frame_count)
+    draw_block(draw, block)
+    draw_robot_arm(draw, wrist, gripper_closed=closed, base=(188.0, 337.0))
+    rounded(draw, (430, 128, 622, 210), PANEL)
+    rounded(draw, (678, 128, 850, 210), PANEL)
+    draw.text((452, 154), "robot CPU", fill=TEXT, font=STYLE.body)
+    draw.text((700, 154), "GPU server", fill=TEXT, font=STYLE.body)
+    arrow(draw, (622, 154), (678, 154), BLUE, width=4)
+    arrow(draw, (678, 188), (622, 188), GREEN, width=4)
+    obs_x = 630 + (progress % frame_count) * 5
+    act_x = 662 - (progress % frame_count) * 5
+    draw.ellipse((obs_x, 146, obs_x + 14, 160), fill=BLUE)
+    draw.ellipse((act_x, 181, act_x + 14, 195), fill=GREEN)
     pill(draw, (54, 420), "runtime='remote'", BLUE)
     pill(draw, (284, 420), "same predict() API", GREEN)
     return image
 
 
 def benchmark(progress: int) -> Image.Image:
+    frame_count = 8
     image, draw = frame(
         "Smoke benchmark",
-        "The benchmark runner uses the same model adapter boundary.",
+        "The same adapter contract drives repeatable motion and metrics.",
     )
+    draw_workspace(draw)
+    wrist, block, closed = robot_motion(progress, frame_count)
+    draw_block(draw, block)
+    draw_robot_arm(draw, wrist, gripper_closed=closed, base=(188.0, 337.0))
     terminal(
         draw,
-        (44, 130, 500, 410),
+        (500, 128, 858, 292),
         [
             "$ vla-zoo bench --model dummy",
             "{",
@@ -175,23 +318,26 @@ def benchmark(progress: int) -> Image.Image:
             "}",
         ][: progress + 1],
     )
-    rounded(draw, (560, 154, 830, 380), PANEL)
+    rounded(draw, (500, 312, 858, 408), PANEL)
     labels = [
         ("success", GREEN, min(1.0, progress / 4)),
         ("latency", BLUE, 0.75),
-        ("stable API", CYAN, 1.0),
     ]
-    y = 190
+    y = 336
     for label, color, value in labels:
-        draw.text((590, y - 4), label, fill=TEXT, font=STYLE.small)
-        draw.rounded_rectangle((590, y + 28, 790, y + 46), radius=9, fill=(50, 58, 72))
-        draw.rounded_rectangle((590, y + 28, 590 + int(200 * value), y + 46), radius=9, fill=color)
-        y += 62
+        draw.text((520, y - 4), label, fill=TEXT, font=STYLE.small)
+        draw.rounded_rectangle((622, y + 2, 820, y + 16), radius=7, fill=(50, 58, 72))
+        draw.rounded_rectangle((622, y + 2, 622 + int(198 * value), y + 16), radius=7, fill=color)
+        y += 38
     return image
 
 
 def adapter_hub(progress: int) -> Image.Image:
-    image, draw = frame("Adapter hub", "Built-ins today, external entry points tomorrow.")
+    image, draw = frame("Adapter hub", "Swap adapters while the robot-facing API stays stable.")
+    draw_workspace(draw)
+    wrist, block, closed = robot_motion(progress, 8)
+    draw_block(draw, block)
+    draw_robot_arm(draw, wrist, gripper_closed=closed, base=(180.0, 337.0))
     cards = [
         ("dummy", "available", GREEN),
         ("openvla", "optional", BLUE),
@@ -200,14 +346,12 @@ def adapter_hub(progress: int) -> Image.Image:
         ("groot", "experimental", YELLOW),
     ]
     for index, (name, status, color) in enumerate(cards[: progress + 1]):
-        row = index // 2
-        col = index % 2
-        x = 68 + col * 398
-        y = 140 + row * 98
-        rounded(draw, (x, y, x + 340, y + 72), PANEL)
+        x = 520
+        y = 126 + index * 58
+        rounded(draw, (x, y, x + 320, y + 44), PANEL)
         draw.text((x + 22, y + 18), name, fill=TEXT, font=STYLE.body)
-        pill(draw, (x + 176, y + 19), status, color)
-    draw.text((68, 432), "[project.entry-points.'vla_zoo.adapters']", fill=MUTED, font=STYLE.mono)
+        pill(draw, (x + 174, y + 6), status, color)
+    draw.text((64, 430), "one robot runtime, many VLA adapters", fill=MUTED, font=STYLE.mono)
     return image
 
 
@@ -227,11 +371,11 @@ def save_gif(name: str, maker: Callable[[int], Image.Image], frame_count: int = 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    save_gif("readme_no_gpu_demo.gif", no_gpu_demo, 4)
-    save_gif("readme_ros2_runtime.gif", ros2_runtime, 5)
-    save_gif("readme_remote_gpu.gif", remote_gpu, 6)
-    save_gif("readme_benchmark.gif", benchmark, 5)
-    save_gif("readme_adapter_hub.gif", adapter_hub, 5)
+    save_gif("readme_no_gpu_demo.gif", no_gpu_demo, 9)
+    save_gif("readme_ros2_runtime.gif", ros2_runtime, 9)
+    save_gif("readme_remote_gpu.gif", remote_gpu, 10)
+    save_gif("readme_benchmark.gif", benchmark, 8)
+    save_gif("readme_adapter_hub.gif", adapter_hub, 8)
 
 
 if __name__ == "__main__":
