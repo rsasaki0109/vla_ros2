@@ -56,4 +56,14 @@ The manifest records the instruction, query cadence, render stride, each model e
 
 The HTML output is self-contained, so it can be attached to issues, release notes, or static docs without a server.
 
+For a richer browser view with filters and charts, build a dashboard from result files:
+
+```bash
+vla-zoo compare dashboard \
+  --results results/vla_runtime_comparison.json \
+  --out results/vla_runtime_dashboard.html
+```
+
+Multiple JSON files can be passed as a comma-separated list.
+
 The comparison output is intentionally runtime-centric: frames, adapter query count, adapter errors, latency, and action magnitude. It is not a claim of task success or model quality.

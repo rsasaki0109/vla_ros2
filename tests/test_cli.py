@@ -29,6 +29,13 @@ def test_cli_compare_adapters() -> None:
     assert "openvla" in result.output
 
 
+def test_cli_compare_dashboard_help() -> None:
+    result = CliRunner().invoke(app, ["compare", "dashboard", "--help"])
+    assert result.exit_code == 0
+    assert "--results" in result.output
+    assert "--out" in result.output
+
+
 def test_cli_compare_pybullet_help() -> None:
     result = CliRunner().invoke(app, ["compare", "pybullet", "--help"])
     assert result.exit_code == 0

@@ -69,6 +69,13 @@ def _parse_remote_map(value: str | None) -> dict[str, str]:
     return parsed
 
 
+def _parse_paths(value: str) -> list[Path]:
+    paths = [Path(item.strip()) for item in value.split(",") if item.strip()]
+    if not paths:
+        raise typer.BadParameter("At least one result JSON path is required.")
+    return paths
+
+
 def _write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -290,6 +297,41 @@ def compare_adapters() -> None:
             f"{(adapter.domain or '-'):<22} "
             f"{aliases}"
         )
+
+
+@compare_app.command("dashboard")
+def compare_dashboard(
+    results: Annotated[
+        str,
+        typer.Option(
+            "--results",
+            "-r",
+            help="Comma-separated comparison JSON result paths.",
+        ),
+    ],
+    out: Annotated[
+        Path,
+        typer.Option("--out", "-o", help="Output HTML dashboard path."),
+    ] = Path("results/vla_runtime_dashboard.html"),
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Dashboard title."),
+    ] = "vla_zoo Runtime Dashboard",
+) -> None:
+    """Build an interactive static dashboard from comparison result JSON."""
+
+    from vla_zoo.runtime.dashboard import (
+        format_comparison_dashboard_html,
+        load_dashboard_records,
+    )
+
+    try:
+        records = load_dashboard_records(_parse_paths(results))
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    _write_text(out, format_comparison_dashboard_html(records, title=title))
+    typer.echo(f"Dashboard written to {out}")
 
 
 @compare_app.command("pybullet")

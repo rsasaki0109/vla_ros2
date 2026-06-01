@@ -17,6 +17,7 @@ Initial runtime seed for a ROS2-native VLA adapter hub.
 - Typer CLI: list, info, predict, serve, bench, demo, compare.
 - PyBullet pick-and-place smoke demo and GIF generation.
 - PyBullet runtime comparison commands, remote endpoint maps, and JSON manifests.
+- Static HTML report and interactive dashboard generation for comparison results.
 - ROS2 packages, messages, node, launch files, and dry-run configs.
 - Benchmark scaffolds and smoke benchmark runner.
 - Architecture, adapter, ROS2, benchmark, comparison, and safety docs.
