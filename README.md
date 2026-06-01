@@ -144,6 +144,18 @@ The first PyBullet-rendered SmolVLA probe also runs locally: 3 adapter queries,
 0 adapter errors, mean latency about 1.0 s, and a 6D action emitted from the
 same 3-camera + state observation path used by the comparison runner.
 
+For the recommended deployment shape, run SmolVLA as a remote server in an
+isolated environment (the `smolvla` extra pins `transformers`/`torch` versions
+that clash with `openvla`). Generate a reproducible bring-up plan:
+
+```bash
+vla-zoo smolvla-remote-plan --public-host gpu-box --port 8000 --device cuda:0
+```
+
+See [SmolVLA remote serving](docs/smolvla_remote.md) and the generated
+[remote serving plan](docs/assets/smolvla_remote_smoke_plan.md). This is a
+command plan, not a recorded `/v1/predict` run, and makes no policy-quality claim.
+
 ## OpenVLA On GPU
 
 OpenVLA is an external project. `vla_zoo` wraps it behind the runtime API and

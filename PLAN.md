@@ -423,24 +423,26 @@ Remaining/next useful tasks:
 
 Do not require a ROS2 installation in standard CI yet.
 
-### 7.4 Strengthen SmolVLA Remote Path
+### 7.4 Strengthen SmolVLA Remote Path (plan + isolation docs DONE)
+
+Status: `vla-zoo smolvla-remote-plan` generates a reproducible isolated-env bring-up
+plan (`src/vla_zoo/runtime/smolvla_plan.py`): venv create, `pip install -e ".[cli,server,smolvla]"`,
+server command, `/health` check, robot-side `runtime=remote` probe
+(`examples/python/smolvla_remote_client.py`), `compare pybullet --runtime remote`, and a
+ROS2 remote smoke report command. `docs/smolvla_remote.md` documents why the `smolvla`
+extra needs a dedicated venv (its `transformers`/`torch` pins clash with `openvla`).
+Generated artifacts: `docs/assets/smolvla_remote_smoke_plan.{md,json}` and
+`examples/serve/smolvla_remote_smoke_plan.{md,json}`. The evidence matrix `remote_server`
+cell for SmolVLA stays `planned` (no recorded `/v1/predict` yet) but now links the plan
+and isolation docs. Tests in `tests/test_smolvla_remote_plan.py`.
 
 Reason: SmolVLA is the most feasible real model path already checked locally. The next
 credible step is remote serving and robot-side client evidence.
 
-Target:
+Remaining/next useful tasks:
 
-```bash
-vla-zoo serve --model smolvla --host 0.0.0.0 --port 8000
-vla-zoo demo action-playground-record --models smolvla --runtime remote
-```
-
-Work items:
-
-- Add a SmolVLA remote smoke plan.
-- Add adapter-specific server config examples.
-- Add docs for `vla_zoo[smolvla]` environment isolation.
-- Add evidence matrix cells for "remote server" once recorded.
+- Record an actual SmolVLA `/v1/predict` response from a real server and check it in.
+- Promote the `remote_server` cell from `planned` to `partial`/`verified` only then.
 
 Do not claim policy-quality success.
 
@@ -632,26 +634,27 @@ Shell/tooling conventions in this environment:
 
 ## 13. Current Best Next Commit
 
-The docs link checker (7.1), artifact index (7.2), and ROS2 metadata tests (7.3) are
-now done. The next best commit is:
+The docs link checker (7.1), artifact index (7.2), ROS2 metadata tests (7.3), and the
+SmolVLA remote serving plan + isolation docs (7.4) are now done. The next best commit is:
 
 ```text
-strengthen SmolVLA remote path (7.4)
+add remote OpenVLA 7B GPU path (7.5)
 ```
 
-Reason: SmolVLA is the most feasible real model path already checked locally. Add a
-SmolVLA remote smoke plan, adapter-specific server config examples, env-isolation docs
-for `vla_zoo[smolvla]`, and evidence-matrix cells for "remote server" once recorded.
-Do not claim policy-quality success.
+Reason: OpenVLA local inference was blocked by free VRAM, so the correct next path is a
+remote GPU server. Add a remote OpenVLA probe script that checks server `/health` first,
+record a `/v1/predict` response artifact only if a real server runs, and promote the
+evidence matrix from `planned` to `verified` only after a real recorded response. Keep
+model downloads out of tests.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_docs_links.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_smolvla_remote_plan.py tests/test_cli.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
-rtk proxy env PYTHONPATH=src mypy src/vla_zoo tests/test_docs_links.py
+rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths README.md,docs/index.html,docs/assets/gif_suite/index.html \
+  --paths docs/smolvla_remote.md,docs/assets/smolvla_remote_smoke_plan.md,docs/index.html \
   --strict
 ```
 

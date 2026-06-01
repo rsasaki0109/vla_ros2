@@ -528,6 +528,79 @@ def serve_plan(
         typer.echo(markdown)
 
 
+@app.command("smolvla-remote-plan")
+def smolvla_remote_plan(
+    pretrained: Annotated[
+        str,
+        typer.Option("--pretrained", help="SmolVLA checkpoint/repository to serve."),
+    ] = "lerobot/smolvla_base",
+    host: Annotated[
+        str,
+        typer.Option("--host", help="Bind host for the SmolVLA server."),
+    ] = "0.0.0.0",
+    public_host: Annotated[
+        str,
+        typer.Option("--public-host", help="Hostname/IP reachable from the robot-side runtime."),
+    ] = "gpu-box",
+    port: Annotated[int, typer.Option("--port", help="Server port.")] = 8000,
+    device: Annotated[
+        str,
+        typer.Option("--device", help="Device passed to the SmolVLA adapter."),
+    ] = "cuda:0",
+    dtype: Annotated[
+        str | None,
+        typer.Option("--dtype", help="Optional model dtype, for example bfloat16."),
+    ] = None,
+    venv_dir: Annotated[
+        str,
+        typer.Option("--venv-dir", help="Isolated virtual environment directory for the server."),
+    ] = ".venv-smolvla",
+    instruction: Annotated[
+        str,
+        typer.Option("--instruction", help="Instruction used by the robot-side probe."),
+    ] = "pick up the red block",
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON plan."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write Markdown plan."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print JSON instead of Markdown."),
+    ] = False,
+) -> None:
+    """Generate an isolated-environment remote SmolVLA serving plan."""
+
+    from vla_zoo.runtime.smolvla_plan import (
+        build_smolvla_remote_plan,
+        format_smolvla_remote_plan_markdown,
+    )
+
+    plan = build_smolvla_remote_plan(
+        pretrained=pretrained,
+        host=host,
+        public_host=public_host,
+        port=port,
+        device=device,
+        dtype=dtype,
+        venv_dir=venv_dir,
+        instruction=instruction,
+    )
+    payload = plan.to_dict()
+    markdown = format_smolvla_remote_plan_markdown(plan)
+    if out is not None:
+        _write_text(out, json.dumps(payload, indent=2) + "\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, markdown)
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(markdown)
+
+
 @app.command()
 def serve(
     model: Annotated[str, typer.Option("--model", "-m")] = "dummy",
