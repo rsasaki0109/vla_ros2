@@ -114,6 +114,14 @@ vla-zoo ros smoke-report --output-dir results/ros2_smoke
 This writes status, diagnostics, and action JSONL logs, then generates
 `dashboard.html`, `action_trace.html`, `action_analysis.md`, and `report_bundle.zip`.
 
+Recorded actions can be replayed on a separate safe topic for visualization,
+debugging, and downstream bridge dry-runs:
+
+```bash
+ros2 launch vla_zoo action_replay.launch.py \
+  action_log_path:=results/ros2_smoke/vla_actions.jsonl
+```
+
 | Topic | Type | Direction |
 |---|---|---|
 | `/camera/image_raw` | `sensor_msgs/msg/Image` | input |
