@@ -4,6 +4,8 @@
 - status: ok
 - assets: 9
 
+This QA report checks that generated GIFs exist, decode, have enough frames, use the expected resolution, are not low-variance blank files, and match the manifest. It does not validate VLA model quality or real robot behavior.
+
 | GIF | Status | Frames | Resolution | Size | Issues |
 |---|---|---:|---|---:|---|
 | `simulation_pick_red_block_dummy.gif` | ok | 60 | 960x540 | 1645249 | - |
