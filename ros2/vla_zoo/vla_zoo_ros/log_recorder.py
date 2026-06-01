@@ -21,11 +21,17 @@ def _key_value_to_dict(value: KeyValue) -> dict[str, str]:
     return {"key": value.key, "value": value.value}
 
 
+def _uint8_to_int(value: object) -> int:
+    if isinstance(value, bytes):
+        return int.from_bytes(value[:1], byteorder="little") if value else 0
+    return int(value)  # type: ignore[arg-type]
+
+
 def _diagnostic_status_to_dict(status: DiagnosticStatus) -> dict[str, Any]:
     return {
         "name": status.name,
         "hardware_id": status.hardware_id,
-        "level": int(status.level),
+        "level": _uint8_to_int(status.level),
         "message": status.message,
         "values": [_key_value_to_dict(value) for value in status.values],
     }
