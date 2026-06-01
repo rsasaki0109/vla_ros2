@@ -35,4 +35,14 @@ vla-zoo compare pybullet \
   --remote-url http://gpu-box:8000
 ```
 
+For separate model servers, use `--remote-map`:
+
+```bash
+vla-zoo compare pybullet \
+  --models openvla,pi0,smolvla,groot \
+  --runtime remote \
+  --remote-map "openvla=http://gpu-box:8001,pi0=http://gpu-box:8002,smolvla=http://gpu-box:8003,groot=http://gpu-box:8004" \
+  --markdown-out results/vla_runtime_comparison.md
+```
+
 The comparison output is intentionally runtime-centric: frames, adapter query count, adapter errors, latency, and action magnitude. It is not a claim of task success or model quality.

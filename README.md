@@ -61,6 +61,17 @@ vla-zoo compare pybullet \
   --remote-url http://gpu-box:8000
 ```
 
+If each model is served by a separate process, pass a model-to-endpoint map and write README-ready results:
+
+```bash
+vla-zoo compare pybullet \
+  --models openvla,pi0,smolvla,groot \
+  --runtime remote \
+  --remote-map "openvla=http://gpu-box:8001,pi0=http://gpu-box:8002,smolvla=http://gpu-box:8003,groot=http://gpu-box:8004" \
+  --out results/vla_runtime_comparison.json \
+  --markdown-out results/vla_runtime_comparison.md
+```
+
 ## What works today
 
 - `load_model("dummy")` runs without a GPU or model download.
