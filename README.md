@@ -21,13 +21,32 @@ Live demo page: https://rsasaki0109.github.io/vla_zoo/
 | Surface | What works now |
 |---|---|
 | Python API | `load_model("dummy")`, typed `VLAAction`, adapter registry |
-| Model adapters | dummy, scripted, random, OpenVLA scaffold, pi0, SmolVLA, GR00T placeholders |
+| Runtime baselines | `dummy`, `scripted`, and `random` adapters for no-GPU validation |
+| VLA adapters | OpenVLA local scaffold; pi0, SmolVLA, and GR00T remote-first placeholders |
 | ROS2 runtime | dry-run launch files, action/status topics, diagnostics, log recorder |
 | Remote inference | FastAPI server/client with the same `predict()` boundary |
 | Simulation demo | real PyBullet Franka pick-and-place scene with adapter action overlay |
 | Comparison artifacts | method profiles, PyBullet metrics, HTML report, interactive dashboard |
 
 The base install stays light. Heavy VLA stacks remain optional and external.
+
+## Maturity Matrix
+
+`vla_zoo` is infrastructure, not a claim that every listed VLA is fully supported today.
+
+| Method | Current state | Local inference | Remote inference | What the output means |
+|---|---|---:|---:|---|
+| `dummy` | implemented baseline | yes | yes | neutral 7-DoF action for CI, docs, and dry-run ROS2 |
+| `scripted` | implemented baseline | yes | yes | phase-aware rule baseline for the bundled PyBullet smoke scene |
+| `random` | implemented baseline | yes | yes | seeded random action baseline for plumbing and visualization checks |
+| `openvla` | adapter scaffold | optional deps required | yes | OpenVLA-style 7-DoF action, model/robot unnormalization dependent |
+| `pi0` / `openpi` | remote-first placeholder | no | yes | policy-specific action/chunk interface to be provided by a serving stack |
+| `smolvla` | remote-first placeholder | no | yes | multi-camera/state/action-chunk policy interface to be provided by LeRobot |
+| `groot` / `gr00t` | experimental placeholder | no | yes | humanoid/generalist action interface, adapter-specific |
+
+The shipped GIFs below are no-GPU runtime baselines. They prove that the observation,
+adapter, action, visualization, and reporting path works. They are not VLA model
+performance demonstrations.
 
 ## 30 Second No-GPU Path
 
@@ -49,18 +68,19 @@ print(action)
 
 No GPU, model download, or ROS2 install is required for this path.
 
-## Real PyBullet Demo
+## PyBullet Runtime Smoke Demo
 
 This GIF is rendered from PyBullet: Franka Panda URDF, cube, gravity, inverse
 kinematics, gripper command, and a fixed grasp constraint. It is a real simulation
-smoke scene, not a real robot performance claim.
+smoke scene for runtime validation, not a policy benchmark or real robot performance claim.
 
 ![vla_zoo pick-and-place simulation GIF](docs/assets/simulation_pick_place.gif)
 
-The PyBullet controller keeps the scene deterministic, while the selected VLA adapter
-is queried on rendered observations and its action output is overlaid. The same smoke
-scene works for `dummy`, `scripted`, `random`, local OpenVLA, or remote
-pi0/SmolVLA/GR00T-style servers.
+The PyBullet controller keeps the scene deterministic, while the selected adapter is
+queried on rendered observations and its action output is overlaid. This deliberately
+separates runtime plumbing from model skill. Real VLA evaluation should use the
+model's required observation schema, robot-specific action normalization, and a
+benchmark or robot setup appropriate for that policy.
 
 Regenerate it:
 
@@ -69,11 +89,12 @@ pip install -e ".[sim]"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 ```
 
-### Adapter GIF Gallery
+### No-GPU Baseline GIF Gallery
 
 These are all generated from real PyBullet runs. The robot scene is the same, but
-the selected adapter is queried through the runtime and its `VLAAction` output is
-shown in the overlay.
+the selected baseline adapter is queried through the runtime and its `VLAAction`
+output is shown in the overlay. `dummy`, `scripted`, and `random` are not VLA
+foundation models.
 
 <table>
   <tr>
@@ -103,8 +124,9 @@ vla-zoo demo pybullet --model scripted --out docs/assets/simulation_scripted.gif
 vla-zoo demo pybullet --model random --out docs/assets/simulation_random.gif
 ```
 
-For heavyweight VLA models, use the same demo path with local optional dependencies
-or a remote GPU server:
+For heavyweight VLA models, use the same runtime path with local optional dependencies
+or a remote GPU server. These commands require real serving environments and should
+not be interpreted as pre-generated model-quality results:
 
 ```bash
 vla-zoo demo pybullet --model openvla --runtime remote --remote-url http://gpu-box:8000
@@ -137,11 +159,44 @@ or [open the live sample dashboard](https://rsasaki0109.github.io/vla_zoo/assets
 
 ![vla_zoo runtime dashboard preview](docs/assets/dashboard_preview.png)
 
+The comparison suite is runtime-centric. It tracks availability, errors, latency,
+action magnitude, action metadata, and deterministic smoke-scene telemetry. It does
+not rank VLA policies by task success.
+
 For a fast metadata-only artifact:
 
 ```bash
 vla-zoo compare suite --no-pybullet --out-dir results/quick_suite
 ```
+
+## For VLA Researchers
+
+Most VLA failures at deployment time are not just model failures. They are often
+interface failures: camera naming, image preprocessing, proprioception schema,
+action unnormalization, gripper convention, chunk timing, controller rate, or stale
+observations. `vla_zoo` is designed to make those contracts explicit.
+
+Every adapter should declare:
+
+| Contract | Examples |
+|---|---|
+| Observation inputs | single RGB image, multi-camera images, instruction, proprioception |
+| Action representation | EEF delta, EEF pose, joint position, joint velocity, base twist, gripper, custom |
+| Normalization | normalized action, dataset-specific unnormalization key, robot-specific bounds |
+| Temporal behavior | single action, action chunk, expected control rate, action `dt` |
+| Runtime mode | local model, remote GPU server, ROS2 node, benchmark runner |
+| Safety caveats | dry-run behavior, clipping expectations, downstream controller requirements |
+
+The adapter boundary intentionally returns `VLAAction` or `VLAActionChunk`, never a raw
+array. That makes action semantics visible to ROS2, dashboards, benchmarks, and future
+robot-specific bridges.
+
+`vla_zoo` does not claim:
+
+- zero-shot success on arbitrary robots
+- apples-to-apples policy quality comparisons from the bundled PyBullet smoke scene
+- direct hardware control
+- redistribution of OpenVLA, openpi, SmolVLA, GR00T, or other external weights
 
 ## Compare VLA Runtime Paths
 
@@ -162,15 +217,17 @@ This method profile table summarizes input requirements, action shape, action ch
 proprioception expectations, local/remote runtime support, dependency profile, and license
 caveats for baselines, OpenVLA, pi0/openpi, SmolVLA, and GR00T-style adapters.
 
-Run the same deterministic PyBullet smoke scene across baseline methods and adapters:
+Run the same deterministic PyBullet smoke scene across the no-GPU baseline adapters:
 
 ```bash
-vla-zoo compare pybullet --models dummy,scripted,random,openvla,pi0,smolvla,groot
+vla-zoo compare pybullet --models dummy,scripted,random
 ```
 
-The comparison records runtime metrics plus scripted-scene telemetry: whether the cube was lifted, final distance to the goal, cube travel distance, grasp-attached frames, and phase completion. The smoke task treats placement inside a 15 cm goal zone as success. This makes reports useful for smoke-testing the full observation-to-action path, but it is still not a claim of real model skill because the PyBullet controller keeps the scene deterministic.
+The comparison records runtime metrics plus scripted-scene telemetry: whether the cube was lifted, final distance to the goal, cube travel distance, grasp-attached frames, and phase completion. The smoke task treats placement inside a 15 cm goal zone as success. This makes reports useful for smoke-testing the full observation-to-action path, but it is still not a claim of model skill because the PyBullet controller keeps the scene deterministic.
 
-By default, the local PyBullet comparison skips heavy local OpenVLA loading so it does not accidentally download weights. The `dummy`, `scripted`, and `random` adapters are no-GPU baselines for validating the runtime, visualization, and metrics pipeline before comparing heavyweight VLA policies. Use a remote GPU server for real cross-model runtime checks:
+The `dummy`, `scripted`, and `random` adapters are no-GPU baselines for validating
+the runtime, visualization, and metrics pipeline before comparing heavyweight VLA
+policies. Use remote GPU servers for real cross-model runtime checks:
 
 ```bash
 vla-zoo compare pybullet \
@@ -387,13 +444,13 @@ flowchart LR
 
 | Adapter | Status | Notes |
 |---|---|---|
-| `dummy` | available | Always returns neutral 7-DoF actions for tests, docs, and dry runs |
-| `scripted`, `heuristic`, `rule-based` | available | Rule-based baseline for no-GPU method comparisons |
-| `random`, `random-baseline` | available | Seeded random-action baseline for sanity checks |
-| `openvla` | optional | Hugging Face OpenVLA adapter, installed with `vla_zoo[openvla]` |
-| `pi0`, `openpi`, `pi0-fast`, `pi05` | experimental | Remote-first scaffold for openpi/pi0 integration |
-| `smolvla`, `lerobot-smolvla` | experimental | Placeholder for LeRobot SmolVLA action-chunk policies |
-| `groot`, `gr00t`, `isaac-groot` | experimental | Placeholder for humanoid/generalist GR00T-style stacks |
+| `dummy` | implemented baseline | Always returns neutral 7-DoF actions for tests, docs, and dry runs |
+| `scripted`, `heuristic`, `rule-based` | implemented baseline | Rule-based baseline for the bundled smoke scene |
+| `random`, `random-baseline` | implemented baseline | Seeded random-action baseline for sanity checks |
+| `openvla` | local scaffold | Hugging Face OpenVLA adapter behind `vla_zoo[openvla]`; real use requires weights, GPU memory, and correct unnormalization |
+| `pi0`, `openpi`, `pi0-fast`, `pi05` | remote-first placeholder | Adapter contract for openpi/pi0 serving environments |
+| `smolvla`, `lerobot-smolvla` | remote-first placeholder | Adapter contract for LeRobot SmolVLA multi-camera/state/action-chunk policies |
+| `groot`, `gr00t`, `isaac-groot` | experimental placeholder | Adapter contract for humanoid/generalist GR00T-style stacks |
 
 ## Benchmarks
 
