@@ -89,6 +89,29 @@
       margin: 22px 0;
       align-items: center;
     }
+    .scope {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 0 0 20px;
+    }
+    .scope-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--accent);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .scope-card.warn { border-left-color: var(--warn); background: #fffbeb; }
+    .scope-card.ok-scope { border-left-color: var(--ok); background: #f0fdf4; }
+    .scope-card h2 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+    .scope-card p {
+      color: #334155;
+      font-size: 13px;
+    }
     input, select, button {
       min-height: 42px;
       border: 1px solid var(--line);
@@ -211,6 +234,19 @@
     .error { background: var(--error-bg); color: #881337; }
     .warn { background: var(--warn-bg); color: #713f12; }
     .neutral { background: #e0f2fe; color: #075985; }
+    .matrix-table td, .matrix-table th {
+      font-size: 13px;
+    }
+    .signal {
+      display: grid;
+      gap: 4px;
+    }
+    .signal strong {
+      font-size: 16px;
+    }
+    .signal small {
+      color: var(--muted);
+    }
     .bar-row {
       display: grid;
       grid-template-columns: 160px 1fr 82px;
@@ -279,6 +315,7 @@
     @media (max-width: 1100px) {
       header { align-items: flex-start; flex-direction: column; }
       .header-meta { justify-content: flex-start; }
+      .scope { grid-template-columns: 1fr; }
       .toolbar { grid-template-columns: 1fr 1fr; }
       .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .grid { grid-template-columns: 1fr; }
@@ -309,6 +346,23 @@
         <span class="pill">offline HTML</span>
       </div>
     </header>
+    <section class="scope">
+      <div class="scope-card ok-scope">
+        <h2>What This Shows</h2>
+        <p>Runtime evidence from comparison JSON or ROS2 logs: readiness, queries,
+          latency, adapter errors, task metrics, and action magnitude.</p>
+      </div>
+      <div class="scope-card warn">
+        <h2>What This Does Not Claim</h2>
+        <p>This dashboard is not a VLA model-quality leaderboard and does not prove
+          real-robot task success without hardware-specific validation.</p>
+      </div>
+      <div class="scope-card">
+        <h2>How To Read It</h2>
+        <p>Use the matrix first, then triage degraded rows. Keep ROS2 dry-run,
+          watchdogs, and action clipping in the deployment path.</p>
+      </div>
+    </section>
     <section class="toolbar">
       <input id="search" placeholder="Filter model, runtime, endpoint, note">
       <select id="status">
@@ -334,6 +388,10 @@
     </section>
     <section class="cards" id="summary"></section>
     <section class="grid">
+      <div class="panel wide">
+        <h2>Runtime Evidence Matrix</h2>
+        <div class="panel-body" id="evidenceMatrix"></div>
+      </div>
       <div class="panel">
         <h2>Fleet Health</h2>
         <div class="panel-body" id="healthPanel"></div>
@@ -676,6 +734,46 @@
         `).join("") || '<div class="empty">No records match the current filters.</div>';
     }
 
+    function renderEvidenceMatrix(rows) {
+      const sorted = [...rows].sort((a, b) => {
+        const model = text(a.model_name).localeCompare(text(b.model_name));
+        if (model !== 0) return model;
+        return text(a.runtime).localeCompare(text(b.runtime));
+      });
+      document.getElementById("evidenceMatrix").innerHTML = sorted.length
+        ? `<table class="matrix-table">
+          <thead>
+            <tr>
+              <th>Adapter</th><th>Runtime</th><th>Status</th><th>Health</th>
+              <th>Task</th><th>Latency</th><th>Errors</th><th>Action</th><th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sorted.map(record => `
+              <tr>
+                <td><code>${esc(record.model_name)}</code></td>
+                <td><code>${esc(record.runtime)}</code></td>
+                <td>${stateBadge(record)}</td>
+                <td>
+                  <div class="signal">
+                    <strong>${healthScore(record)}%</strong>
+                    <small>${esc(recordState(record))}</small>
+                  </div>
+                </td>
+                <td>${esc(taskLabel(record))}</td>
+                <td>${fmt(record.mean_latency_ms)} ms</td>
+                <td>${record.adapter_errors}/${record.adapter_queries}</td>
+                <td>${fmt(record.mean_abs_action, 3)}</td>
+                <td class="note">
+                  ${esc(record.source || record.last_error || "generated record")}
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>`
+        : '<div class="empty">No records match the current filters.</div>';
+    }
+
     function renderBarChart(id, rows, metric, digits, className = "") {
       const metricValue = record => {
         if (metric === "error_rate") {
@@ -781,6 +879,7 @@
       document.getElementById("recordCount").textContent = `${records.length} records`;
       document.getElementById("sourceCount").textContent = `${sources.size || 1} sources`;
       renderSummary(rows);
+      renderEvidenceMatrix(rows);
       renderHealth(rows);
       renderRuntimeMix(rows);
       renderBarChart("latencyChart", rows, "mean_latency_ms", 2);
