@@ -398,12 +398,18 @@ Categories:
 - "adapter docs"
 - "GPU probes"
 
-### 7.3 Make ROS2 Integration More Credible
+### 7.3 Make ROS2 Integration More Credible (metadata tests DONE)
 
-Reason: user has repeatedly emphasized ROS2 integration. Current ROS2 code is useful,
-but CI does not build it.
+Status: `tests/test_ros2_package_metadata.py` added (stdlib-only, no ROS2 install).
+It parses and asserts: both `package.xml` files (name/format/build_type/deps/groups),
+`setup.py` console_scripts + their module files + launch/config data_files,
+`CMakeLists.txt` registers every `.msg`, `.msg` field contracts, every
+`*.launch.py` parses and exposes `generate_launch_description`, the smoke launch
+declares expected topic args and Node executables, and the safety invariant that any
+launch `dry_run` arg defaults to `"true"`. A GitHub Actions ROS build job is still
+optional/documented-only and not enabled.
 
-Next useful tasks:
+Remaining/next useful tasks:
 
 - Add a non-ROS syntax/lint test for launch files and package metadata.
 - Add `tests/test_ros2_package_metadata.py`.
@@ -626,24 +632,17 @@ Shell/tooling conventions in this environment:
 
 ## 13. Current Best Next Commit
 
-The docs link checker (7.1) and artifact index (7.2) are now done. The next best
-commit is:
+The docs link checker (7.1), artifact index (7.2), and ROS2 metadata tests (7.3) are
+now done. The next best commit is:
 
 ```text
-add ROS2 package metadata tests (7.3)
+strengthen SmolVLA remote path (7.4)
 ```
 
-Files likely touched:
-
-```text
-tests/test_ros2_package_metadata.py
-src/vla_zoo/...                  # optional non-ROS parser helper
-PLAN.md
-```
-
-Reason: CI does not build ROS2 yet, so add non-ROS syntax/metadata tests that parse
-`ros2/vla_zoo/package.xml`, `setup.py`, `launch/*.launch.py`, and `vla_zoo_msgs/msg/*.msg`,
-asserting expected topics and launch args. Do not require a ROS2 install in CI.
+Reason: SmolVLA is the most feasible real model path already checked locally. Add a
+SmolVLA remote smoke plan, adapter-specific server config examples, env-isolation docs
+for `vla_zoo[smolvla]`, and evidence-matrix cells for "remote server" once recorded.
+Do not claim policy-quality success.
 
 Acceptance:
 
