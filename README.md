@@ -9,57 +9,91 @@ ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action model
 [![Demo](https://img.shields.io/badge/demo-GitHub%20Pages-0369a1)](https://rsasaki0109.github.io/vla_zoo/)
 
 > VLA models are moving fast. Robots still need stable runtime interfaces.  
-> vla_zoo connects camera + instruction + robot state to actions through ROS2-native adapters.
+> `vla_zoo` connects camera + instruction + robot state to typed actions through
+> ROS2-native adapters, remote inference, and reproducible comparison artifacts.
 
 Live demo page: https://rsasaki0109.github.io/vla_zoo/
 
-![vla_zoo runtime dashboard preview](docs/assets/dashboard_preview.png)
+![vla_zoo social preview](docs/assets/social_preview.png)
 
-## 30 Second Demo
+## What You Get
+
+| Surface | What works now |
+|---|---|
+| Python API | `load_model("dummy")`, typed `VLAAction`, adapter registry |
+| Model adapters | dummy, scripted, random, OpenVLA scaffold, pi0, SmolVLA, GR00T placeholders |
+| ROS2 runtime | dry-run launch files, action/status topics, diagnostics, log recorder |
+| Remote inference | FastAPI server/client with the same `predict()` boundary |
+| Simulation demo | real PyBullet Franka pick-and-place scene with adapter action overlay |
+| Comparison artifacts | method profiles, PyBullet metrics, HTML report, interactive dashboard |
+
+The base install stays light. Heavy VLA stacks remain optional and external.
+
+## 30 Second No-GPU Path
 
 ```bash
 pip install -e ".[dev,cli,server,sim]"
-vla-zoo doctor
+vla-zoo doctor --no-ros
 vla-zoo predict --model dummy --instruction "hello"
-vla-zoo compare adapters
 vla-zoo compare methods
 vla-zoo compare suite --no-pybullet --out-dir results/quick_suite
-vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 ```
 
-No GPU, model download, or ROS2 install is required for the dummy path.
+```python
+from vla_zoo import load_model
 
-## Demos
+model = load_model("dummy")
+action = model.predict(image=None, instruction="pick up the red block")
+print(action)
+```
 
-This GIF is rendered from a PyBullet simulation: Franka Panda URDF, cube, gravity, inverse kinematics, gripper command, and a fixed grasp constraint. It is still a demo scene, not a real robot performance claim.
+No GPU, model download, or ROS2 install is required for this path.
+
+## Real PyBullet Demo
+
+This GIF is rendered from PyBullet: Franka Panda URDF, cube, gravity, inverse
+kinematics, gripper command, and a fixed grasp constraint. It is a real simulation
+smoke scene, not a real robot performance claim.
 
 ![vla_zoo pick-and-place simulation GIF](docs/assets/simulation_pick_place.gif)
 
-The PyBullet controller keeps the scene deterministic, while the selected VLA adapter is queried on rendered observations and its action output is overlaid. That makes the same smoke scene usable for `dummy`, `scripted`, `random`, local OpenVLA, or remote pi0/SmolVLA/GR00T-style servers.
+The PyBullet controller keeps the scene deterministic, while the selected VLA adapter
+is queried on rendered observations and its action output is overlaid. The same smoke
+scene works for `dummy`, `scripted`, `random`, local OpenVLA, or remote
+pi0/SmolVLA/GR00T-style servers.
 
-Regenerate it locally with:
+Regenerate it:
 
 ```bash
 pip install -e ".[sim]"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 ```
 
-Use the same demo loop with any adapter that implements `predict()`:
+## Comparison Suite
+
+`vla_zoo` can generate a shareable comparison directory for READMEs, issues, and
+release notes:
 
 ```bash
-# local OpenVLA, if the optional ML dependencies and weights are available
-vla-zoo demo pybullet --model openvla --instruction "pick up the red block"
+vla-zoo compare suite --out-dir results/vla_compare_suite
+```
 
-# remote VLA server on a GPU workstation
-vla-zoo demo pybullet \
-  --model openvla \
-  --runtime remote \
-  --remote-url http://gpu-box:8000
+It writes:
 
-# future remote adapters
-vla-zoo demo pybullet --model pi0 --runtime remote --remote-url http://gpu-box:8000
-vla-zoo demo pybullet --model smolvla --runtime remote --remote-url http://gpu-box:8000
-vla-zoo demo pybullet --model groot --runtime remote --remote-url http://gpu-box:8000
+| Artifact | Purpose |
+|---|---|
+| `method_profiles.md/json` | VLA method integration profiles without loading weights |
+| `pybullet_results.md/json` | deterministic runtime and task telemetry |
+| `pybullet_report.html` | self-contained static comparison report |
+| `runtime_dashboard.html` | interactive dashboard for latency, errors, and task metrics |
+| `README.md` | index page with reproduce command and tables |
+
+![vla_zoo runtime dashboard preview](docs/assets/dashboard_preview.png)
+
+For a fast metadata-only artifact:
+
+```bash
+vla-zoo compare suite --no-pybullet --out-dir results/quick_suite
 ```
 
 ## Compare VLA Runtime Paths
@@ -80,17 +114,6 @@ vla-zoo compare methods --markdown-out results/vla_method_profiles.md
 This method profile table summarizes input requirements, action shape, action chunks,
 proprioception expectations, local/remote runtime support, dependency profile, and license
 caveats for baselines, OpenVLA, pi0/openpi, SmolVLA, and GR00T-style adapters.
-
-Generate a shareable comparison artifact directory:
-
-```bash
-vla-zoo compare suite --out-dir results/vla_compare_suite
-```
-
-The suite writes `method_profiles.json`, `method_profiles.md`, `pybullet_results.json`,
-`pybullet_results.md`, `pybullet_report.html`, `runtime_dashboard.html`, and a self-contained
-`README.md` under the output directory. Use `--no-pybullet` when you only want the lightweight
-method profile artifacts.
 
 Run the same deterministic PyBullet smoke scene across baseline methods and adapters:
 
@@ -158,35 +181,26 @@ vla-zoo report bundle \
   --out results/vla_runtime_report_bundle.zip
 ```
 
-## What works today
+## Runnable Today
 
-- `load_model("dummy")` runs without a GPU or model download.
-- `vla-zoo doctor` reports local dependency, adapter, ROS2, and optional remote health.
-- `vla-zoo predict --model dummy --instruction "hello"` returns a typed `VLAAction`.
-- `vla-zoo serve --model dummy --port 8000` exposes `/health`, `/v1/models`, and `/v1/predict`.
-- `ros2 launch vla_zoo dummy.launch.py` starts a dry-run ROS2 runtime node with status and diagnostics.
-- Third-party adapters can be added through Python entry points.
+| Goal | Command |
+|---|---|
+| Check local health | `vla-zoo doctor --no-ros` |
+| Predict a typed action | `vla-zoo predict --model dummy --instruction "hello"` |
+| Render the PyBullet GIF | `vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif` |
+| Compare method profiles | `vla-zoo compare methods` |
+| Generate report artifacts | `vla-zoo compare suite --out-dir results/vla_compare_suite` |
+| Start a local server | `vla-zoo serve --model dummy --port 8000` |
+| Launch ROS2 dry-run | `ros2 launch vla_zoo dummy.launch.py` |
 
-## What to Run Next
-
-```bash
-pip install -e ".[dev,cli,server,sim]"
-vla-zoo doctor --no-ros
-vla-zoo predict --model dummy --instruction "hello"
-vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
-vla-zoo compare adapters
-vla-zoo compare methods
-vla-zoo compare suite --no-pybullet --out-dir results/quick_suite
-```
-
-For remote-runtime smoke testing:
+Remote-runtime smoke test:
 
 ```bash
 vla-zoo serve --model dummy --host 127.0.0.1 --port 8010
 vla-zoo compare pybullet --manifest examples/compare/pybullet_dummy_remote.json
 ```
 
-For ROS2 dry-run testing:
+ROS2 dry-run:
 
 ```bash
 pip install -e .
@@ -217,6 +231,14 @@ camera + instruction + state -> action
 ```
 
 `vla_zoo` is not a training framework and it does not redistribute model weights. It is a runtime boundary for local or remote VLA inference, ROS2 topic integration, action-space metadata, and benchmark orchestration.
+
+In practice, that means:
+
+- research models stay in their own upstream projects
+- robot-side ROS2 code sees stable topics and typed actions
+- GPU-heavy inference can run remotely
+- adapters declare action shape, input needs, and safety caveats
+- demos and reports can be regenerated without hand-editing README tables
 
 ## Quickstart
 
