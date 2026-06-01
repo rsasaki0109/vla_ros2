@@ -939,6 +939,69 @@ def report_bundle(
     typer.echo(f"Report bundle written to {out}")
 
 
+@ros_app.command("action-analyze")
+def ros_action_analyze(
+    action_log: Annotated[
+        Path,
+        typer.Option("--action-log", help="ROS2 VLAAction JSONL path."),
+    ],
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Output JSON analysis path."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Output Markdown analysis path."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable JSON."),
+    ] = False,
+    max_gap_warn_sec: Annotated[
+        float,
+        typer.Option("--max-gap-warn-sec", help="Warn when action gaps exceed this value."),
+    ] = 1.0,
+    min_rate_warn_hz: Annotated[
+        float,
+        typer.Option("--min-rate-warn-hz", help="Warn when action rate is below this value."),
+    ] = 1.0,
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Markdown report title."),
+    ] = "vla_zoo Action Analysis",
+) -> None:
+    """Analyze recorded ROS2 VLAAction JSONL for timing and action-quality signals."""
+
+    from vla_zoo.runtime.action_trace import (
+        analyze_action_trace,
+        format_action_analysis_markdown,
+        load_action_trace_events,
+    )
+
+    try:
+        analysis = analyze_action_trace(
+            load_action_trace_events(action_log),
+            max_gap_warn_sec=max_gap_warn_sec,
+            min_rate_warn_hz=min_rate_warn_hz,
+        )
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    payload = json.dumps(asdict(analysis), indent=2)
+    markdown = format_action_analysis_markdown(analysis, title=title)
+    if out is not None:
+        _write_text(out, f"{payload}\n")
+        typer.echo(f"Action analysis JSON written to {out}")
+    if markdown_out is not None:
+        _write_text(markdown_out, markdown)
+        typer.echo(f"Action analysis Markdown written to {markdown_out}")
+    if json_output:
+        typer.echo(payload)
+    elif out is None and markdown_out is None:
+        typer.echo(markdown)
+
+
 @ros_app.command("action-trace")
 def ros_action_trace(
     action_log: Annotated[
@@ -1036,6 +1099,20 @@ def ros_smoke_report(
         str,
         typer.Option("--action-trace-name", help="Action trace HTML filename inside output-dir."),
     ] = "action_trace.html",
+    action_analysis_name: Annotated[
+        str,
+        typer.Option(
+            "--action-analysis-name",
+            help="Action analysis JSON filename inside output-dir.",
+        ),
+    ] = "action_analysis.json",
+    action_analysis_markdown_name: Annotated[
+        str,
+        typer.Option(
+            "--action-analysis-markdown-name",
+            help="Action analysis Markdown filename inside output-dir.",
+        ),
+    ] = "action_analysis.md",
     launch_log_name: Annotated[
         str,
         typer.Option("--launch-log-name", help="ROS2 launch log filename inside output-dir."),
@@ -1057,6 +1134,8 @@ def ros_smoke_report(
     dashboard_out = output_dir / dashboard_name
     bundle_out = output_dir / bundle_name
     action_trace_out = output_dir / action_trace_name
+    action_analysis_out = output_dir / action_analysis_name
+    action_analysis_markdown_out = output_dir / action_analysis_markdown_name
     launch_log = output_dir / launch_log_name
 
     if not skip_launch:
@@ -1076,6 +1155,8 @@ def ros_smoke_report(
                 dashboard_out,
                 bundle_out,
                 action_trace_out,
+                action_analysis_out,
+                action_analysis_markdown_out,
                 launch_log,
             ):
                 _unlink_if_exists(path)
@@ -1138,10 +1219,21 @@ def ros_smoke_report(
     )
     if _path_has_content(action_log):
         ros_action_trace(action_log=action_log, out=action_trace_out, title=f"{title}: Actions")
+        ros_action_analyze(
+            action_log=action_log,
+            out=action_analysis_out,
+            markdown_out=action_analysis_markdown_out,
+            json_output=False,
+            max_gap_warn_sec=1.0,
+            min_rate_warn_hz=1.0,
+            title=f"{title}: Action Analysis",
+        )
         if bundle_out.exists():
             with ZipFile(bundle_out, "a", compression=ZIP_DEFLATED) as bundle:
                 bundle.write(action_log, "inputs/actions/00_vla_actions.jsonl")
                 bundle.write(action_trace_out, "action_trace.html")
+                bundle.write(action_analysis_out, "action_analysis.json")
+                bundle.write(action_analysis_markdown_out, "action_analysis.md")
     else:
         typer.echo(f"Warning: action log is empty or missing: {action_log}", err=True)
     typer.echo(f"ROS2 smoke report written to {output_dir}")
