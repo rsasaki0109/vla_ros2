@@ -27,6 +27,17 @@ To observe action messages during dummy dry-run demos, opt in explicitly:
 ros2 launch vla_zoo dummy.launch.py publish_actions_in_dry_run:=true
 ```
 
+For a self-contained runtime smoke test, launch the runtime together with synthetic
+camera, joint state, and typed instruction inputs:
+
+```bash
+ros2 launch vla_zoo smoke.launch.py
+```
+
+`smoke.launch.py` keeps `dry_run:=true`, uses the `dummy` adapter, sets
+`instruction_msg_type:=vla_instruction`, requires a fresh image, and publishes
+dummy actions for logging/demo visibility.
+
 ## Topics
 
 Inputs:
@@ -105,6 +116,21 @@ python examples/ros2/publish_instruction.py \
 `VLAStatus.metadata_json`, and diagnostics key-values. This keeps ROS bag replay,
 dashboards, and future benchmark runners aligned on the same task identity without
 changing the model adapter API.
+
+## Smoke Input Node
+
+`vla_smoke_input_node` publishes a deterministic RGB image with a moving red block,
+a `vla_zoo_msgs/msg/VLAInstruction`, and optional `sensor_msgs/msg/JointState`.
+It is for launch validation and ROS bag/report demos, not for measuring model skill.
+
+Useful launch arguments:
+
+- `image_topic`: camera topic to publish and subscribe
+- `instruction_topic`: typed instruction topic
+- `joint_state_topic`: optional joint state topic
+- `publish_hz`: synthetic input rate
+- `instruction`: instruction text
+- `task_id`: typed task identifier copied into runtime metadata
 
 ## Runtime Dashboard From Logs
 

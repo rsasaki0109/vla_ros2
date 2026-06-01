@@ -99,6 +99,12 @@ ros2 launch vla_zoo dummy.launch.py
 The ROS2 runtime subscribes to camera, instruction, and optional joint state topics,
 then publishes typed actions, status, and diagnostics.
 
+For a self-contained ROS2 smoke demo with synthetic camera input and typed instruction:
+
+```bash
+ros2 launch vla_zoo smoke.launch.py
+```
+
 | Topic | Type | Direction |
 |---|---|---|
 | `/camera/image_raw` | `sensor_msgs/msg/Image` | input |

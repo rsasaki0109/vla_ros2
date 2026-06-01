@@ -361,6 +361,7 @@ vla-zoo serve --model openvla \
         <pre><code id="ros-command">pip install -e .
 colcon build --base-paths ros2 --symlink-install
 source install/setup.bash
+ros2 launch vla_zoo smoke.launch.py
 ros2 launch vla_zoo dummy.launch.py publish_actions_in_dry_run:=true
 ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre>
       </div>
