@@ -50,10 +50,13 @@ class RenderSample:
     scripted_action: tuple[float, float, float, float]
     adapter_action: tuple[float, float, float, float] | None
     adapter_error: str | None
+    adapter_query_count: int
+    adapter_query_fresh: bool
     attached: bool
     sim_time: float
     model_name: str
     runtime: str
+    frame_index: int
 
 
 @dataclass(frozen=True)
@@ -275,7 +278,7 @@ def overlay(sample: RenderSample) -> Image.Image:
         font=SMALL,
     )
 
-    draw.rounded_rectangle((600, 20, 936, 152), radius=18, fill=(8, 12, 20, 215))
+    draw.rounded_rectangle((600, 20, 936, 170), radius=18, fill=(8, 12, 20, 215))
     draw.text((620, 36), "adapter VLAAction", fill=(245, 247, 250), font=SMALL)
     action = sample.adapter_action or sample.scripted_action
     if sample.adapter_error:
@@ -285,6 +288,13 @@ def overlay(sample: RenderSample) -> Image.Image:
         draw.text((620, 54), "scripted control shown", fill=(188, 199, 216), font=MONO)
     else:
         draw.text((620, 54), "model prediction shown", fill=(125, 211, 252), font=MONO)
+    query_color = (74, 222, 128) if sample.adapter_query_fresh else (188, 199, 216)
+    draw.text(
+        (620, 148),
+        f"adapter queries: {sample.adapter_query_count}",
+        fill=query_color,
+        font=MONO,
+    )
     labels = ("dx", "dy", "dz", "grip")
     for index, (label, value) in enumerate(zip(labels, action, strict=True)):
         y = 70 + index * 19
@@ -297,6 +307,40 @@ def overlay(sample: RenderSample) -> Image.Image:
             draw.rounded_rectangle((center, y, center + width, y + 9), radius=4, fill=color)
         else:
             draw.rounded_rectangle((center + width, y, center, y + 9), radius=4, fill=color)
+
+    draw.rounded_rectangle((24, 458, 936, 526), radius=18, fill=(8, 12, 20, 210))
+    draw.text((44, 474), "observation", fill=(125, 211, 252), font=SMALL)
+    draw.text((190, 474), "adapter.predict()", fill=(245, 247, 250), font=SMALL)
+    draw.text((386, 474), "VLAAction", fill=(74, 222, 128), font=SMALL)
+    draw.line((142, 485, 180, 485), fill=(125, 211, 252), width=3)
+    draw.polygon([(180, 485), (170, 480), (170, 490)], fill=(125, 211, 252))
+    draw.line((332, 485, 376, 485), fill=(74, 222, 128), width=3)
+    draw.polygon([(376, 485), (366, 480), (366, 490)], fill=(74, 222, 128))
+
+    phase_order = [
+        "observe",
+        "approach",
+        "descend",
+        "close gripper",
+        "lift",
+        "transport",
+        "place",
+        "open gripper",
+        "retreat",
+    ]
+    x0, y0, width = 520, 482, 380
+    draw.rounded_rectangle((x0, y0, x0 + width, y0 + 10), radius=5, fill=(45, 55, 72))
+    current_index = phase_order.index(sample.phase) if sample.phase in phase_order else 0
+    progress = (current_index + 1) / len(phase_order)
+    draw.rounded_rectangle(
+        (x0, y0, x0 + int(width * progress), y0 + 10),
+        radius=5,
+        fill=(34, 211, 238),
+    )
+    for index, _ in enumerate(phase_order):
+        x = x0 + int(width * index / max(1, len(phase_order) - 1))
+        draw.line((x, y0 - 4, x, y0 + 14), fill=(148, 160, 178), width=1)
+    draw.text((520, 504), f"phase timeline: {sample.phase}", fill=(188, 199, 216), font=MONO)
     return image
 
 
@@ -328,6 +372,7 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
     last_adapter_action: tuple[float, float, float, float] | None = None
     last_adapter_error: str | None = None
     rendered_frames = 0
+    adapter_query_count = 0
 
     for waypoint in waypoints:
         start = current
@@ -366,6 +411,7 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                     1.0 - gripper,
                 )
                 if config.model_call_every > 0 and rendered_frames % config.model_call_every == 0:
+                    adapter_query_count += 1
                     last_adapter_action, last_adapter_error = predict_adapter_action(
                         model,
                         raw,
@@ -376,6 +422,9 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                         attached=grasp_constraint is not None,
                         sim_time=sim_step / 240.0,
                     )
+                    adapter_query_fresh = True
+                else:
+                    adapter_query_fresh = False
                 samples.append(
                     RenderSample(
                         image=raw,
@@ -384,10 +433,13 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                         scripted_action=scripted_action,
                         adapter_action=last_adapter_action,
                         adapter_error=last_adapter_error,
+                        adapter_query_count=adapter_query_count,
+                        adapter_query_fresh=adapter_query_fresh,
                         attached=grasp_constraint is not None,
                         sim_time=sim_step / 240.0,
                         model_name=config.model_name,
                         runtime=config.runtime,
+                        frame_index=rendered_frames,
                     )
                 )
                 last_target = target
