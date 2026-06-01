@@ -35,3 +35,27 @@ my_robot_vla = "my_pkg.adapters:MyRobotVLAAdapter"
 ## Metadata
 
 Each adapter should document input cameras, proprioception needs, action names, control rate, chunk size, remote support, dependency status, and model license caveats.
+
+Built-in profiles use `AdapterInfo.metadata` keys that external adapters can also provide:
+
+| Key | Meaning |
+|---|---|
+| `family` | Method family, such as dry-run baseline, VLA foundation model, or LeRobot policy |
+| `compare_role` | Why this method appears in comparison tables |
+| `input_requirements` | Tuple/list of required observations, cameras, instruction, and state |
+| `output` | Human-readable action output description |
+| `action_space` | Runtime action space, matching `ActionSpec.action_space` when possible |
+| `action_shape` | Expected action tensor shape |
+| `control_hz` | Expected outer-loop policy rate |
+| `action_chunks` | Whether the method emits action chunks |
+| `proprioception` | Whether robot state is required |
+| `local_runtime` | Local adapter support status |
+| `remote_runtime` | Remote inference support status |
+| `dependency_profile` | Optional dependency and serving environment summary |
+| `license_caveat` | External project, model, dataset, or checkpoint license notes |
+
+These fields are displayed by:
+
+```bash
+vla-zoo compare methods
+```

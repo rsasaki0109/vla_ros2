@@ -350,6 +350,58 @@ def compare_adapters() -> None:
         )
 
 
+@compare_app.command("methods")
+def compare_methods(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Emit machine-readable JSON."),
+    ] = False,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON profiles to this path."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write a README-ready Markdown table."),
+    ] = None,
+) -> None:
+    """Compare VLA method profiles without loading model weights."""
+
+    from vla_zoo.compare.profiles import format_method_profiles_markdown, method_profiles
+
+    profiles = method_profiles(status_provider=_adapter_status)
+    payload = json.dumps([profile.to_dict() for profile in profiles], indent=2)
+    if out is not None:
+        _write_text(out, f"{payload}\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, format_method_profiles_markdown(profiles))
+    if json_output:
+        typer.echo(payload)
+    else:
+        typer.echo(
+            f"{'method':<11} {'family':<28} {'action':<22} {'chunks':<14} "
+            f"{'remote':<24} status"
+        )
+        typer.echo(
+            f"{'-' * 11} {'-' * 28} {'-' * 22} {'-' * 14} "
+            f"{'-' * 24} {'-' * 32}"
+        )
+        for profile in profiles:
+            action = f"{profile.action_space} {profile.action_shape}"
+            typer.echo(
+                f"{profile.name:<11} "
+                f"{_shorten(profile.family, 28):<28} "
+                f"{_shorten(action, 22):<22} "
+                f"{_shorten(profile.action_chunks, 14):<14} "
+                f"{_shorten(profile.remote_runtime, 24):<24} "
+                f"{_shorten(profile.status, 48)}"
+            )
+    if out is not None:
+        typer.echo(f"JSON written to {out}")
+    if markdown_out is not None:
+        typer.echo(f"Markdown written to {markdown_out}")
+
+
 @compare_app.command("dashboard")
 def compare_dashboard(
     results: Annotated[

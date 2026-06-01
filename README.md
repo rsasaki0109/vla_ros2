@@ -22,6 +22,7 @@ pip install -e ".[dev,cli,server,sim]"
 vla-zoo doctor
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo compare adapters
+vla-zoo compare methods
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 ```
 
@@ -67,6 +68,17 @@ Compare adapter availability without loading heavy model weights:
 ```bash
 vla-zoo compare adapters
 ```
+
+Compare VLA method integration profiles without loading weights:
+
+```bash
+vla-zoo compare methods
+vla-zoo compare methods --markdown-out results/vla_method_profiles.md
+```
+
+This method profile table summarizes input requirements, action shape, action chunks,
+proprioception expectations, local/remote runtime support, dependency profile, and license
+caveats for baselines, OpenVLA, pi0/openpi, SmolVLA, and GR00T-style adapters.
 
 Run the same deterministic PyBullet smoke scene across baseline methods and adapters:
 
@@ -151,6 +163,7 @@ vla-zoo doctor --no-ros
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 vla-zoo compare adapters
+vla-zoo compare methods
 ```
 
 For remote-runtime smoke testing:
