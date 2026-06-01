@@ -6,9 +6,12 @@ ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action model
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![ROS2](https://img.shields.io/badge/ROS2-native-22314E)](docs/ros2_integration.md)
+[![Demo](https://img.shields.io/badge/demo-GitHub%20Pages-0369a1)](https://rsasaki0109.github.io/vla_zoo/)
 
 > VLA models are moving fast. Robots still need stable runtime interfaces.  
 > vla_zoo connects camera + instruction + robot state to actions through ROS2-native adapters.
+
+Live demo page: https://rsasaki0109.github.io/vla_zoo/
 
 ## 30 Second Demo
 
