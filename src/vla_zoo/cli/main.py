@@ -95,6 +95,12 @@ def _parse_name_list(value: str) -> list[str]:
     return names
 
 
+def _parse_optional_name_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return _parse_name_list(value)
+
+
 def _model_load_kwargs(
     *,
     pretrained: str | None,
@@ -2555,6 +2561,107 @@ def demo_action_playground_view(
         typer.echo(f"Action playground HTML written to {out} ({ok_count}/{len(records)} ok)")
         if merged_out is not None:
             typer.echo(f"Merged trace JSON written to {merged_out}")
+
+
+@demo_app.command("action-playground-check")
+def demo_action_playground_check(
+    traces: Annotated[
+        str,
+        typer.Option(
+            "--trace",
+            "-t",
+            help="Comma-separated action_playground.json files to validate.",
+        ),
+    ] = "docs/assets/action_playground.json",
+    out: Annotated[
+        Path,
+        typer.Option("--out", help="Write machine-readable check JSON."),
+    ] = Path("docs/assets/action_playground_check.json"),
+    markdown_out: Annotated[
+        Path,
+        typer.Option("--markdown-out", help="Write README/Page-ready Markdown report."),
+    ] = Path("docs/reports/model_comparison.md"),
+    expected_models: Annotated[
+        str | None,
+        typer.Option(
+            "--expected-models",
+            help="Comma-separated model names expected in the trace. Empty disables this check.",
+        ),
+    ] = "dummy,scripted,random",
+    expected_tasks: Annotated[
+        str | None,
+        typer.Option(
+            "--expected-tasks",
+            help="Comma-separated PyBullet task ids, or 'all'. Empty disables this check.",
+        ),
+    ] = "all",
+    base_dir: Annotated[
+        Path,
+        typer.Option("--base-dir", help="Base directory for resolving relative GIF paths."),
+    ] = Path("."),
+    min_frames: Annotated[
+        int,
+        typer.Option("--min-frames", help="Minimum frames required per trace record."),
+    ] = 12,
+    require_gifs: Annotated[
+        bool,
+        typer.Option("--require-gifs/--no-require-gifs", help="Require referenced GIF files."),
+    ] = True,
+    strict: Annotated[
+        bool,
+        typer.Option("--strict/--no-strict", help="Exit non-zero when validation fails."),
+    ] = True,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable report."),
+    ] = False,
+) -> None:
+    """Validate Action Playground traces and write a model/task comparison report."""
+
+    from vla_zoo.demo.action_playground import (
+        check_action_playground_traces,
+        format_action_playground_check_markdown,
+    )
+    from vla_zoo.demo.gif_suite import resolve_pybullet_tasks
+
+    trace_paths = _parse_paths(traces)
+    expected_task_ids = (
+        [task.task_id for task in resolve_pybullet_tasks(expected_tasks)]
+        if expected_tasks
+        else []
+    )
+    try:
+        report = check_action_playground_traces(
+            trace_paths,
+            base_dir=base_dir,
+            expected_models=_parse_optional_name_list(expected_models),
+            expected_tasks=expected_task_ids,
+            min_frames=min_frames,
+            require_gifs=require_gifs,
+        )
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    payload = json.dumps(report.to_dict(), indent=2)
+    markdown = format_action_playground_check_markdown(report)
+    _write_text(out, payload + "\n")
+    _write_text(markdown_out, markdown)
+
+    if json_output:
+        typer.echo(payload)
+    else:
+        typer.echo(
+            f"Action playground check: {report.ok_count}/{report.record_count} records ok"
+        )
+        typer.echo(f"JSON written to {out}")
+        typer.echo(f"Markdown written to {markdown_out}")
+        if report.issues:
+            typer.echo("Issues:")
+            for issue in report.issues:
+                typer.echo(f"- {issue}")
+    if strict and not report.ok:
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

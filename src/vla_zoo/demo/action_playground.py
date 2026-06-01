@@ -16,6 +16,7 @@ from vla_zoo.demo.pybullet import (
 )
 
 ACTION_PLAYGROUND_SCHEMA = "vla_zoo.action_playground.v1"
+ACTION_PLAYGROUND_CHECK_SCHEMA = "vla_zoo.action_playground_check.v1"
 Simulator = Callable[[PyBulletGifSpec], list[RenderSample]]
 
 
@@ -55,6 +56,70 @@ class ActionPlaygroundRecord:
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
+
+
+@dataclass(frozen=True)
+class ActionPlaygroundRecordCheck:
+    model_name: str
+    task_id: str
+    runtime: str
+    ok: bool
+    frames: int
+    gif_path: str
+    gif_exists: bool
+    adapter_queries: int
+    adapter_errors: int
+    mean_latency_ms: float | None
+    final_cube_distance_to_goal: float | None
+    issues: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ActionPlaygroundCheckReport:
+    ok: bool
+    trace_paths: tuple[str, ...]
+    expected_models: tuple[str, ...]
+    expected_tasks: tuple[str, ...]
+    records: tuple[ActionPlaygroundRecordCheck, ...]
+    issues: tuple[str, ...] = ()
+
+    @property
+    def record_count(self) -> int:
+        return len(self.records)
+
+    @property
+    def ok_count(self) -> int:
+        return sum(1 for record in self.records if record.ok)
+
+    @property
+    def model_names(self) -> tuple[str, ...]:
+        return tuple(sorted({record.model_name for record in self.records}))
+
+    @property
+    def task_ids(self) -> tuple[str, ...]:
+        return tuple(sorted({record.task_id for record in self.records}))
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": ACTION_PLAYGROUND_CHECK_SCHEMA,
+            "ok": self.ok,
+            "summary": {
+                "records": self.record_count,
+                "ok": self.ok_count,
+                "models": len(self.model_names),
+                "tasks": len(self.task_ids),
+            },
+            "trace_paths": list(self.trace_paths),
+            "expected_models": list(self.expected_models),
+            "expected_tasks": list(self.expected_tasks),
+            "model_names": list(self.model_names),
+            "task_ids": list(self.task_ids),
+            "records": [record.to_dict() for record in self.records],
+            "issues": list(self.issues),
+        }
 
 
 def _tuple3(value: object, default: tuple[float, float, float]) -> tuple[float, float, float]:
@@ -467,6 +532,249 @@ def load_action_playground_traces(paths: Sequence[Path]) -> list[ActionPlaygroun
     for path in paths:
         records.extend(load_action_playground_trace(path))
     return merge_action_playground_records(records)
+
+
+def _resolve_existing_path(path: str, *, base_dir: Path | None) -> Path | None:
+    raw = Path(path)
+    candidates = [raw]
+    if base_dir is not None and not raw.is_absolute():
+        candidates.append(base_dir / raw)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _summary_int(summary: Mapping[str, object], key: str) -> int:
+    return _int_value(summary.get(key), 0)
+
+
+def _summary_optional_float(summary: Mapping[str, object], key: str) -> float | None:
+    return _optional_float_value(summary.get(key))
+
+
+def _check_record(
+    record: ActionPlaygroundRecord,
+    *,
+    base_dir: Path | None,
+    min_frames: int,
+    require_gifs: bool,
+) -> ActionPlaygroundRecordCheck:
+    summary = record.summary
+    frames = len(record.frames)
+    gif_exists = _resolve_existing_path(record.gif_path, base_dir=base_dir) is not None
+    adapter_errors = _summary_int(summary, "adapter_errors")
+    issues: list[str] = []
+    if not record.ok:
+        issues.append(record.error or "record summary is not ok")
+    if frames < min_frames:
+        issues.append(f"too few frames: {frames} < {min_frames}")
+    if require_gifs and not gif_exists:
+        issues.append(f"missing referenced GIF: {record.gif_path}")
+    if adapter_errors > 0:
+        issues.append(f"adapter errors: {adapter_errors}")
+
+    return ActionPlaygroundRecordCheck(
+        model_name=record.model_name,
+        task_id=record.task_id,
+        runtime=record.runtime,
+        ok=not issues,
+        frames=frames,
+        gif_path=record.gif_path,
+        gif_exists=gif_exists,
+        adapter_queries=_summary_int(summary, "adapter_queries"),
+        adapter_errors=adapter_errors,
+        mean_latency_ms=_summary_optional_float(summary, "mean_latency_ms"),
+        final_cube_distance_to_goal=_summary_optional_float(
+            summary,
+            "final_cube_distance_to_goal",
+        ),
+        issues=tuple(issues),
+    )
+
+
+def check_action_playground_records(
+    records: Sequence[ActionPlaygroundRecord],
+    *,
+    trace_paths: Sequence[Path] = (),
+    base_dir: Path | None = None,
+    expected_models: Sequence[str] = (),
+    expected_tasks: Sequence[str] = (),
+    min_frames: int = 12,
+    require_gifs: bool = True,
+) -> ActionPlaygroundCheckReport:
+    checks = tuple(
+        _check_record(
+            record,
+            base_dir=base_dir,
+            min_frames=min_frames,
+            require_gifs=require_gifs,
+        )
+        for record in records
+    )
+    actual_models = {record.model_name for record in checks}
+    actual_tasks = {record.task_id for record in checks}
+    issues: list[str] = []
+    for model_name in expected_models:
+        if model_name not in actual_models:
+            issues.append(f"missing expected model trace: {model_name}")
+    for task_id in expected_tasks:
+        if task_id not in actual_tasks:
+            issues.append(f"missing expected task trace: {task_id}")
+    for check in checks:
+        for issue in check.issues:
+            issues.append(f"{check.task_id}/{check.model_name}/{check.runtime}: {issue}")
+
+    return ActionPlaygroundCheckReport(
+        ok=not issues,
+        trace_paths=tuple(path.as_posix() for path in trace_paths),
+        expected_models=tuple(expected_models),
+        expected_tasks=tuple(expected_tasks),
+        records=checks,
+        issues=tuple(issues),
+    )
+
+
+def check_action_playground_traces(
+    paths: Sequence[Path],
+    *,
+    base_dir: Path | None = None,
+    expected_models: Sequence[str] = (),
+    expected_tasks: Sequence[str] = (),
+    min_frames: int = 12,
+    require_gifs: bool = True,
+) -> ActionPlaygroundCheckReport:
+    return check_action_playground_records(
+        load_action_playground_traces(paths),
+        trace_paths=paths,
+        base_dir=base_dir,
+        expected_models=expected_models,
+        expected_tasks=expected_tasks,
+        min_frames=min_frames,
+        require_gifs=require_gifs,
+    )
+
+
+def _markdown_status(ok: bool) -> str:
+    return "ok" if ok else "check"
+
+
+def _markdown_cell(value: object) -> str:
+    text = str(value) if value is not None else "-"
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _format_optional_metric(value: float | None, digits: int = 3) -> str:
+    return "-" if value is None else f"{value:.{digits}f}"
+
+
+def _matrix_cell(
+    records: Sequence[ActionPlaygroundRecordCheck],
+    *,
+    task_id: str,
+    model_name: str,
+) -> str:
+    matching = [
+        record
+        for record in records
+        if record.task_id == task_id and record.model_name == model_name
+    ]
+    if not matching:
+        return "missing"
+    if any(record.ok for record in matching):
+        runtimes = sorted({record.runtime for record in matching if record.ok})
+        return f"ok ({', '.join(runtimes)})"
+    return "check"
+
+
+def format_action_playground_check_markdown(report: ActionPlaygroundCheckReport) -> str:
+    model_names = report.expected_models or report.model_names
+    task_ids = report.expected_tasks or report.task_ids
+    lines = [
+        "# Action Playground Verification Report",
+        "",
+        "This report validates recorded PyBullet Action Playground traces. It checks",
+        "that the trace contains expected model/task records, enough frames, referenced",
+        "GIF assets, adapter query counts, and adapter error summaries.",
+        "",
+        "It is a runtime-path report, not a claim of real robot task success.",
+        "",
+        "## Summary",
+        "",
+        "| Field | Value |",
+        "|---|---|",
+        f"| Overall | {_markdown_status(report.ok)} |",
+        f"| Records | {report.ok_count}/{report.record_count} ok |",
+        f"| Models | {', '.join(report.model_names) if report.model_names else '-'} |",
+        f"| Tasks | {', '.join(report.task_ids) if report.task_ids else '-'} |",
+        f"| Trace files | {', '.join(report.trace_paths) if report.trace_paths else '-'} |",
+        "",
+        "## Task Matrix",
+        "",
+    ]
+    header = "| Task | " + " | ".join(f"`{_markdown_cell(model)}`" for model in model_names) + " |"
+    separator = "|---|" + "|".join("---" for _ in model_names) + "|"
+    lines.extend([header, separator])
+    for task_id in task_ids:
+        cells = [
+            _matrix_cell(report.records, task_id=task_id, model_name=model_name)
+            for model_name in model_names
+        ]
+        lines.append(
+            "| "
+            + _markdown_cell(task_id)
+            + " | "
+            + " | ".join(_markdown_cell(cell) for cell in cells)
+            + " |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Record Details",
+            "",
+            "| Model | Runtime | Task | Status | Frames | GIF | Queries | Errors "
+            "| Goal m | Latency ms |",
+            "|---|---|---|---|---:|---|---:|---:|---:|---:|",
+        ]
+    )
+    for record in report.records:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _markdown_cell(f"`{record.model_name}`"),
+                    _markdown_cell(record.runtime),
+                    _markdown_cell(record.task_id),
+                    _markdown_cell(_markdown_status(record.ok)),
+                    str(record.frames),
+                    "yes" if record.gif_exists else "missing",
+                    str(record.adapter_queries),
+                    str(record.adapter_errors),
+                    _format_optional_metric(record.final_cube_distance_to_goal),
+                    _format_optional_metric(record.mean_latency_ms, digits=2),
+                ]
+            )
+            + " |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Scope",
+            "",
+            "- `ok` means the runtime trace record was present and internally consistent.",
+            "- `missing` means no trace record was provided for that model/task pair.",
+            "- Heavy VLA adapters such as OpenVLA, pi0, SmolVLA, and GR00T require explicit",
+            "  local GPU or remote-server traces before they should be described as verified.",
+            "- This report does not validate hardware actuation, policy quality, safety bridges,",
+            "  checkpoint licenses, or zero-shot robot performance.",
+        ]
+    )
+    if report.issues:
+        lines.extend(["", "## Issues", ""])
+        lines.extend(f"- {issue}" for issue in report.issues)
+    return "\n".join(lines) + "\n"
 
 
 def _display_path(path: str, *, relative_to: Path | None) -> str:

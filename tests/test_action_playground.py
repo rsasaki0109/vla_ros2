@@ -9,6 +9,8 @@ from vla_zoo.demo.action_playground import (
     ActionPlaygroundRecord,
     build_action_playground_records,
     build_action_playground_task_records,
+    check_action_playground_records,
+    format_action_playground_check_markdown,
     format_action_playground_html,
     load_action_playground_trace,
     load_action_playground_traces,
@@ -170,6 +172,48 @@ def test_action_playground_trace_load_and_merge(tmp_path: Path) -> None:
     assert len(merged) == 1
     assert merged[0].error == "external trace replacement"
     assert loaded_merged[0].summary["adapter_queries"] == 99
+
+
+def test_action_playground_check_report_marks_verified_records(tmp_path: Path) -> None:
+    records = build_action_playground_records(
+        _manifest(tmp_path),
+        simulator=lambda _spec: [_sample(frame_index=0), _sample(frame_index=1)],
+    )
+
+    report = check_action_playground_records(
+        records,
+        expected_models=("dummy",),
+        expected_tasks=("pick_red_block",),
+        min_frames=2,
+    )
+    markdown = format_action_playground_check_markdown(report)
+
+    assert report.ok
+    assert report.ok_count == 1
+    assert report.records[0].gif_exists
+    assert "| pick_red_block | ok (local) |" in markdown
+    assert "runtime-path report" in markdown
+
+
+def test_action_playground_check_report_surfaces_missing_expected_model(
+    tmp_path: Path,
+) -> None:
+    records = build_action_playground_records(
+        _manifest(tmp_path),
+        simulator=lambda _spec: [_sample(frame_index=0), _sample(frame_index=1)],
+    )
+
+    report = check_action_playground_records(
+        records,
+        expected_models=("dummy", "openvla"),
+        expected_tasks=("pick_red_block",),
+        min_frames=2,
+    )
+    markdown = format_action_playground_check_markdown(report)
+
+    assert not report.ok
+    assert "missing expected model trace: openvla" in report.issues
+    assert "| pick_red_block | ok (local) | missing |" in markdown
 
 
 def test_build_action_playground_task_records_uses_remote_and_reference_gif(

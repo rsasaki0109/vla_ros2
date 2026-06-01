@@ -75,6 +75,14 @@ def test_cli_demo_action_playground_view_help() -> None:
     assert "--out" in result.output
 
 
+def test_cli_demo_action_playground_check_help() -> None:
+    result = CliRunner().invoke(app, ["demo", "action-playground-check", "--help"])
+    assert result.exit_code == 0
+    assert "--trace" in result.output
+    assert "--expected-models" in result.output
+    assert "--markdown-out" in result.output
+
+
 def test_cli_doctor_json() -> None:
     result = CliRunner().invoke(app, ["doctor", "--json", "--no-ros"])
     assert result.exit_code == 0
