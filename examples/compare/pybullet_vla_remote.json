@@ -28,6 +28,7 @@
   ],
   "outputs": {
     "json": "results/vla_runtime_comparison.json",
-    "markdown": "results/vla_runtime_comparison.md"
+    "markdown": "results/vla_runtime_comparison.md",
+    "html": "results/vla_runtime_comparison.html"
   }
 }
