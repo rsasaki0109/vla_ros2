@@ -53,5 +53,7 @@ SmolVLA is now represented separately by `smolvla_gpu_probe.md`, which records
 `load_model("smolvla")` running `lerobot/smolvla_base` on CUDA and returning a
 6D action. That probe is an inference-path check, not a task-success benchmark.
 `smolvla_pybullet_report.html` extends this by querying SmolVLA on rendered
-PyBullet RGB images plus a 6D simulation state vector. openpi and GR00T remain
-placeholder/remote adapter targets in this repository.
+PyBullet RGB images plus a 6D simulation state vector. pi0/openpi is now a
+remote-first adapter with opt-in LeRobot local loading, but no completed local
+real-model action probe is claimed here. GR00T remains a placeholder/remote
+adapter target in this repository.

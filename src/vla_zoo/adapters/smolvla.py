@@ -57,11 +57,13 @@ class SmolVLAAdapter(VLAAdapter):
     name = "smolvla"
     model_id = DEFAULT_PRETRAINED
     action_spec = SMOLVLA_ACTION_SPEC
+    default_pretrained = DEFAULT_PRETRAINED
+    adapter_label = "LeRobot SmolVLA"
 
     def __init__(
         self,
         *,
-        pretrained: str = DEFAULT_PRETRAINED,
+        pretrained: str | None = None,
         device: str = "auto",
         action_space: ActionSpace = "custom",
         control_hz: float | None = None,
@@ -77,7 +79,8 @@ class SmolVLAAdapter(VLAAdapter):
         action_spec: ActionSpec | None = None,
         **kwargs: Any,
     ) -> None:
-        torch, policy_cls, processor_factory = _import_smolvla_dependencies()
+        pretrained = pretrained or self.default_pretrained
+        torch, policy_cls, processor_factory = self._import_policy_dependencies()
         self._torch = torch
         self.pretrained = pretrained
         self.device = "cuda" if device == "auto" and torch.cuda.is_available() else device
@@ -120,7 +123,7 @@ class SmolVLAAdapter(VLAAdapter):
             shape=self.action_shape,
             control_hz=control_hz,
             description=(
-                f"LeRobot SmolVLA action from {pretrained}; action semantics are "
+                f"{self.adapter_label} action from {pretrained}; action semantics are "
                 "checkpoint and robot specific."
             ),
         )
@@ -141,6 +144,9 @@ class SmolVLAAdapter(VLAAdapter):
     @classmethod
     def from_config(cls, **kwargs: Any) -> SmolVLAAdapter:
         return cls(**kwargs)
+
+    def _import_policy_dependencies(self) -> tuple[Any, Any, Any]:
+        return _import_smolvla_dependencies()
 
     def _config_feature_keys(self, feature_type: str) -> tuple[str, ...]:
         features = getattr(self.policy.config, "input_features", {})
@@ -197,7 +203,10 @@ class SmolVLAAdapter(VLAAdapter):
             if tensor.ndim == 4 and tensor.shape[0] == 1:
                 tensor = tensor[0]
             if tensor.ndim != 3:
-                msg = f"SmolVLA image {key!r} must be CHW or HWC, got shape {tuple(tensor.shape)}"
+                msg = (
+                    f"{self.adapter_label} image {key!r} must be CHW or HWC, "
+                    f"got shape {tuple(tensor.shape)}"
+                )
                 raise ValueError(msg)
             if tensor.shape[0] not in {1, 3}:
                 tensor = tensor.permute(2, 0, 1)
@@ -211,7 +220,10 @@ class SmolVLAAdapter(VLAAdapter):
             if array.ndim == 2:
                 array = np.repeat(array[..., None], 3, axis=-1)
             if array.ndim != 3:
-                msg = f"SmolVLA image {key!r} must be HWC or CHW, got shape {array.shape}"
+                msg = (
+                    f"{self.adapter_label} image {key!r} must be HWC or CHW, "
+                    f"got shape {array.shape}"
+                )
                 raise ValueError(msg)
             tensor = torch.as_tensor(array)
             if tensor.shape[0] not in {1, 3}:
@@ -222,7 +234,10 @@ class SmolVLAAdapter(VLAAdapter):
         if tensor.shape[0] == 1:
             tensor = tensor.repeat(3, 1, 1)
         if tensor.shape[0] != 3:
-            msg = f"SmolVLA image {key!r} must have 1 or 3 channels, got {tensor.shape[0]}"
+            msg = (
+                f"{self.adapter_label} image {key!r} must have 1 or 3 channels, "
+                f"got {tensor.shape[0]}"
+            )
             raise ValueError(msg)
         return tensor.contiguous()
 
@@ -233,7 +248,7 @@ class SmolVLAAdapter(VLAAdapter):
             image, alias = self._image_candidates(key, observation)
             if image is None:
                 if not self.fill_missing_images:
-                    msg = f"SmolVLA requires image key {key!r}"
+                    msg = f"{self.adapter_label} requires image key {key!r}"
                     raise ValueError(msg)
                 frame[key] = self._default_image_tensor(key)
                 filled.append(key)
@@ -242,7 +257,7 @@ class SmolVLAAdapter(VLAAdapter):
             if alias != key:
                 filled.append(f"{key}<={alias}")
         if not frame:
-            msg = "SmolVLA checkpoint does not declare visual input features"
+            msg = f"{self.adapter_label} checkpoint does not declare visual input features"
             raise ValueError(msg)
         return frame, filled
 
@@ -266,7 +281,7 @@ class SmolVLAAdapter(VLAAdapter):
         state_size = max(_prod(self.state_shape), 1)
         if state_value is None:
             if not self.zero_state_if_missing:
-                msg = f"SmolVLA requires state key {self.state_key!r}"
+                msg = f"{self.adapter_label} requires state key {self.state_key!r}"
                 raise ValueError(msg)
             return self._torch.zeros(state_size, dtype=self._torch.float32), True
 
@@ -308,7 +323,10 @@ class SmolVLAAdapter(VLAAdapter):
             if data.ndim == 3 and data.shape[0] == 1:
                 data = data[0]
             if data.ndim != 2:
-                msg = f"SmolVLA action chunk must be 2D after batch squeeze, got shape {data.shape}"
+                msg = (
+                    f"{self.adapter_label} action chunk must be 2D after batch squeeze, "
+                    f"got shape {data.shape}"
+                )
                 raise ValueError(msg)
             actions = [
                 VLAAction(

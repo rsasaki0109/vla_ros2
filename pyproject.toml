@@ -40,7 +40,7 @@ openvla = [
   "accelerate",
   "einops",
 ]
-openpi = []
+openpi = ["lerobot>=0.5.1,<0.6.0"]
 smolvla = ["lerobot[smolvla]>=0.5.1,<0.6.0"]
 groot = []
 bench = ["pandas", "tqdm"]
