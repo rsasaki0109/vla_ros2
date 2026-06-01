@@ -69,6 +69,50 @@ pip install -e ".[sim]"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 ```
 
+### Adapter GIF Gallery
+
+These are all generated from real PyBullet runs. The robot scene is the same, but
+the selected adapter is queried through the runtime and its `VLAAction` output is
+shown in the overlay.
+
+<table>
+  <tr>
+    <td width="33%">
+      <strong><code>dummy</code></strong><br>
+      neutral dry-run action<br>
+      <img src="docs/assets/simulation_dummy.gif" alt="dummy adapter PyBullet GIF" width="320">
+    </td>
+    <td width="33%">
+      <strong><code>scripted</code></strong><br>
+      phase-aware baseline<br>
+      <img src="docs/assets/simulation_scripted.gif" alt="scripted adapter PyBullet GIF" width="320">
+    </td>
+    <td width="33%">
+      <strong><code>random</code></strong><br>
+      seeded random baseline<br>
+      <img src="docs/assets/simulation_random.gif" alt="random adapter PyBullet GIF" width="320">
+    </td>
+  </tr>
+</table>
+
+Regenerate the gallery:
+
+```bash
+vla-zoo demo pybullet --model dummy --out docs/assets/simulation_dummy.gif
+vla-zoo demo pybullet --model scripted --out docs/assets/simulation_scripted.gif
+vla-zoo demo pybullet --model random --out docs/assets/simulation_random.gif
+```
+
+For heavyweight VLA models, use the same demo path with local optional dependencies
+or a remote GPU server:
+
+```bash
+vla-zoo demo pybullet --model openvla --runtime remote --remote-url http://gpu-box:8000
+vla-zoo demo pybullet --model pi0 --runtime remote --remote-url http://gpu-box:8000
+vla-zoo demo pybullet --model smolvla --runtime remote --remote-url http://gpu-box:8000
+vla-zoo demo pybullet --model groot --runtime remote --remote-url http://gpu-box:8000
+```
+
 ## Comparison Suite
 
 `vla_zoo` can generate a shareable comparison directory for READMEs, issues, and
