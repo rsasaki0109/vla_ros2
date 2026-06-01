@@ -83,13 +83,16 @@ The watchdog checks image and instruction freshness before starting each inferen
 The static dashboard can ingest JSONL logs shaped like `VLAStatus` and `DiagnosticArray` messages:
 
 ```bash
+ros2 launch vla_zoo log_recorder.launch.py output_dir:=results
 vla-zoo compare dashboard \
-  --status-log examples/ros2/vla_status_sample.jsonl \
-  --diagnostics-log examples/ros2/diagnostics_sample.jsonl \
+  --status-log results/vla_status.jsonl \
+  --diagnostics-log results/vla_diagnostics.jsonl \
   --out results/vla_ros_runtime_dashboard.html
 ```
 
 This is intended for issue reports and field debugging: attach the JSONL plus generated HTML instead of screenshots alone.
+
+The recorder node subscribes to `/vla/status` and `/diagnostics` by default. It does not command hardware and can run beside `dummy.launch.py`, `openvla.launch.py`, or `remote.launch.py`.
 
 ## Hardware Bridges
 

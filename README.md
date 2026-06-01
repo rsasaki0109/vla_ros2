@@ -120,9 +120,10 @@ vla-zoo compare dashboard \
 Build the same dashboard from ROS2 runtime logs:
 
 ```bash
+ros2 launch vla_zoo log_recorder.launch.py output_dir:=results
 vla-zoo compare dashboard \
-  --status-log examples/ros2/vla_status_sample.jsonl \
-  --diagnostics-log examples/ros2/diagnostics_sample.jsonl \
+  --status-log results/vla_status.jsonl \
+  --diagnostics-log results/vla_diagnostics.jsonl \
   --out results/vla_ros_runtime_dashboard.html
 ```
 
@@ -242,6 +243,7 @@ The launchable runtime can publish actions, status, and diagnostics. In dry-run 
 ```bash
 ros2 launch vla_zoo openvla.launch.py dry_run:=true
 ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000
+ros2 launch vla_zoo log_recorder.launch.py output_dir:=results
 ```
 
 ## Remote GPU Runtime
