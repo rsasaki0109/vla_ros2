@@ -6,9 +6,13 @@ from pathlib import Path
 from PIL import Image
 
 from vla_zoo.demo.action_playground import (
+    ActionPlaygroundRecord,
     build_action_playground_records,
     format_action_playground_html,
+    load_action_playground_trace,
+    load_action_playground_traces,
     load_playground_specs,
+    merge_action_playground_records,
     samples_to_playground_frames,
     write_action_playground_html,
     write_action_playground_trace,
@@ -134,3 +138,34 @@ def test_action_playground_html_and_trace_outputs(tmp_path: Path) -> None:
         1,
     )[0]
     assert json.loads(script_json)["records"][0]["model_name"] == "dummy"
+
+
+def test_action_playground_trace_load_and_merge(tmp_path: Path) -> None:
+    records = build_action_playground_records(
+        _manifest(tmp_path),
+        simulator=lambda _spec: [_sample(frame_index=0)],
+    )
+    replacement = ActionPlaygroundRecord(
+        model_name=records[0].model_name,
+        task_id=records[0].task_id,
+        instruction=records[0].instruction,
+        gif_path=records[0].gif_path,
+        runtime=records[0].runtime,
+        ok=False,
+        frames=records[0].frames,
+        summary={"adapter_queries": 99},
+        error="external trace replacement",
+    )
+    first = tmp_path / "first.json"
+    second = tmp_path / "second.json"
+    write_action_playground_trace(first, records)
+    write_action_playground_trace(second, [replacement])
+
+    loaded = load_action_playground_trace(first)
+    merged = merge_action_playground_records([*loaded, replacement])
+    loaded_merged = load_action_playground_traces([first, second])
+
+    assert len(loaded) == 1
+    assert len(merged) == 1
+    assert merged[0].error == "external trace replacement"
+    assert loaded_merged[0].summary["adapter_queries"] == 99

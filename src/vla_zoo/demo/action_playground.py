@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from html import escape
 from pathlib import Path
@@ -14,6 +14,7 @@ from vla_zoo.demo.pybullet import (
     summarize_pybullet_samples,
 )
 
+ACTION_PLAYGROUND_SCHEMA = "vla_zoo.action_playground.v1"
 Simulator = Callable[[PyBulletGifSpec], list[RenderSample]]
 
 
@@ -61,6 +62,15 @@ def _tuple3(value: object, default: tuple[float, float, float]) -> tuple[float, 
     return default
 
 
+def _tuple4(
+    value: object,
+    default: tuple[float, float, float, float],
+) -> tuple[float, float, float, float]:
+    if isinstance(value, Sequence) and not isinstance(value, str) and len(value) >= 4:
+        return (float(value[0]), float(value[1]), float(value[2]), float(value[3]))
+    return default
+
+
 def _float_tuple3(value: Sequence[float]) -> tuple[float, float, float]:
     return (float(value[0]), float(value[1]), float(value[2]))
 
@@ -86,6 +96,35 @@ def _float_value(value: object, default: float) -> float:
         except ValueError:
             return default
     return default
+
+
+def _optional_float_value(value: object) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _bool_value(value: object, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+    return default
+
+
+def _str_value(value: object, default: str = "") -> str:
+    return value if isinstance(value, str) else default
 
 
 def _spec_from_manifest_result(result: object) -> PyBulletGifSpec | None:
@@ -259,10 +298,92 @@ def build_action_playground_records(
 def write_action_playground_trace(path: Path, records: Sequence[ActionPlaygroundRecord]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "schema": "vla_zoo.action_playground.v1",
+        "schema": ACTION_PLAYGROUND_SCHEMA,
         "records": [record.to_dict() for record in records],
     }
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def _frame_from_payload(payload: object) -> ActionPlaygroundFrame:
+    if not isinstance(payload, Mapping):
+        raise ValueError("action playground frame must be an object")
+    adapter_action_raw = payload.get("adapter_action")
+    return ActionPlaygroundFrame(
+        frame_index=_int_value(payload.get("frame_index"), 0),
+        phase=_str_value(payload.get("phase"), "unknown"),
+        sim_time=_float_value(payload.get("sim_time"), 0.0),
+        scripted_action=_tuple4(payload.get("scripted_action"), (0.0, 0.0, 0.0, 0.0)),
+        adapter_action=(
+            _tuple4(adapter_action_raw, (0.0, 0.0, 0.0, 0.0))
+            if adapter_action_raw is not None
+            else None
+        ),
+        displayed_action=_tuple4(payload.get("displayed_action"), (0.0, 0.0, 0.0, 0.0)),
+        action_magnitude=_float_value(payload.get("action_magnitude"), 0.0),
+        adapter_query_count=_int_value(payload.get("adapter_query_count"), 0),
+        adapter_query_fresh=_bool_value(payload.get("adapter_query_fresh")),
+        adapter_latency_ms=_optional_float_value(payload.get("adapter_latency_ms")),
+        adapter_error=_str_value(payload.get("adapter_error")) or None,
+        attached=_bool_value(payload.get("attached")),
+        eef_position=_tuple3(payload.get("eef_position"), (0.0, 0.0, 0.0)),
+        cube_position=_tuple3(payload.get("cube_position"), (0.0, 0.0, 0.0)),
+        cube_goal_position=_tuple3(payload.get("cube_goal_position"), (0.0, 0.0, 0.0)),
+    )
+
+
+def _record_from_payload(payload: object) -> ActionPlaygroundRecord:
+    if not isinstance(payload, Mapping):
+        raise ValueError("action playground record must be an object")
+    raw_frames = payload.get("frames", ())
+    frames = (
+        tuple(_frame_from_payload(frame) for frame in raw_frames)
+        if isinstance(raw_frames, Sequence) and not isinstance(raw_frames, str)
+        else ()
+    )
+    raw_summary = payload.get("summary", {})
+    summary = dict(raw_summary) if isinstance(raw_summary, Mapping) else {}
+    return ActionPlaygroundRecord(
+        model_name=_str_value(payload.get("model_name"), "unknown"),
+        task_id=_str_value(payload.get("task_id"), "unknown"),
+        instruction=_str_value(payload.get("instruction")),
+        gif_path=_str_value(payload.get("gif_path")),
+        runtime=_str_value(payload.get("runtime"), "local"),
+        ok=_bool_value(payload.get("ok")),
+        frames=frames,
+        summary=summary,
+        error=_str_value(payload.get("error")) or None,
+    )
+
+
+def load_action_playground_trace(path: Path) -> list[ActionPlaygroundRecord]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    raw_records = payload.get("records") if isinstance(payload, Mapping) else payload
+    if not isinstance(raw_records, Sequence) or isinstance(raw_records, str):
+        raise ValueError(f"action playground trace has no records list: {path}")
+    return [_record_from_payload(record) for record in raw_records]
+
+
+def merge_action_playground_records(
+    records: Sequence[ActionPlaygroundRecord],
+) -> list[ActionPlaygroundRecord]:
+    merged: list[ActionPlaygroundRecord] = []
+    indexes: dict[tuple[str, str, str], int] = {}
+    for record in records:
+        key = (record.task_id, record.model_name, record.runtime)
+        existing_index = indexes.get(key)
+        if existing_index is None:
+            indexes[key] = len(merged)
+            merged.append(record)
+        else:
+            merged[existing_index] = record
+    return merged
+
+
+def load_action_playground_traces(paths: Sequence[Path]) -> list[ActionPlaygroundRecord]:
+    records: list[ActionPlaygroundRecord] = []
+    for path in paths:
+        records.extend(load_action_playground_trace(path))
+    return merge_action_playground_records(records)
 
 
 def _display_path(path: str, *, relative_to: Path | None) -> str:

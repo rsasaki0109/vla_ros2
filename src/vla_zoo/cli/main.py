@@ -2389,5 +2389,66 @@ def demo_action_playground(
         typer.echo(f"Trace JSON written to {trace_out}")
 
 
+@demo_app.command("action-playground-view")
+def demo_action_playground_view(
+    traces: Annotated[
+        str,
+        typer.Option(
+            "--trace",
+            "-t",
+            help="Comma-separated action_playground.json files to merge and render.",
+        ),
+    ] = "docs/assets/action_playground.json",
+    out: Annotated[
+        Path,
+        typer.Option("--out", "-o", help="Output static HTML playground path."),
+    ] = Path("docs/assets/action_playground.html"),
+    merged_out: Annotated[
+        Path | None,
+        typer.Option("--merged-out", help="Optional merged trace JSON output path."),
+    ] = None,
+    title: Annotated[
+        str,
+        typer.Option("--title", help="HTML report title."),
+    ] = "vla_zoo Action Playground",
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable summary."),
+    ] = False,
+) -> None:
+    """Render an Action Playground from one or more saved trace JSON files."""
+
+    from vla_zoo.demo.action_playground import (
+        load_action_playground_traces,
+        write_action_playground_html,
+        write_action_playground_trace,
+    )
+
+    trace_paths = _parse_paths(traces)
+    try:
+        records = load_action_playground_traces(trace_paths)
+        if merged_out is not None:
+            write_action_playground_trace(merged_out, records)
+        write_action_playground_html(out, records, title=title)
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    ok_count = sum(1 for record in records if record.ok)
+    payload = {
+        "traces": [str(path) for path in trace_paths],
+        "html": str(out),
+        "merged_trace": str(merged_out) if merged_out is not None else None,
+        "records": len(records),
+        "ok": ok_count,
+    }
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(f"Action playground HTML written to {out} ({ok_count}/{len(records)} ok)")
+        if merged_out is not None:
+            typer.echo(f"Merged trace JSON written to {merged_out}")
+
+
 if __name__ == "__main__":
     app()

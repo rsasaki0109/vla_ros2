@@ -284,6 +284,10 @@ vla-zoo demo action-playground \
   --manifest docs/assets/gif_suite/gif_manifest.json \
   --out docs/assets/action_playground.html \
   --trace-out docs/assets/action_playground.json
+vla-zoo demo action-playground-view \
+  --trace docs/assets/action_playground.json,results/openvla/action_playground.json \
+  --merged-out results/action_playground_merged.json \
+  --out docs/assets/action_playground.html
 vla-zoo compare suite --out-dir results/vla_compare_suite
 ```
 
