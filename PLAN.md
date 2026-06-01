@@ -360,12 +360,16 @@ rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
   --strict
 ```
 
-### 7.2 Add a README/Pages Artifact Index
+### 7.2 Add a README/Pages Artifact Index (DONE)
 
-Reason: many reports exist but are spread across sections. A machine-readable artifact
-index makes it easier to check, render, and hand off.
+Status: implemented in `src/vla_zoo/docs/artifact_index.py` + CLI `vla-zoo report index`.
+Curated 16-entry catalog (title/path/category/status/kind/source command/caveat) across
+all six categories, verifies on-disk existence vs `--root`, emits `--out` JSON and
+`--html-out` HTML (hrefs relative to the output dir) plus a status table, and supports
+`--strict`. Generated `docs/assets/artifact_index.json` + `.html`, linked from
+`docs/index.html`, and link-checked clean. Tests in `tests/test_docs_index.py`.
 
-Implement:
+Original spec for reference:
 
 - `docs/assets/artifact_index.json`
 - `docs/assets/artifact_index.html`
@@ -622,23 +626,24 @@ Shell/tooling conventions in this environment:
 
 ## 13. Current Best Next Commit
 
-The docs link checker (7.1) is now committed. The next best commit is:
+The docs link checker (7.1) and artifact index (7.2) are now done. The next best
+commit is:
 
 ```text
-add README/Pages artifact index (7.2)
+add ROS2 package metadata tests (7.3)
 ```
 
 Files likely touched:
 
 ```text
-src/vla_zoo/docs/index.py        # or extend src/vla_zoo/docs/
-src/vla_zoo/cli/main.py
-docs/assets/artifact_index.json
-docs/assets/artifact_index.html
-tests/test_docs_index.py
-tests/test_cli.py
+tests/test_ros2_package_metadata.py
+src/vla_zoo/...                  # optional non-ROS parser helper
 PLAN.md
 ```
+
+Reason: CI does not build ROS2 yet, so add non-ROS syntax/metadata tests that parse
+`ros2/vla_zoo/package.xml`, `setup.py`, `launch/*.launch.py`, and `vla_zoo_msgs/msg/*.msg`,
+asserting expected topics and launch args. Do not require a ROS2 install in CI.
 
 Acceptance:
 

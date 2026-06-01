@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>vla_zoo Artifact Index</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:2rem;color:#1f2933;}
+table{border-collapse:collapse;width:100%;}
+th,td{border:1px solid #d2d6dc;padding:0.4rem 0.6rem;text-align:left;vertical-align:top;font-size:0.9rem;}
+tr.category th{background:#1f2933;color:#fff;}
+.status{font-weight:600;}
+.missing{color:#b91c1c;font-weight:600;}
+code{font-size:0.8rem;word-break:break-all;}
+</style>
+</head>
+<body>
+<h1>vla_zoo Artifact Index</h1>
+<p>16 artifacts, all present. Statuses and caveats reflect runtime evidence only.</p>
+<table>
+<thead><tr><th>Artifact</th><th>Status</th><th>Kind</th><th>Source command</th><th>Caveat</th></tr></thead>
+<tbody>
+<tr class="category"><th colspan="5">model evidence</th></tr>
+<tr><td><a href="vla_model_evidence_matrix.html">VLA model evidence matrix (HTML)</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare evidence --html-out docs/assets/vla_model_evidence_matrix.html</code></td><td>Runtime-path evidence only; not a policy-quality or robot task-success claim.</td></tr>
+<tr><td><a href="vla_model_evidence_matrix.md">VLA model evidence matrix (Markdown)</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare evidence --markdown-out docs/assets/vla_model_evidence_matrix.md</code></td><td>Runtime-path evidence only.</td></tr>
+<tr><td><a href="vla_model_evidence_matrix.json">VLA model evidence matrix (JSON)</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare evidence --out docs/assets/vla_model_evidence_matrix.json</code></td><td>Machine-readable evidence matrix.</td></tr>
+<tr class="category"><th colspan="5">simulation</th></tr>
+<tr><td><a href="gif_suite/index.html">PyBullet GIF gallery</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo demo gif-report --manifest docs/assets/gif_suite/gif_manifest.json</code></td><td>Deterministic runtime artifact; baselines, not robot skill.</td></tr>
+<tr><td><a href="sample_task_verification/baseline_tasks.html">PyBullet baseline task verification</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>vla-zoo compare tasks --models dummy,scripted,random --tasks all</code></td><td>Deterministic baselines, not VLA model-quality measurements.</td></tr>
+<tr><td><a href="sample_compare_suite/pybullet_report.html">PyBullet comparison report</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare suite --out-dir docs/assets/sample_compare_suite</code></td><td>Smoke-scene runtime telemetry.</td></tr>
+<tr class="category"><th colspan="5">runtime dashboard</th></tr>
+<tr><td><a href="sample_compare_suite/runtime_dashboard.html">Runtime dashboard</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare dashboard --results docs/assets/sample_compare_suite/pybullet_results.json</code></td><td>Static dashboard rendered from comparison results.</td></tr>
+<tr><td><a href="sample_ros2_remote_dummy/dashboard.html">ROS2 remote dummy dashboard</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare dashboard --status-log .../vla_status.jsonl</code></td><td>Rendered from recorded ROS2 dummy runtime logs.</td></tr>
+<tr class="category"><th colspan="5">ROS2</th></tr>
+<tr><td><a href="sample_ros2_remote_dummy/remote_smoke_check.md">ROS2 remote smoke check</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>vla-zoo ros remote-smoke-check --output-dir docs/assets/sample_ros2_remote_dummy</code></td><td>ROS2 remote dummy runtime evidence; launch stays dry-run safe by default.</td></tr>
+<tr><td><a href="ros2_remote_smoke_plan.md">ROS2 remote smoke plan</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo ros remote-smoke-plan --markdown-out docs/assets/ros2_remote_smoke_plan.md</code></td><td>Command plan, not a recorded run.</td></tr>
+<tr><td><a href="sample_ros2_remote_dummy/action_trace.html">ROS2 action trace</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo ros action-trace --action-log .../vla_actions.jsonl</code></td><td>Typed action messages only; core never commands motors.</td></tr>
+<tr class="category"><th colspan="5">adapter docs</th></tr>
+<tr><td><a href="../adapters/README.md">Adapter cards index</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare cards --out-dir docs/adapters</code></td><td>Generated from registry metadata.</td></tr>
+<tr><td><a href="../reports/model_comparison.md">Model comparison report</a></td><td><span class="status">manual</span></td><td>manual</td><td>-</td><td>Narrative comparison of runtime paths.</td></tr>
+<tr class="category"><th colspan="5">GPU probes</th></tr>
+<tr><td><a href="sample_task_verification/smolvla_gpu_probe.md">SmolVLA GPU inference-path probe</a></td><td><span class="status">verified</span></td><td>checked</td><td>-</td><td>GPU inference-path probe with lerobot/smolvla_base; not a robot task-success claim.</td></tr>
+<tr><td><a href="sample_task_verification/openvla_prompt_probe.md">OpenVLA prompt probe</a></td><td><span class="status">blocked</span></td><td>checked</td><td>-</td><td>Local CUDA prompt probe blocked by insufficient free VRAM; remote GPU path is next.</td></tr>
+<tr><td><a href="sample_task_verification/pi0_compatibility_probe.md">pi0 compatibility probe</a></td><td><span class="status">planned</span></td><td>checked</td><td>-</td><td>pi0/openpi is remote-first and still needs a recorded real action probe.</td></tr>
+</tbody>
+</table>
+</body>
+</html>

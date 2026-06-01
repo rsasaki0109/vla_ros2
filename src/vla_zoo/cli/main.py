@@ -1323,6 +1323,70 @@ def report_link_check(
         raise typer.Exit(1)
 
 
+@report_app.command("index")
+def report_index(
+    root: Annotated[
+        Path,
+        typer.Option("--root", help="Repository root for resolving artifact paths."),
+    ] = Path("."),
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON artifact index."),
+    ] = None,
+    html_out: Annotated[
+        Path | None,
+        typer.Option("--html-out", help="Write standalone HTML artifact index."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print JSON instead of the status table."),
+    ] = False,
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Artifact index title."),
+    ] = "vla_zoo Artifact Index",
+    strict: Annotated[
+        bool,
+        typer.Option("--strict", help="Exit non-zero if any catalogued artifact is missing."),
+    ] = False,
+) -> None:
+    """Build a curated, machine-readable index of README/Pages artifacts."""
+
+    from vla_zoo.docs.artifact_index import (
+        artifact_index_payload,
+        build_artifact_index,
+        format_artifact_index_html,
+        format_artifact_index_table,
+    )
+
+    index = build_artifact_index(root=root)
+    payload = json.dumps(artifact_index_payload(index), indent=2)
+    if out is not None:
+        _write_text(out, f"{payload}\n")
+    if html_out is not None:
+        _write_text(
+            html_out,
+            format_artifact_index_html(
+                index,
+                title=title,
+                root=root,
+                html_dir=html_out.parent,
+            ),
+        )
+    if json_output:
+        typer.echo(payload)
+    else:
+        typer.echo(format_artifact_index_table(index))
+        for entry in index.missing:
+            typer.echo(f"missing: {entry.path}", err=True)
+    if out is not None:
+        typer.echo(f"JSON written to {out}")
+    if html_out is not None:
+        typer.echo(f"HTML written to {html_out}")
+    if strict and index.missing:
+        raise typer.Exit(1)
+
+
 @ros_app.command("action-analyze")
 def ros_action_analyze(
     action_log: Annotated[
