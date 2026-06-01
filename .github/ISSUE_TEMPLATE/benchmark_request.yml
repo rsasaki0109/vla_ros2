@@ -1,0 +1,38 @@
+name: Benchmark request
+description: Propose a benchmark backend, task suite, or metric.
+title: "Add benchmark: "
+labels: ["enhancement", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Benchmarks should use the same `BaseVLA.predict()` interface as Python, ROS2, server, and demos.
+  - type: input
+    id: backend
+    attributes:
+      label: Benchmark backend
+      placeholder: "LIBERO / SimplerEnv / Genesis / Isaac / rosbag replay"
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks or suites
+      placeholder: "libero_spatial, libero_object, open-loop rosbag replay..."
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics
+      placeholder: "success_rate, p50 latency, p95 latency, action_rate_hz, dropped frames..."
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Optional packages, simulators, datasets, licenses, hardware.
+      placeholder: "No hard dependency in base install; expose through extras."
+    validations:
+      required: true
