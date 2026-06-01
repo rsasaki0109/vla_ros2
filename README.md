@@ -117,6 +117,15 @@ vla-zoo compare dashboard \
   --out results/vla_runtime_dashboard.html
 ```
 
+Build the same dashboard from ROS2 runtime logs:
+
+```bash
+vla-zoo compare dashboard \
+  --status-log examples/ros2/vla_status_sample.jsonl \
+  --diagnostics-log examples/ros2/diagnostics_sample.jsonl \
+  --out results/vla_ros_runtime_dashboard.html
+```
+
 ## What works today
 
 - `load_model("dummy")` runs without a GPU or model download.
