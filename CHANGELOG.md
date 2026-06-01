@@ -19,6 +19,7 @@ Initial runtime seed for a ROS2-native VLA adapter hub.
 - PyBullet runtime comparison commands, remote endpoint maps, and JSON manifests.
 - Static HTML report and interactive dashboard generation for comparison results.
 - GitHub Pages demo site under `docs/`.
+- Dashboard preview and social preview image generation for README and Pages.
 - ROS2 packages, messages, node, launch files, and dry-run configs.
 - Benchmark scaffolds and smoke benchmark runner.
 - Architecture, adapter, ROS2, benchmark, comparison, and safety docs.

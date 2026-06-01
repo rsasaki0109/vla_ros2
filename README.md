@@ -13,6 +13,8 @@ ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action model
 
 Live demo page: https://rsasaki0109.github.io/vla_zoo/
 
+![vla_zoo runtime dashboard preview](docs/assets/dashboard_preview.png)
+
 ## 30 Second Demo
 
 ```bash
