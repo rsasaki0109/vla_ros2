@@ -515,14 +515,14 @@ def overlay(sample: RenderSample) -> Image.Image:
     for index, (label, value) in enumerate(zip(labels, action, strict=True)):
         y = 70 + index * 19
         draw.text((620, y - 5), label, fill=(188, 199, 216), font=MONO)
-        draw.rounded_rectangle((670, y, 910, y + 9), radius=4, fill=(45, 55, 72))
+        draw.rectangle((670, y, 910, y + 9), fill=(45, 55, 72))
         center = 790
         width = int(clamp(value, -1.0, 1.0) * 105)
         color = (34, 211, 238, 255) if label != "grip" else (74, 222, 128, 255)
         if width >= 0:
-            draw.rounded_rectangle((center, y, center + width, y + 9), radius=4, fill=color)
+            draw.rectangle((center, y, center + width, y + 9), fill=color)
         else:
-            draw.rounded_rectangle((center + width, y, center, y + 9), radius=4, fill=color)
+            draw.rectangle((center + width, y, center, y + 9), fill=color)
 
     draw.rounded_rectangle((24, 458, 936, 526), radius=18, fill=(8, 12, 20, 210))
     draw.text((44, 474), "observation", fill=(125, 211, 252), font=SMALL)

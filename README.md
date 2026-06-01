@@ -76,6 +76,7 @@ Sample artifacts:
 - Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
 - External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
 - Adapter capability cards: [docs/adapters/README.md](docs/adapters/README.md)
+- PyBullet GIF gallery: [docs/assets/gif_suite/README.md](docs/assets/gif_suite/README.md)
 - Robot compatibility report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md
 - GPU server plan: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
 - ROS2 remote smoke plan: https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md
@@ -260,12 +261,21 @@ observation.images.camera1, camera2, camera3
 [eef_target_x, eef_target_y, eef_target_z, cube_x, cube_y, gripper_open]
 ```
 
-| Dummy | Scripted | Random |
-|---|---|---|
-| ![dummy PyBullet smoke run](docs/assets/simulation_dummy.gif) | ![scripted PyBullet smoke run](docs/assets/simulation_scripted.gif) | ![random PyBullet smoke run](docs/assets/simulation_random.gif) |
+The README GIFs are generated from real PyBullet simulation runs. The current
+gallery covers three tasks and three lightweight adapters: `dummy`, `scripted`,
+and `random`.
+
+| Task | Dummy | Scripted | Random |
+|---|---|---|---|
+| pick red block | ![dummy pick_red_block PyBullet simulation](docs/assets/gif_suite/simulation_pick_red_block_dummy.gif) | ![scripted pick_red_block PyBullet simulation](docs/assets/gif_suite/simulation_pick_red_block_scripted.gif) | ![random pick_red_block PyBullet simulation](docs/assets/gif_suite/simulation_pick_red_block_random.gif) |
+| move left | ![dummy move_red_block_left PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_left_dummy.gif) | ![scripted move_red_block_left PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_left_scripted.gif) | ![random move_red_block_left PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_left_random.gif) |
+| move right | ![dummy move_red_block_right PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_right_dummy.gif) | ![scripted move_red_block_right PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_right_scripted.gif) | ![random move_red_block_right PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_right_random.gif) |
 
 ```bash
-vla-zoo demo pybullet --model dummy --out docs/assets/simulation_dummy.gif
+vla-zoo demo gif-suite \
+  --models dummy,scripted,random \
+  --tasks all \
+  --out-dir docs/assets/gif_suite
 vla-zoo compare suite --out-dir results/vla_compare_suite
 ```
 

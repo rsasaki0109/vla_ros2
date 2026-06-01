@@ -2069,25 +2069,43 @@ def demo_pybullet(
     model: Annotated[str, typer.Option("--model", "-m")] = "dummy",
     runtime: Annotated[str, typer.Option("--runtime")] = "local",
     remote_url: Annotated[str, typer.Option("--remote-url")] = "http://localhost:8000",
-    instruction: Annotated[str, typer.Option("--instruction", "-i")] = "pick up the red block",
+    instruction: Annotated[
+        str | None,
+        typer.Option("--instruction", "-i", help="Override the task instruction."),
+    ] = None,
+    task: Annotated[
+        str,
+        typer.Option("--task", help="PyBullet task id, for example pick_red_block."),
+    ] = "pick_red_block",
     out: Annotated[Path, typer.Option("--out", "-o")] = Path(
         "docs/assets/simulation_pick_place.gif"
     ),
     model_call_every: Annotated[int, typer.Option("--model-call-every")] = 8,
+    render_stride: Annotated[
+        int,
+        typer.Option("--render-stride", help="Render every N scripted simulation steps."),
+    ] = 3,
 ) -> None:
     """Render the PyBullet pick-and-place demo with any VLA adapter."""
 
-    from vla_zoo.demo.pybullet import PyBulletDemoConfig, render_pybullet_demo
+    from vla_zoo.demo.pybullet import PyBulletDemoConfig, pybullet_task_by_id, render_pybullet_demo
 
     try:
+        task_spec = pybullet_task_by_id(task)
+        config_kwargs: dict[str, object] = {
+            "model_name": model,
+            "runtime": runtime,
+            "remote_url": remote_url,
+            "out": out,
+            "model_call_every": model_call_every,
+            "render_stride": render_stride,
+        }
+        if instruction:
+            config_kwargs["instruction"] = instruction
         result = render_pybullet_demo(
-            PyBulletDemoConfig(
-                model_name=model,
-                runtime=runtime,
-                remote_url=remote_url,
-                instruction=instruction,
-                out=out,
-                model_call_every=model_call_every,
+            PyBulletDemoConfig.from_task(
+                task_spec,
+                **config_kwargs,
             )
         )
     except Exception as exc:
@@ -2095,6 +2113,79 @@ def demo_pybullet(
         raise typer.Exit(1) from exc
 
     typer.echo(json.dumps(result, indent=2))
+
+
+@demo_app.command("gif-suite")
+def demo_gif_suite(
+    models: Annotated[
+        str,
+        typer.Option("--models", "-m", help="Comma-separated models to render."),
+    ] = "dummy,scripted,random",
+    tasks: Annotated[
+        str,
+        typer.Option("--tasks", help="Comma-separated PyBullet task ids, or 'all'."),
+    ] = "all",
+    out_dir: Annotated[
+        Path,
+        typer.Option("--out-dir", "-o", help="Directory for generated GIFs and reports."),
+    ] = Path("docs/assets/gif_suite"),
+    runtime: Annotated[str, typer.Option("--runtime")] = "local",
+    remote_url: Annotated[str, typer.Option("--remote-url")] = "http://localhost:8000",
+    model_call_every: Annotated[int, typer.Option("--model-call-every")] = 8,
+    render_stride: Annotated[int, typer.Option("--render-stride")] = 8,
+    manifest_out: Annotated[
+        Path | None,
+        typer.Option("--manifest-out", help="Manifest JSON path. Defaults under out-dir."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Markdown gallery path. Defaults under out-dir."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable JSON."),
+    ] = False,
+) -> None:
+    """Render a README-ready suite of real PyBullet simulation GIFs."""
+
+    from vla_zoo.demo.gif_suite import (
+        build_pybullet_gif_specs,
+        render_pybullet_gif_suite,
+        resolve_pybullet_tasks,
+        write_gif_gallery,
+        write_gif_manifest,
+    )
+
+    model_names = _parse_name_list(models)
+    task_specs = resolve_pybullet_tasks(tasks)
+    specs = build_pybullet_gif_specs(
+        models=model_names,
+        tasks=task_specs,
+        out_dir=out_dir,
+        runtime=runtime,
+        remote_url=remote_url,
+        model_call_every=model_call_every,
+        render_stride=render_stride,
+    )
+    results = render_pybullet_gif_suite(specs)
+    manifest_path = manifest_out if manifest_out is not None else out_dir / "gif_manifest.json"
+    markdown_path = markdown_out if markdown_out is not None else out_dir / "README.md"
+    write_gif_manifest(manifest_path, results)
+    write_gif_gallery(markdown_path, results)
+
+    payload = {
+        "out_dir": str(out_dir),
+        "manifest": str(manifest_path),
+        "markdown": str(markdown_path),
+        "results": [result.to_dict() for result in results],
+    }
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        ok_count = sum(1 for result in results if result.ok)
+        typer.echo(f"GIF suite written to {out_dir} ({ok_count}/{len(results)} ok)")
+        typer.echo(f"Manifest: {manifest_path}")
+        typer.echo(f"Markdown: {markdown_path}")
 
 
 if __name__ == "__main__":
