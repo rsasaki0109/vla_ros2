@@ -21,6 +21,19 @@
     "--unnorm-key",
     "bridge_orig"
   ],
+  "smoke_report_command": [
+    "vla-zoo",
+    "ros",
+    "remote-smoke-report",
+    "--model",
+    "openvla",
+    "--remote-url",
+    "http://gpu-box:8001",
+    "--output-dir",
+    "results/ros2_remote_openvla",
+    "--duration-sec",
+    "30"
+  ],
   "launch_command": [
     "timeout",
     "30s",
@@ -87,6 +100,7 @@
     "vla_zoo ROS2 Remote Smoke: openvla"
   ],
   "server_command_shell": "vla-zoo serve --model openvla --host 0.0.0.0 --port 8001 --pretrained openvla/openvla-7b --device cuda:0 --dtype bfloat16 --unnorm-key bridge_orig",
+  "smoke_report_command_shell": "vla-zoo ros remote-smoke-report --model openvla --remote-url http://gpu-box:8001 --output-dir results/ros2_remote_openvla --duration-sec 30",
   "launch_command_shell": "timeout 30s ros2 launch vla_zoo remote_smoke_record.launch.py model_name:=openvla remote_url:=http://gpu-box:8001 output_dir:=results/ros2_remote_openvla 'instruction:=pick up the red block' task_id:=ros2_remote_smoke_pick_red_block dry_run:=true publish_actions_in_dry_run:=true",
   "dashboard_command_shell": "vla-zoo compare dashboard --status-log results/ros2_remote_openvla/vla_status.jsonl --diagnostics-log results/ros2_remote_openvla/vla_diagnostics.jsonl --out results/ros2_remote_openvla/dashboard.html --title 'vla_zoo ROS2 Remote Smoke: openvla'",
   "action_trace_command_shell": "vla-zoo ros action-trace --action-log results/ros2_remote_openvla/vla_actions.jsonl --out results/ros2_remote_openvla/action_trace.html --title 'vla_zoo ROS2 Remote Smoke: openvla Actions'",

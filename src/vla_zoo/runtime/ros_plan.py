@@ -15,6 +15,7 @@ class RosRemoteSmokePlan:
     output_dir: str
     duration_sec: float
     server_command: tuple[str, ...]
+    smoke_report_command: tuple[str, ...]
     launch_command: tuple[str, ...]
     dashboard_command: tuple[str, ...]
     action_trace_command: tuple[str, ...]
@@ -25,6 +26,7 @@ class RosRemoteSmokePlan:
         payload = asdict(self)
         for key in (
             "server_command",
+            "smoke_report_command",
             "launch_command",
             "dashboard_command",
             "action_trace_command",
@@ -91,6 +93,19 @@ def build_ros_remote_smoke_plan(
         output_dir=output_dir,
         duration_sec=duration_sec,
         server_command=server_plan.entries[0].command,
+        smoke_report_command=(
+            "vla-zoo",
+            "ros",
+            "remote-smoke-report",
+            "--model",
+            model_name,
+            "--remote-url",
+            remote_url,
+            "--output-dir",
+            output_dir,
+            "--duration-sec",
+            f"{duration_sec:g}",
+        ),
         launch_command=launch_command,
         dashboard_command=(
             "vla-zoo",
@@ -183,6 +198,12 @@ def format_ros_remote_smoke_plan_markdown(plan: RosRemoteSmokePlan) -> str:
             f"- remote_url: `{plan.remote_url}`",
             f"- output_dir: `{plan.output_dir}`",
             f"- suggested_duration_sec: `{plan.duration_sec:g}`",
+            "",
+            "## One-Shot Command",
+            "",
+            "```bash",
+            shell_join(plan.smoke_report_command),
+            "```",
             "",
         ]
     )

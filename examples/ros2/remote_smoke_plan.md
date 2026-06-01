@@ -33,3 +33,9 @@ vla-zoo report bundle --status-log results/ros2_remote_openvla/vla_status.jsonl 
 - remote_url: `http://gpu-box:8001`
 - output_dir: `results/ros2_remote_openvla`
 - suggested_duration_sec: `30`
+
+## One-Shot Command
+
+```bash
+vla-zoo ros remote-smoke-report --model openvla --remote-url http://gpu-box:8001 --output-dir results/ros2_remote_openvla --duration-sec 30
+```
