@@ -66,4 +66,13 @@ vla-zoo compare dashboard \
 
 Multiple JSON files can be passed as a comma-separated list.
 
+The same dashboard can summarize ROS2 runtime status and diagnostics logs written as JSONL:
+
+```bash
+vla-zoo compare dashboard \
+  --status-log examples/ros2/vla_status_sample.jsonl \
+  --diagnostics-log examples/ros2/diagnostics_sample.jsonl \
+  --out results/vla_ros_runtime_dashboard.html
+```
+
 The comparison output is intentionally runtime-centric: frames, adapter query count, adapter errors, latency, and action magnitude. It is not a claim of task success or model quality.

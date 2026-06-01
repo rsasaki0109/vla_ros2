@@ -291,6 +291,11 @@
           <p>Filter and sort comparison JSON in a self-contained browser dashboard.</p>
           <a href="assets/sample_runtime_dashboard.html">Open dashboard</a>
         </div>
+        <div class="tile">
+          <h3>ROS2 log dashboard</h3>
+          <p>Summarize VLAStatus and diagnostics JSONL into runtime health and triage.</p>
+          <a href="assets/sample_ros_runtime_dashboard.html">Open ROS2 dashboard</a>
+        </div>
       </div>
     </section>
 
@@ -308,14 +313,18 @@ vla-zoo compare pybullet --models dummy,openvla,pi0,smolvla,groot \
   --html-out results/vla_runtime_comparison.html
 vla-zoo compare dashboard \
   --results results/vla_runtime_comparison.json \
-  --out results/vla_runtime_dashboard.html</code></pre>
+  --out results/vla_runtime_dashboard.html
+vla-zoo compare dashboard \
+  --status-log examples/ros2/vla_status_sample.jsonl \
+  --diagnostics-log examples/ros2/diagnostics_sample.jsonl \
+  --out results/vla_ros_runtime_dashboard.html</code></pre>
       </div>
     </section>
 
     <section class="section">
       <h2>Dashboard Preview</h2>
       <p class="lead">
-        The dashboard is generated from comparison JSON and can be shared as a static artifact.
+        The dashboard is generated from comparison JSON or ROS2 runtime logs and can be shared as a static artifact.
       </p>
       <img
         class="preview-image"

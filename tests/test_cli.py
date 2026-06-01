@@ -33,7 +33,36 @@ def test_cli_compare_dashboard_help() -> None:
     result = CliRunner().invoke(app, ["compare", "dashboard", "--help"])
     assert result.exit_code == 0
     assert "--results" in result.output
+    assert "--status-log" in result.output
+    assert "--diagnostics-log" in result.output
     assert "--out" in result.output
+
+
+def test_cli_compare_dashboard_accepts_status_log(tmp_path: Path) -> None:
+    log = tmp_path / "status.jsonl"
+    log.write_text(
+        json.dumps(
+            {
+                "model_name": "dummy",
+                "ready": True,
+                "last_latency_ms": 1.0,
+                "status_text": "ready",
+                "metadata": {"runtime": "local"},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "dashboard.html"
+
+    result = CliRunner().invoke(
+        app,
+        ["compare", "dashboard", "--status-log", str(log), "--out", str(out)],
+    )
+
+    assert result.exit_code == 0
+    assert out.exists()
+    assert "Fleet Health" in out.read_text(encoding="utf-8")
 
 
 def test_cli_compare_pybullet_help() -> None:

@@ -76,6 +76,12 @@ def _parse_paths(value: str) -> list[Path]:
     return paths
 
 
+def _parse_optional_paths(value: str | None) -> list[Path]:
+    if not value:
+        return []
+    return _parse_paths(value)
+
+
 def _write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -302,13 +308,27 @@ def compare_adapters() -> None:
 @compare_app.command("dashboard")
 def compare_dashboard(
     results: Annotated[
-        str,
+        str | None,
         typer.Option(
             "--results",
             "-r",
-            help="Comma-separated comparison JSON result paths.",
+            help="Comma-separated comparison JSON or JSONL result paths.",
         ),
-    ],
+    ] = None,
+    status_logs: Annotated[
+        str | None,
+        typer.Option(
+            "--status-log",
+            help="Comma-separated ROS2 VLAStatus JSON or JSONL paths.",
+        ),
+    ] = None,
+    diagnostics_logs: Annotated[
+        str | None,
+        typer.Option(
+            "--diagnostics-log",
+            help="Comma-separated DiagnosticArray/DiagnosticStatus JSON or JSONL paths.",
+        ),
+    ] = None,
     out: Annotated[
         Path,
         typer.Option("--out", "-o", help="Output HTML dashboard path."),
@@ -318,18 +338,30 @@ def compare_dashboard(
         typer.Option("--title", help="Dashboard title."),
     ] = "vla_zoo Runtime Dashboard",
 ) -> None:
-    """Build an interactive static dashboard from comparison result JSON."""
+    """Build an interactive static dashboard from comparison or ROS2 runtime logs."""
 
     from vla_zoo.runtime.dashboard import (
         format_comparison_dashboard_html,
         load_dashboard_records,
+        load_runtime_dashboard_records,
     )
 
     try:
-        records = load_dashboard_records(_parse_paths(results))
+        records = load_dashboard_records(_parse_optional_paths(results))
+        runtime_log_paths = [
+            *_parse_optional_paths(status_logs),
+            *_parse_optional_paths(diagnostics_logs),
+        ]
+        records.extend(load_runtime_dashboard_records(runtime_log_paths))
     except Exception as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
+    if not records:
+        typer.echo(
+            "At least one --results, --status-log, or --diagnostics-log path is required.",
+            err=True,
+        )
+        raise typer.Exit(1)
     _write_text(out, format_comparison_dashboard_html(records, title=title))
     typer.echo(f"Dashboard written to {out}")
 

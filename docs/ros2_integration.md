@@ -78,6 +78,19 @@ Safety and observability parameters:
 
 The watchdog checks image and instruction freshness before starting each inference. If a timeout is hit, `/vla/status` and `/diagnostics` report `stale image` or `stale instruction` and the node skips inference until fresh inputs arrive.
 
+## Runtime Dashboard From Logs
+
+The static dashboard can ingest JSONL logs shaped like `VLAStatus` and `DiagnosticArray` messages:
+
+```bash
+vla-zoo compare dashboard \
+  --status-log examples/ros2/vla_status_sample.jsonl \
+  --diagnostics-log examples/ros2/diagnostics_sample.jsonl \
+  --out results/vla_ros_runtime_dashboard.html
+```
+
+This is intended for issue reports and field debugging: attach the JSONL plus generated HTML instead of screenshots alone.
+
 ## Hardware Bridges
 
 The MVP does not command hardware. Downstream bridge packages may translate:
