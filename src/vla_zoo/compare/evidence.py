@@ -238,8 +238,13 @@ def _pi0_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         ),
         "remote_server": _cell(
             "planned",
-            "Remote-first deployment path is the intended initial route for pi0.",
-            (_link("GPU server plan", "sample_compare_suite/gpu_server_plan.md"),),
+            "Remote-first deployment path with a reproducible pi0 server plan and "
+            "LeRobot/openpi version-compatibility docs; a recorded pi0 /v1/predict run "
+            "from a version-matched server is still needed.",
+            (
+                _link("pi0 remote path", "../pi0_remote.md"),
+                _link("pi0 server plan", "pi0_server_plan.md"),
+            ),
         ),
         "ros2_remote": _cell(
             "planned",

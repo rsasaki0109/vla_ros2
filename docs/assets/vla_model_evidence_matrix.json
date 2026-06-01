@@ -342,11 +342,15 @@
         },
         "remote_server": {
           "status": "planned",
-          "summary": "Remote-first deployment path is the intended initial route for pi0.",
+          "summary": "Remote-first deployment path with a reproducible pi0 server plan and LeRobot/openpi version-compatibility docs; a recorded pi0 /v1/predict run from a version-matched server is still needed.",
           "links": [
             {
-              "label": "GPU server plan",
-              "href": "sample_compare_suite/gpu_server_plan.md"
+              "label": "pi0 remote path",
+              "href": "../pi0_remote.md"
+            },
+            {
+              "label": "pi0 server plan",
+              "href": "pi0_server_plan.md"
             }
           ]
         },
