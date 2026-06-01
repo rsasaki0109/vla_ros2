@@ -210,6 +210,15 @@ without pretending to be the live controller path.
 The bundled PyBullet scene validates runtime plumbing, reports, and action
 shape handling. It is not a VLA skill benchmark.
 
+Every adapter query receives a real rendered RGB observation. For VLA-shaped
+probes, the PyBullet path now builds `primary` plus three LeRobot-style camera
+keys and a fixed 6D simulation state vector:
+
+```text
+observation.images.camera1, camera2, camera3
+[eef_target_x, eef_target_y, eef_target_z, cube_x, cube_y, gripper_open]
+```
+
 | Dummy | Scripted | Random |
 |---|---|---|
 | ![dummy PyBullet smoke run](docs/assets/simulation_dummy.gif) | ![scripted PyBullet smoke run](docs/assets/simulation_scripted.gif) | ![random PyBullet smoke run](docs/assets/simulation_random.gif) |
