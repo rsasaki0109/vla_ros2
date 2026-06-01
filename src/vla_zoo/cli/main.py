@@ -657,10 +657,12 @@ def compare_pybullet(
 
     typer.echo(
         f"{'model':<11} {'ok':<5} {'frames':>6} {'queries':>7} {'errors':>6} "
+        f"{'task':<7} {'lift':<5} {'goal_m':>8} {'moved_m':>8} "
         f"{'mean_ms':>9} {'max_ms':>9} {'mean|a|':>9} note"
     )
     typer.echo(
         f"{'-' * 11} {'-' * 5} {'-' * 6} {'-' * 7} {'-' * 6} "
+        f"{'-' * 7} {'-' * 5} {'-' * 8} {'-' * 8} "
         f"{'-' * 9} {'-' * 9} {'-' * 9} {'-' * 32}"
     )
     for result in results:
@@ -670,6 +672,10 @@ def compare_pybullet(
             f"{result.frames:>6} "
             f"{result.adapter_queries:>7} "
             f"{result.adapter_errors:>6} "
+            f"{('success' if result.task_success else 'miss'):<7} "
+            f"{str(result.cube_lifted):<5} "
+            f"{_format_optional_float(result.final_cube_distance_to_goal):>8} "
+            f"{_format_optional_float(result.cube_moved_distance):>8} "
             f"{_format_optional_float(result.mean_latency_ms):>9} "
             f"{_format_optional_float(result.max_latency_ms):>9} "
             f"{_format_optional_float(result.mean_abs_action):>9} "

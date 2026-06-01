@@ -20,6 +20,10 @@ def test_dashboard_records_from_payload_accepts_result_list() -> None:
                 "ok": True,
                 "adapter_queries": 2,
                 "mean_latency_ms": 0.03,
+                "task_success": True,
+                "cube_lifted": True,
+                "final_cube_distance_to_goal": 0.04,
+                "phase_completion": 1.0,
             }
         ],
         source="results.json",
@@ -28,6 +32,10 @@ def test_dashboard_records_from_payload_accepts_result_list() -> None:
     assert records[0].model_name == "dummy"
     assert records[0].source == "results.json"
     assert records[0].mean_latency_ms == 0.03
+    assert records[0].task_success is True
+    assert records[0].cube_lifted is True
+    assert records[0].final_cube_distance_to_goal == 0.04
+    assert records[0].phase_completion == 1.0
 
 
 def test_dashboard_html_embeds_records_and_interactions() -> None:
@@ -56,6 +64,8 @@ def test_dashboard_html_embeds_records_and_interactions() -> None:
     assert "Fleet Health" in html
     assert "triageQueue" in html
     assert "runtimeFilter" in html
+    assert "goalDistanceChart" in html
+    assert "sort by task score" in html
     assert "exportCsv" in html
 
 

@@ -20,6 +20,12 @@ class ComparisonDashboardRecord:
     mean_latency_ms: float | None = None
     max_latency_ms: float | None = None
     mean_abs_action: float | None = None
+    task_success: bool | None = None
+    cube_lifted: bool | None = None
+    cube_moved_distance: float | None = None
+    final_cube_distance_to_goal: float | None = None
+    grasp_attached_frames: int = 0
+    phase_completion: float | None = None
     last_error: str | None = None
 
 
@@ -338,6 +344,16 @@ def dashboard_record_from_mapping(
         mean_latency_ms=_float(payload.get("mean_latency_ms")),
         max_latency_ms=_float(payload.get("max_latency_ms")),
         mean_abs_action=_float(payload.get("mean_abs_action")),
+        task_success=(
+            _bool(payload.get("task_success")) if "task_success" in payload else None
+        ),
+        cube_lifted=(
+            _bool(payload.get("cube_lifted")) if "cube_lifted" in payload else None
+        ),
+        cube_moved_distance=_float(payload.get("cube_moved_distance")),
+        final_cube_distance_to_goal=_float(payload.get("final_cube_distance_to_goal")),
+        grasp_attached_frames=_int(payload.get("grasp_attached_frames")),
+        phase_completion=_float(payload.get("phase_completion")),
         last_error=(
             _string(payload.get("last_error")) if payload.get("last_error") is not None else None
         ),
@@ -726,6 +742,7 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
         <option value="latency">sort by latency</option>
         <option value="errors">sort by errors</option>
         <option value="queries">sort by queries</option>
+        <option value="task">sort by task score</option>
         <option value="action">sort by action magnitude</option>
         <option value="model">sort by model</option>
       </select>
@@ -756,6 +773,10 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
         <div id="actionChart"></div>
       </div>
       <div class="panel">
+        <h2>Task Goal Distance</h2>
+        <div id="goalDistanceChart"></div>
+      </div>
+      <div class="panel">
         <h2>Triage Queue</h2>
         <div class="panel-body" id="triageQueue"></div>
       </div>
@@ -766,6 +787,7 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
             <tr>
               <th>Model</th><th>Runtime</th><th>Endpoint</th><th>Status</th><th>Health</th>
               <th>Frames</th><th>Queries</th><th>Errors</th>
+              <th>Task</th><th>Lifted</th><th>Goal dist</th>
               <th>Mean latency</th><th>Max latency</th><th>Mean abs action</th><th>Note</th>
             </tr>
           </thead>
@@ -812,6 +834,41 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
       if (record.adapter_errors > 0) return "degraded";
       if ((record.mean_latency_ms ?? 0) > 250) return "slow";
       return "ready";
+    }
+
+    function hasTaskMetrics(record) {
+      return record.task_success !== null && record.task_success !== undefined ||
+        record.cube_lifted !== null && record.cube_lifted !== undefined ||
+        record.final_cube_distance_to_goal !== null &&
+          record.final_cube_distance_to_goal !== undefined ||
+        record.phase_completion !== null && record.phase_completion !== undefined;
+    }
+
+    function taskScore(record) {
+      if (!hasTaskMetrics(record)) return null;
+      let score = 0;
+      if (record.task_success) score += 55;
+      if (record.cube_lifted) score += 15;
+      if (record.phase_completion !== null && record.phase_completion !== undefined) {
+        score += clamp(Number(record.phase_completion) * 15, 0, 15);
+      }
+      if (record.final_cube_distance_to_goal !== null &&
+          record.final_cube_distance_to_goal !== undefined) {
+        score += clamp((0.25 - Number(record.final_cube_distance_to_goal)) / 0.25 * 15, 0, 15);
+      }
+      return Math.round(clamp(score, 0, 100));
+    }
+
+    function taskLabel(record) {
+      if (!hasTaskMetrics(record)) return "-";
+      const score = taskScore(record);
+      if (record.task_success) return `success ${score}%`;
+      return `miss ${score}%`;
+    }
+
+    function liftedLabel(record) {
+      if (record.cube_lifted === null || record.cube_lifted === undefined) return "-";
+      return String(record.cube_lifted);
     }
 
     function stateBadge(record) {
@@ -874,6 +931,7 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
         if (sort === "health") return healthScore(a) - healthScore(b);
         if (sort === "errors") return b.adapter_errors - a.adapter_errors;
         if (sort === "queries") return b.adapter_queries - a.adapter_queries;
+        if (sort === "task") return (taskScore(b) ?? -1) - (taskScore(a) ?? -1);
         if (sort === "action") return (b.mean_abs_action ?? -1) - (a.mean_abs_action ?? -1);
         if (sort === "model") return text(a.model_name).localeCompare(text(b.model_name));
         return (b.mean_latency_ms ?? -1) - (a.mean_latency_ms ?? -1);
@@ -893,12 +951,15 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
         ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length
         : null;
       const errorRate = queries > 0 ? errors / queries * 100 : 0;
+      const taskRows = rows.filter(record => hasTaskMetrics(record));
+      const taskOk = taskRows.filter(record => record.task_success).length;
       const health = rows.length
         ? rows.reduce((sum, record) => sum + healthScore(record), 0) / rows.length
         : 0;
       document.getElementById("summary").innerHTML = [
         ["health", `${Math.round(health)}%`, "mean readiness score"],
         ["ready", `${ok}/${rows.length}`, "passing adapters"],
+        ["task", taskRows.length ? `${taskOk}/${taskRows.length}` : "-", "PyBullet scene success"],
         ["queries", queries, `${frames} frames observed`],
         ["error rate", `${fmt(errorRate, 1)}%`, `${errors} adapter errors`],
         ["avg latency", `${fmt(avgLatency)} ms`, "mean over available rows"],
@@ -1017,6 +1078,9 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
         <td>${record.frames}</td>
         <td>${record.adapter_queries}</td>
         <td>${record.adapter_errors}</td>
+        <td>${esc(taskLabel(record))}</td>
+        <td>${esc(liftedLabel(record))}</td>
+        <td>${fmt(record.final_cube_distance_to_goal, 3)} m</td>
         <td>${fmt(record.mean_latency_ms)} ms</td>
         <td>${fmt(record.max_latency_ms)} ms</td>
         <td>${fmt(record.mean_abs_action, 3)}</td>
@@ -1028,7 +1092,9 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
       const headers = [
         "model_name", "runtime", "ok", "health", "remote_url", "frames",
         "adapter_queries", "adapter_errors", "mean_latency_ms", "max_latency_ms",
-        "mean_abs_action", "last_error", "source"
+        "mean_abs_action", "task_success", "cube_lifted", "cube_moved_distance",
+        "final_cube_distance_to_goal", "grasp_attached_frames", "phase_completion",
+        "last_error", "source"
       ];
       const quote = value => `"${text(value).replaceAll('"', '""')}"`;
       const csv = [
@@ -1072,6 +1138,7 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
       renderBarChart("latencyChart", rows, "mean_latency_ms", 2);
       renderBarChart("errorChart", rows, "error_rate", 1, "error");
       renderBarChart("actionChart", rows, "mean_abs_action", 3, "action");
+      renderBarChart("goalDistanceChart", rows, "final_cube_distance_to_goal", 3, "neutral");
       renderTriage(rows);
       renderRows(rows);
       document.getElementById("raw").textContent = JSON.stringify(rows, null, 2);

@@ -74,6 +74,8 @@ Run the same deterministic PyBullet smoke scene across baseline methods and adap
 vla-zoo compare pybullet --models dummy,scripted,random,openvla,pi0,smolvla,groot
 ```
 
+The comparison records runtime metrics plus scripted-scene telemetry: whether the cube was lifted, final distance to the goal, cube travel distance, grasp-attached frames, and phase completion. The smoke task treats placement inside a 15 cm goal zone as success. This makes reports useful for smoke-testing the full observation-to-action path, but it is still not a claim of real model skill because the PyBullet controller keeps the scene deterministic.
+
 By default, the local PyBullet comparison skips heavy local OpenVLA loading so it does not accidentally download weights. The `dummy`, `scripted`, and `random` adapters are no-GPU baselines for validating the runtime, visualization, and metrics pipeline before comparing heavyweight VLA policies. Use a remote GPU server for real cross-model runtime checks:
 
 ```bash
