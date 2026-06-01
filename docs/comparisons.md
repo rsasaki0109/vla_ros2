@@ -69,9 +69,10 @@ Multiple JSON files can be passed as a comma-separated list.
 The same dashboard can summarize ROS2 runtime status and diagnostics logs written as JSONL:
 
 ```bash
+ros2 launch vla_zoo log_recorder.launch.py output_dir:=results
 vla-zoo compare dashboard \
-  --status-log examples/ros2/vla_status_sample.jsonl \
-  --diagnostics-log examples/ros2/diagnostics_sample.jsonl \
+  --status-log results/vla_status.jsonl \
+  --diagnostics-log results/vla_diagnostics.jsonl \
   --out results/vla_ros_runtime_dashboard.html
 ```
 
