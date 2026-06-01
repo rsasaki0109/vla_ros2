@@ -700,6 +700,102 @@ def compare_cards(
         typer.echo(f"- {path}")
 
 
+@compare_app.command("compatibility")
+def compare_compatibility(
+    robot_profile: Annotated[
+        str,
+        typer.Option(
+            "--robot-profile",
+            "-r",
+            help="Built-in robot profile to check against.",
+        ),
+    ] = "single-camera-eef",
+    models: Annotated[
+        str,
+        typer.Option(
+            "--models",
+            "-m",
+            help="Comma-separated adapters to check.",
+        ),
+    ] = "dummy,scripted,random,openvla,pi0,smolvla,groot",
+    list_profiles: Annotated[
+        bool,
+        typer.Option("--list-profiles", help="List built-in robot profiles and exit."),
+    ] = False,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON compatibility report."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write Markdown compatibility report."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable JSON."),
+    ] = False,
+) -> None:
+    """Check adapter contracts against robot-side capability profiles."""
+
+    from vla_zoo.compare.compatibility import (
+        ROBOT_PROFILE_PRESETS,
+        compatibility_matrix,
+        format_compatibility_markdown,
+        format_robot_profiles_markdown,
+        get_robot_profile,
+    )
+
+    if list_profiles:
+        typer.echo(format_robot_profiles_markdown())
+        return
+    try:
+        robot = get_robot_profile(robot_profile)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+
+    results = compatibility_matrix(
+        robot=robot,
+        models=_parse_name_list(models),
+        status_provider=_adapter_status,
+    )
+    payload = {
+        "robot_profile": robot.to_dict(),
+        "available_profiles": sorted(ROBOT_PROFILE_PRESETS),
+        "results": [result.to_dict() for result in results],
+    }
+    json_payload = json.dumps(payload, indent=2)
+    markdown = format_compatibility_markdown(results, robot=robot)
+    if out is not None:
+        _write_text(out, f"{json_payload}\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, markdown)
+    if json_output:
+        typer.echo(json_payload)
+    else:
+        typer.echo(
+            f"{'model':<11} {'fit':<14} {'score':<5} {'adapter':<18} "
+            f"{'action':<24} first issue"
+        )
+        typer.echo(
+            f"{'-' * 11} {'-' * 14} {'-' * 5} {'-' * 18} {'-' * 24} {'-' * 40}"
+        )
+        for result in results:
+            first_issue = result.issues[0].message if result.issues else "-"
+            action = f"{result.action_space} {result.action_shape}"
+            typer.echo(
+                f"{result.model:<11} "
+                f"{result.status:<14} "
+                f"{result.score:<5} "
+                f"{_shorten(result.adapter_status, 18):<18} "
+                f"{_shorten(action, 24):<24} "
+                f"{_shorten(first_issue, 64)}"
+            )
+    if out is not None:
+        typer.echo(f"JSON written to {out}")
+    if markdown_out is not None:
+        typer.echo(f"Markdown written to {markdown_out}")
+
+
 @compare_app.command("suite")
 def compare_suite(
     out_dir: Annotated[

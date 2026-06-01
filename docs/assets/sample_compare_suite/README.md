@@ -8,6 +8,8 @@ This artifact directory is intended for README snippets, issue reports, and rele
 
 - `method_profiles.json`: structured adapter integration profiles
 - `method_profiles.md`: README-ready adapter integration table
+- `robot_compatibility.json`: robot-profile compatibility report
+- `robot_compatibility.md`: README-ready robot-profile compatibility table
 - `gpu_server_plan.json`: remote GPU server commands for heavyweight adapters
 - `gpu_server_plan.md`: README-ready remote GPU server plan
 - `pybullet_results.json`: deterministic smoke-scene runtime and task telemetry
@@ -34,6 +36,20 @@ vla-zoo compare suite --out-dir docs/assets/sample_compare_suite --models dummy,
 | `smolvla` | LeRobot policy | multi-camera/state/action-chunk compact VLA target | multi-camera images<br>natural language instruction<br>robot state | custom checkpoint-specific; lerobot/smolvla_base is (6,): policy-specific continuous action | internal queue; chunk output optional | supported with optional LeRobot dependencies | recommended | available |
 
 These profiles describe runtime integration shape, not model quality. External model weights, datasets, and licenses are not redistributed by vla_zoo.
+
+## VLA Robot Compatibility
+
+Robot profile: `single-camera-eef`
+
+| Model | Fit | Adapter status | Score | Action | Issues |
+|---|---|---|---:|---|---|
+| `openvla` | compatible | available | 100 | eef_delta (7,) | - |
+| `pi0` | blocked | experimental | 20 | custom checkpoint-specific | state expected, custom action bridge, action chunks |
+| `smolvla` | blocked | missing optional deps | 0 | custom checkpoint-specific | multi-camera, state, custom action bridge |
+| `groot` | blocked | experimental | 0 | custom adapter-specific | multimodal/state/custom action/domain mismatch |
+
+This is a deployment-shape check. It does not validate model quality, calibration,
+safety, or real robot task success.
 
 ## PyBullet VLA Runtime Comparison
 

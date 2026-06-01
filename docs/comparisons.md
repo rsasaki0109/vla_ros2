@@ -34,6 +34,20 @@ chunks, proprioception expectations, runtime support, dependency profile, and li
 It is useful for deciding which models can be compared locally, which should be served
 remotely, and which require robot-specific adapter work.
 
+Then check deployment shape against a robot-side capability profile:
+
+```bash
+vla-zoo compare compatibility \
+  --robot-profile single-camera-eef \
+  --models openvla,pi0,smolvla,groot \
+  --markdown-out results/vla_robot_compatibility.md
+```
+
+The compatibility report does not load model weights. It checks camera count,
+proprioception, action space, action chunks, and adapter domain. This catches
+cases where a model family is interesting but the current robot profile still
+needs extra cameras, state wiring, a chunk scheduler, or a custom action bridge.
+
 For issue reports, release notes, and README snippets, generate a complete artifact directory:
 
 ```bash

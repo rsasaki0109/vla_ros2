@@ -76,6 +76,7 @@ Sample artifacts:
 - Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
 - External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
 - Adapter capability cards: [docs/adapters/README.md](docs/adapters/README.md)
+- Robot compatibility report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md
 - GPU server plan: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
 - ROS2 remote smoke plan: https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md
 - OpenVLA prompt probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md
@@ -283,6 +284,10 @@ Start by comparing adapter contracts without loading model weights:
 ```bash
 vla-zoo compare adapters
 vla-zoo compare methods --markdown-out results/vla_method_profiles.md
+vla-zoo compare compatibility \
+  --robot-profile single-camera-eef \
+  --models openvla,pi0,smolvla,groot \
+  --markdown-out results/vla_robot_compatibility.md
 vla-zoo compare tasks --models dummy,scripted,random --tasks all
 ```
 
