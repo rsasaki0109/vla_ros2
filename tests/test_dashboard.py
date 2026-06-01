@@ -50,3 +50,7 @@ def test_dashboard_html_embeds_records_and_interactions() -> None:
     assert "server unavailable" in html
     assert "filteredRecords" in html
     assert "latencyChart" in html
+    assert "Fleet Health" in html
+    assert "triageQueue" in html
+    assert "runtimeFilter" in html
+    assert "exportCsv" in html

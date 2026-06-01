@@ -95,14 +95,14 @@ def bar(
 
 def generate_dashboard_preview(records: list[dict[str, Any]]) -> None:
     width, height = 1400, 900
-    image = Image.new("RGB", (width, height), "#f7fafc")
+    image = Image.new("RGB", (width, height), "#f4f7fb")
     draw = ImageDraw.Draw(image)
 
     draw.text((54, 42), "vla_zoo Runtime Dashboard", fill="#172033", font=FONT_48)
     draw_text_block(
         draw,
         (56, 106),
-        "Static dashboard generated from PyBullet VLA runtime comparison JSON.",
+        "Operational view for adapter readiness, latency budget, query health, and triage.",
         width=78,
         line_height=25,
         fill="#5b687a",
@@ -118,23 +118,68 @@ def generate_dashboard_preview(records: list[dict[str, Any]]) -> None:
         if item.get("mean_latency_ms") is not None
     ]
     avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
+    health = round(ok_count / max(len(records), 1) * 100)
+    frames = sum(int(item.get("frames") or 0) for item in records)
 
     cards = [
-        ("models", str(len(records))),
-        ("ok", str(ok_count)),
-        ("adapter queries", str(total_queries)),
-        ("adapter errors", str(total_errors)),
-        ("avg latency ms", f"{avg_latency:.2f}"),
+        ("health", f"{health}%"),
+        ("ready", f"{ok_count}/{len(records)}"),
+        ("queries", str(total_queries)),
+        ("error rate", f"{(total_errors / max(total_queries, 1) * 100):.1f}%"),
+        ("avg latency", f"{avg_latency:.2f} ms"),
+        ("frames", str(frames)),
     ]
-    card_w, card_h = 244, 112
+    card_w, card_h = 203, 112
     for index, (label, value) in enumerate(cards):
         x = 54 + index * (card_w + 18)
         metric_card(draw, (x, 176, x + card_w, 176 + card_h), label, value)
 
-    rounded_panel(draw, (54, 322, 670, 628))
-    draw.text((76, 344), "Latency", fill="#172033", font=FONT_28)
+    rounded_panel(draw, (54, 322, 670, 578))
+    draw.text((76, 344), "Fleet Health", fill="#172033", font=FONT_28)
+    draw.rounded_rectangle((78, 394, 248, 530), radius=8, fill="#f8fafc", outline="#d7dee8")
+    draw.text((112, 422), f"{health}%", fill="#172033", font=FONT_48)
+    draw.text((112, 482), "runtime health", fill="#64748b", font=FONT_14)
+    states = [
+        ("ready", ok_count, "#16a34a"),
+        ("failed", len(records) - ok_count, "#e11d48"),
+        ("errors", total_errors, "#ca8a04"),
+    ]
+    y = 404
+    max_state = max(1, *(count for _, count, _ in states))
+    for label, value, color in states:
+        draw.text((276, y - 4), label, fill="#334155", font=FONT_16)
+        bar(draw, (390, y, 590, y + 14), value, max_state, color)
+        draw.text((608, y - 4), str(value), fill="#172033", font=FONT_14)
+        y += 42
+
+    rounded_panel(draw, (704, 322, 1346, 578))
+    draw.text((726, 344), "Triage Queue", fill="#172033", font=FONT_28)
+    y = 394
+    for item in records:
+        if item.get("ok"):
+            continue
+        name = str(item.get("model_name", "unknown"))
+        err = str(item.get("last_error", "adapter failed"))
+        draw.rounded_rectangle((728, y, 1322, y + 56), radius=8, fill="#fff7ed", outline="#fed7aa")
+        draw.text((746, y + 10), name, fill="#075985", font=MONO_15)
+        draw.text((902, y + 10), "failed", fill="#9f1239", font=FONT_14)
+        draw_text_block(
+            draw,
+            (746, y + 30),
+            err,
+            width=72,
+            line_height=16,
+            fill="#334155",
+            text_font=FONT_14,
+        )
+        y += 64
+        if y > 538:
+            break
+
+    rounded_panel(draw, (54, 610, 670, 818))
+    draw.text((76, 632), "Latency Budget", fill="#172033", font=FONT_28)
     max_latency = max(latencies, default=1.0)
-    y = 398
+    y = 686
     for item in records:
         name = str(item.get("model_name", "unknown"))
         value = float(item.get("mean_latency_ms") or 0.0)
@@ -142,36 +187,33 @@ def generate_dashboard_preview(records: list[dict[str, Any]]) -> None:
         bar(draw, (220, y, 588, y + 14), value, max_latency, "#16a34a")
         label = f"{value:.2f}" if item.get("mean_latency_ms") is not None else "-"
         draw.text((604, y - 4), label, fill="#172033", font=FONT_14)
-        y += 38
+        y += 28
 
-    rounded_panel(draw, (704, 322, 1346, 628))
-    draw.text((726, 344), "Records", fill="#172033", font=FONT_28)
-    headers = ("model", "runtime", "status", "errors")
+    rounded_panel(draw, (704, 610, 1346, 818))
+    draw.text((726, 632), "Records", fill="#172033", font=FONT_28)
+    headers = ("model", "runtime", "health", "errors")
     xs = (726, 910, 1042, 1194)
     for x, header in zip(xs, headers, strict=True):
-        draw.text((x, 394), header.upper(), fill="#64748b", font=FONT_14)
-    y = 432
+        draw.text((x, 682), header.upper(), fill="#64748b", font=FONT_14)
+    y = 720
     for item in records:
         ok = bool(item.get("ok"))
-        status = "ok" if ok else "error"
+        score = "100%" if ok else "0%"
         color = "#bbf7d0" if ok else "#fecdd3"
         text_color = "#14532d" if ok else "#881337"
         draw.text((726, y), str(item.get("model_name", "unknown")), fill="#075985", font=MONO_15)
         draw.text((910, y), str(item.get("runtime", "-")), fill="#172033", font=FONT_14)
-        draw.rounded_rectangle((1042, y - 3, 1112, y + 21), radius=12, fill=color)
-        draw.text((1056, y), status, fill=text_color, font=FONT_14)
+        draw.rounded_rectangle((1042, y - 3, 1116, y + 21), radius=12, fill=color)
+        draw.text((1056, y), score, fill=text_color, font=FONT_14)
         draw.text((1194, y), str(item.get("adapter_errors", 0)), fill="#172033", font=FONT_14)
-        y += 38
+        y += 28
 
-    rounded_panel(draw, (54, 666, 1346, 834), fill="#0f172a", outline="#1f2937")
+    rounded_panel(draw, (54, 842, 1346, 884), fill="#0f172a", outline="#1f2937")
     command = (
-        'vla-zoo compare pybullet --models dummy,openvla,pi0,smolvla,groot \\\n'
-        "  --out results/vla_runtime_comparison.json\n"
-        "vla-zoo compare dashboard \\\n"
-        "  --results results/vla_runtime_comparison.json \\\n"
+        "vla-zoo compare dashboard --results results/vla_runtime_comparison.json "
         "  --out results/vla_runtime_dashboard.html"
     )
-    draw.text((78, 688), command, fill="#e5e7eb", font=MONO_15, spacing=8)
+    draw.text((78, 854), command, fill="#e5e7eb", font=MONO_15)
 
     image.save(DASHBOARD_PREVIEW, optimize=True)
 
