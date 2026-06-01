@@ -134,6 +134,8 @@ def test_action_playground_html_and_trace_outputs(tmp_path: Path) -> None:
     assert "Trace frame" in html
     assert "Task Comparison" in html
     assert "comparison-chart" in html
+    assert "recordKey(record)" in html
+    assert "recordLabel(record)" in html
     assert "What This Does Not Show" in html
 
     script_json = html.split('<script id="payload" type="application/json">', 1)[1].split(

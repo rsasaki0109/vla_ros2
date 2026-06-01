@@ -75,9 +75,9 @@ Sample artifacts:
 
 | Pillar | Artifacts |
 |---|---|
-| Visual demos | [Action Playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html), [Action Playground verification](docs/reports/model_comparison.md), [PyBullet GIF gallery](docs/assets/gif_suite/index.html), [GIF QA](docs/assets/gif_suite/gif_check.md), [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
+| Visual demos | [Action Playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html), [Local+remote playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground_with_remote.html), [Action Playground verification](docs/reports/model_comparison.md), [PyBullet GIF gallery](docs/assets/gif_suite/index.html), [GIF QA](docs/assets/gif_suite/gif_check.md), [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
 | Adapter/runtime truth | [Adapter cards](docs/adapters/README.md), [external adapter status](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html), [robot compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md) |
-| ROS2 deployment | [ROS2 remote smoke plan](https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md), [ROS2 dashboard](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html) |
+| ROS2 / remote deployment | [Remote runtime smoke](docs/reports/remote_runtime_smoke.md), [ROS2 remote smoke plan](https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md), [ROS2 dashboard](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html) |
 | Heavy VLA probes | [GPU server plan](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md), [OpenVLA prompt probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md), [pi0 compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md), [SmolVLA GPU probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md) |
 
 ## Quickstart
@@ -298,6 +298,12 @@ vla-zoo demo action-playground-check \
   --trace docs/assets/action_playground.json \
   --out docs/assets/action_playground_check.json \
   --markdown-out docs/reports/model_comparison.md
+vla-zoo demo action-playground-remote-smoke \
+  --port 8765 \
+  --out docs/assets/action_playground_remote_dummy.json \
+  --merged-out docs/assets/action_playground_with_remote.json \
+  --html-out docs/assets/action_playground_with_remote.html \
+  --markdown-out docs/reports/remote_runtime_smoke.md
 vla-zoo compare suite --out-dir results/vla_compare_suite
 ```
 
@@ -305,8 +311,12 @@ Live artifacts:
 
 - Action Playground: https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html
   task-level adapter cards, action magnitude comparison, and frame-by-frame traces
+- Local+remote Action Playground: https://rsasaki0109.github.io/vla_zoo/assets/action_playground_with_remote.html
+  local baseline traces plus a temporary HTTP dummy server smoke trace
 - Action Playground verification: https://rsasaki0109.github.io/vla_zoo/reports/model_comparison.md
   9/9 recorded PyBullet runtime traces checked for frames, GIF links, and adapter errors
+- Remote runtime smoke: https://rsasaki0109.github.io/vla_zoo/reports/remote_runtime_smoke.md
+  3/3 remote dummy PyBullet traces over `/v1/predict` with 24 HTTP predictions
 - PyBullet report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html
 - Runtime dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/runtime_dashboard.html
 - ROS2 dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html

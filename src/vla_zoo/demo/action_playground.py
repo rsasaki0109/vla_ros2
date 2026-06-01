@@ -687,11 +687,15 @@ def _matrix_cell(
     return "check"
 
 
-def format_action_playground_check_markdown(report: ActionPlaygroundCheckReport) -> str:
+def format_action_playground_check_markdown(
+    report: ActionPlaygroundCheckReport,
+    *,
+    title: str = "Action Playground Verification Report",
+) -> str:
     model_names = report.expected_models or report.model_names
     task_ids = report.expected_tasks or report.task_ids
     lines = [
-        "# Action Playground Verification Report",
+        f"# {title}",
         "",
         "This report validates recorded PyBullet Action Playground traces. It checks",
         "that the trace contains expected model/task records, enough frames, referenced",
@@ -956,17 +960,23 @@ def format_action_playground_html(
       item.textContent = label;
       select.appendChild(item);
     }}
+    function recordKey(record) {{
+      return `${{record.task_id}}::${{record.model_name}}::${{record.runtime || "local"}}`;
+    }}
+    function recordLabel(record) {{
+      return `${{record.model_name}} (${{record.runtime || "local"}})`;
+    }}
     for (const task of byTask.keys()) option(taskSelect, task, task);
     function currentRecords() {{ return byTask.get(taskSelect.value) || []; }}
     function populateModels() {{
       modelSelect.innerHTML = "";
       for (const record of currentRecords()) {{
-        option(modelSelect, record.model_name, record.model_name);
+        option(modelSelect, recordKey(record), recordLabel(record));
       }}
     }}
     function currentRecord() {{
       return currentRecords().find(
-        (record) => record.model_name === modelSelect.value,
+        (record) => recordKey(record) === modelSelect.value,
       ) || currentRecords()[0];
     }}
     function fmt(value, digits = 3) {{
@@ -1000,7 +1010,7 @@ def format_action_playground_html(
       taskRecords.forEach((record, recordIndex) => {{
         const frames = record.frames || [];
         ctx.strokeStyle = colors[recordIndex % colors.length];
-        ctx.lineWidth = record.model_name === selectedName ? 4 : 2;
+        ctx.lineWidth = recordKey(record) === selectedName ? 4 : 2;
         ctx.beginPath();
         frames.forEach((frame, index) => {{
           const x = pad + index / Math.max(1, frames.length - 1) * (canvas.width - pad * 2);
@@ -1010,7 +1020,7 @@ def format_action_playground_html(
         }});
         ctx.stroke();
         ctx.fillStyle = colors[recordIndex % colors.length];
-        ctx.fillText(record.model_name, pad + recordIndex * 92, 18);
+        ctx.fillText(recordLabel(record), pad + recordIndex * 112, 18);
       }});
     }}
     function renderComparison(selectedRecord) {{
@@ -1025,21 +1035,21 @@ def format_action_playground_html(
         const card = document.createElement("button");
         card.type = "button";
         card.className = "compare-card";
-        if (record.model_name === selectedRecord.model_name) {{
+        if (recordKey(record) === recordKey(selectedRecord)) {{
           card.classList.add("selected");
         }}
         card.addEventListener("click", () => {{
-          modelSelect.value = record.model_name;
+          modelSelect.value = recordKey(record);
           scrubber.value = 0;
           render();
         }});
         const image = document.createElement("img");
         image.src = record.gif_path;
-        image.alt = `${{record.model_name}} PyBullet GIF`;
+        image.alt = `${{recordLabel(record)}} PyBullet GIF`;
         const head = document.createElement("div");
         head.className = "compare-head";
         const name = document.createElement("strong");
-        name.textContent = record.model_name;
+        name.textContent = recordLabel(record);
         const status = document.createElement("span");
         status.className = record.ok ? "status ok" : "status miss";
         status.textContent = record.ok ? "ok" : "check";
@@ -1065,7 +1075,7 @@ def format_action_playground_html(
         card.append(image, head, meta);
         grid.appendChild(card);
       }}
-      drawComparisonChart(taskRecords, selectedRecord.model_name);
+      drawComparisonChart(taskRecords, recordKey(selectedRecord));
     }}
     function drawChart(record, selectedIndex) {{
       const canvas = document.getElementById("chart");
@@ -1133,7 +1143,7 @@ def format_action_playground_html(
       renderComparison(record);
       document.getElementById("gif").src = record.gif_path;
       document.getElementById("selected").textContent =
-        `${{record.task_id}} / ${{record.model_name}}`;
+        `${{record.task_id}} / ${{recordLabel(record)}}`;
       document.getElementById("phase").textContent = frame.phase || "-";
       document.getElementById("magnitude").textContent = fmt(frame.action_magnitude);
       document.getElementById("queries").textContent = frame.adapter_query_count ?? "-";

@@ -3,8 +3,12 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import socket
 import subprocess
+import sys
 import time
+import urllib.error
+import urllib.request
 from contextlib import suppress
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -86,6 +90,33 @@ def _parse_remote_map(value: str | None) -> dict[str, str]:
             )
         parsed[model.strip().lower()] = url.strip()
     return parsed
+
+
+def _free_tcp_port(host: str = "127.0.0.1") -> int:
+    bind_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind((bind_host, 0))
+        return int(sock.getsockname()[1])
+
+
+def _client_host_for_bind_host(host: str) -> str:
+    return "127.0.0.1" if host in {"0.0.0.0", "::"} else host
+
+
+def _wait_for_http_health(remote_url: str, *, timeout_sec: float) -> str | None:
+    deadline = time.monotonic() + timeout_sec
+    last_error = "server did not answer before timeout"
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(f"{remote_url.rstrip('/')}/health", timeout=0.5) as resp:
+                status = resp.getcode()
+            if status == 200:
+                return None
+            last_error = f"health endpoint returned HTTP {status}"
+        except (OSError, urllib.error.URLError) as exc:
+            last_error = str(exc)
+        time.sleep(0.2)
+    return last_error
 
 
 def _parse_name_list(value: str) -> list[str]:
@@ -2661,6 +2692,195 @@ def demo_action_playground_check(
             for issue in report.issues:
                 typer.echo(f"- {issue}")
     if strict and not report.ok:
+        raise typer.Exit(1)
+
+
+@demo_app.command("action-playground-remote-smoke")
+def demo_action_playground_remote_smoke(
+    model: Annotated[
+        str,
+        typer.Option("--model", "-m", help="Single adapter hosted by the temporary server."),
+    ] = "dummy",
+    tasks: Annotated[
+        str,
+        typer.Option("--tasks", help="Comma-separated PyBullet task ids, or 'all'."),
+    ] = "all",
+    host: Annotated[
+        str,
+        typer.Option("--host", help="Temporary server bind host."),
+    ] = "127.0.0.1",
+    port: Annotated[
+        int,
+        typer.Option("--port", help="Temporary server port. Use 0 to pick a free port."),
+    ] = 0,
+    out: Annotated[
+        Path,
+        typer.Option("--out", help="Remote-only action trace JSON."),
+    ] = Path("docs/assets/action_playground_remote_dummy.json"),
+    check_out: Annotated[
+        Path,
+        typer.Option("--check-out", help="Remote-only validation JSON."),
+    ] = Path("docs/assets/action_playground_remote_dummy_check.json"),
+    markdown_out: Annotated[
+        Path,
+        typer.Option("--markdown-out", help="Remote runtime smoke Markdown report."),
+    ] = Path("docs/reports/remote_runtime_smoke.md"),
+    base_trace: Annotated[
+        Path | None,
+        typer.Option("--base-trace", help="Optional existing local trace to merge with remote."),
+    ] = Path("docs/assets/action_playground.json"),
+    merged_out: Annotated[
+        Path | None,
+        typer.Option("--merged-out", help="Optional merged local+remote trace JSON."),
+    ] = Path("docs/assets/action_playground_with_remote.json"),
+    html_out: Annotated[
+        Path | None,
+        typer.Option("--html-out", help="Optional merged Action Playground HTML."),
+    ] = Path("docs/assets/action_playground_with_remote.html"),
+    reference_gif_dir: Annotated[
+        Path,
+        typer.Option("--reference-gif-dir", help="Directory containing reference PyBullet GIFs."),
+    ] = Path("docs/assets/gif_suite"),
+    reference_gif_model: Annotated[
+        str,
+        typer.Option("--reference-gif-model", help="Reference GIF model suffix."),
+    ] = "scripted",
+    model_call_every: Annotated[int, typer.Option("--model-call-every")] = 8,
+    render_stride: Annotated[int, typer.Option("--render-stride")] = 8,
+    min_frames: Annotated[int, typer.Option("--min-frames")] = 12,
+    startup_timeout_sec: Annotated[
+        float,
+        typer.Option("--startup-timeout-sec", help="Seconds to wait for /health."),
+    ] = 20.0,
+    log_path: Annotated[
+        Path,
+        typer.Option("--log-path", help="Temporary server stdout/stderr log."),
+    ] = Path("results/action_playground_remote_smoke/server.log"),
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable summary."),
+    ] = False,
+) -> None:
+    """Start a temporary dummy server and record Action Playground traces over HTTP."""
+
+    from vla_zoo.demo.action_playground import (
+        build_action_playground_task_records,
+        check_action_playground_records,
+        format_action_playground_check_markdown,
+        load_action_playground_trace,
+        merge_action_playground_records,
+        write_action_playground_html,
+        write_action_playground_trace,
+    )
+    from vla_zoo.demo.gif_suite import resolve_pybullet_tasks
+
+    selected_port = _free_tcp_port(host) if port == 0 else port
+    remote_url = f"http://{_client_host_for_bind_host(host)}:{selected_port}"
+    command = [
+        sys.executable,
+        "-m",
+        "vla_zoo.cli.main",
+        "serve",
+        "--model",
+        model,
+        "--host",
+        host,
+        "--port",
+        str(selected_port),
+    ]
+    task_specs = resolve_pybullet_tasks(tasks)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("w", encoding="utf-8") as log_file:
+        process = subprocess.Popen(
+            command,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            env=os.environ.copy(),
+        )
+        try:
+            startup_error = _wait_for_http_health(remote_url, timeout_sec=startup_timeout_sec)
+            if startup_error is not None:
+                raise RuntimeError(
+                    f"Temporary vla-zoo server did not become ready at {remote_url}: "
+                    f"{startup_error}. See {log_path}."
+                )
+            records = build_action_playground_task_records(
+                models=(model,),
+                tasks=task_specs,
+                out_dir=reference_gif_dir,
+                runtime="remote",
+                remote_url=remote_url,
+                model_call_every=model_call_every,
+                render_stride=render_stride,
+                reference_gif_model=reference_gif_model,
+            )
+        except Exception as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(1) from exc
+        finally:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=5.0)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+
+    write_action_playground_trace(out, records)
+    report = check_action_playground_records(
+        records,
+        trace_paths=(out,),
+        expected_models=(model,),
+        expected_tasks=tuple(task.task_id for task in task_specs),
+        min_frames=min_frames,
+        require_gifs=True,
+    )
+    _write_text(check_out, json.dumps(report.to_dict(), indent=2) + "\n")
+    _write_text(
+        markdown_out,
+        format_action_playground_check_markdown(
+            report,
+            title="Remote Runtime Smoke Report",
+        ),
+    )
+
+    merged_records = records
+    if base_trace is not None and base_trace.exists():
+        merged_records = merge_action_playground_records(
+            [*load_action_playground_trace(base_trace), *records]
+        )
+    if merged_out is not None:
+        write_action_playground_trace(merged_out, merged_records)
+    if html_out is not None:
+        write_action_playground_html(
+            html_out,
+            merged_records,
+            title="vla_zoo Action Playground - Local and Remote Runtime",
+        )
+
+    payload = {
+        "model": model,
+        "runtime": "remote",
+        "remote_url": remote_url,
+        "trace": str(out),
+        "check": str(check_out),
+        "markdown": str(markdown_out),
+        "merged_trace": str(merged_out) if merged_out is not None else None,
+        "html": str(html_out) if html_out is not None else None,
+        "records": len(records),
+        "ok": report.ok_count,
+        "server_log": str(log_path),
+    }
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(f"Remote Action Playground smoke: {report.ok_count}/{len(records)} ok")
+        typer.echo(f"Trace written to {out}")
+        typer.echo(f"Markdown written to {markdown_out}")
+        if html_out is not None:
+            typer.echo(f"HTML written to {html_out}")
+        typer.echo(f"Server log written to {log_path}")
+    if not report.ok:
         raise typer.Exit(1)
 
 
