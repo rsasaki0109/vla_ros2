@@ -2389,6 +2389,113 @@ def demo_action_playground(
         typer.echo(f"Trace JSON written to {trace_out}")
 
 
+@demo_app.command("action-playground-record")
+def demo_action_playground_record(
+    models: Annotated[
+        str,
+        typer.Option(
+            "--model",
+            "--models",
+            "-m",
+            help="Comma-separated adapters to record, for example smolvla or openvla,pi0.",
+        ),
+    ] = "dummy",
+    tasks: Annotated[
+        str,
+        typer.Option("--tasks", help="Comma-separated PyBullet task ids, or 'all'."),
+    ] = "all",
+    runtime: Annotated[str, typer.Option("--runtime")] = "remote",
+    remote_url: Annotated[str, typer.Option("--remote-url")] = "http://localhost:8000",
+    remote_map: Annotated[
+        str | None,
+        typer.Option(
+            "--remote-map",
+            help="Comma-separated model=url overrides, for example openvla=http://gpu:8001.",
+        ),
+    ] = None,
+    out: Annotated[
+        Path,
+        typer.Option("--out", "-o", help="Output action_playground.json trace path."),
+    ] = Path("results/action_playground_record.json"),
+    html_out: Annotated[
+        Path | None,
+        typer.Option("--html-out", help="Optional Action Playground HTML output path."),
+    ] = None,
+    reference_gif_dir: Annotated[
+        Path,
+        typer.Option("--reference-gif-dir", help="Directory containing reference PyBullet GIFs."),
+    ] = Path("docs/assets/gif_suite"),
+    reference_gif_model: Annotated[
+        str,
+        typer.Option(
+            "--reference-gif-model",
+            help="Existing GIF model suffix used as the scene reference.",
+        ),
+    ] = "scripted",
+    model_call_every: Annotated[int, typer.Option("--model-call-every")] = 8,
+    render_stride: Annotated[int, typer.Option("--render-stride")] = 8,
+    max_records: Annotated[
+        int | None,
+        typer.Option("--max-records", help="Limit model/task records while developing."),
+    ] = None,
+    allow_local_heavy: Annotated[
+        bool,
+        typer.Option(
+            "--allow-local-heavy",
+            help="Allow local heavy adapters such as OpenVLA to load real model weights.",
+        ),
+    ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable summary."),
+    ] = False,
+) -> None:
+    """Record PyBullet action traces for local or remote VLA adapters without new GIFs."""
+
+    from vla_zoo.demo.action_playground import (
+        build_action_playground_task_records,
+        write_action_playground_html,
+        write_action_playground_trace,
+    )
+    from vla_zoo.demo.gif_suite import resolve_pybullet_tasks
+
+    try:
+        records = build_action_playground_task_records(
+            models=_parse_name_list(models),
+            tasks=resolve_pybullet_tasks(tasks),
+            out_dir=reference_gif_dir,
+            runtime=runtime,
+            remote_url=remote_url,
+            remote_urls=_parse_remote_map(remote_map),
+            model_call_every=model_call_every,
+            render_stride=render_stride,
+            reference_gif_model=reference_gif_model,
+            max_records=max_records,
+            allow_local_heavy=allow_local_heavy,
+        )
+        write_action_playground_trace(out, records)
+        if html_out is not None:
+            write_action_playground_html(html_out, records)
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    ok_count = sum(1 for record in records if record.ok)
+    payload = {
+        "trace": str(out),
+        "html": str(html_out) if html_out is not None else None,
+        "records": len(records),
+        "ok": ok_count,
+        "runtime": runtime,
+    }
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(f"Action trace written to {out} ({ok_count}/{len(records)} ok)")
+        if html_out is not None:
+            typer.echo(f"Action playground HTML written to {html_out}")
+
+
 @demo_app.command("action-playground-view")
 def demo_action_playground_view(
     traces: Annotated[

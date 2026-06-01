@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from html import escape
@@ -127,6 +128,11 @@ def _str_value(value: object, default: str = "") -> str:
     return value if isinstance(value, str) else default
 
 
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", value.strip().lower())
+    return slug.strip("_") or "item"
+
+
 def _spec_from_manifest_result(result: object) -> PyBulletGifSpec | None:
     if not isinstance(result, dict):
         return None
@@ -219,19 +225,19 @@ def _simulate_spec(spec: PyBulletGifSpec) -> list[RenderSample]:
     return run_simulation(spec.to_config())
 
 
-def build_action_playground_records(
-    manifest: Path,
+def build_action_playground_records_from_specs(
+    specs: Sequence[PyBulletGifSpec],
     *,
     simulator: Simulator = _simulate_spec,
     max_records: int | None = None,
     allow_local_heavy: bool = False,
 ) -> list[ActionPlaygroundRecord]:
-    specs = load_playground_specs(manifest)
+    selected_specs = list(specs)
     if max_records is not None:
-        specs = specs[:max_records]
+        selected_specs = selected_specs[:max_records]
 
     records: list[ActionPlaygroundRecord] = []
-    for spec in specs:
+    for spec in selected_specs:
         if (
             not allow_local_heavy
             and spec.runtime == "local"
@@ -293,6 +299,83 @@ def build_action_playground_records(
                 )
             )
     return records
+
+
+def build_action_playground_records(
+    manifest: Path,
+    *,
+    simulator: Simulator = _simulate_spec,
+    max_records: int | None = None,
+    allow_local_heavy: bool = False,
+) -> list[ActionPlaygroundRecord]:
+    return build_action_playground_records_from_specs(
+        load_playground_specs(manifest),
+        simulator=simulator,
+        max_records=max_records,
+        allow_local_heavy=allow_local_heavy,
+    )
+
+
+def build_action_playground_task_records(
+    *,
+    models: Sequence[str],
+    tasks: Sequence[object],
+    out_dir: Path = Path("docs/assets/gif_suite"),
+    runtime: str = "local",
+    remote_url: str = "http://localhost:8000",
+    remote_urls: Mapping[str, str] | None = None,
+    model_call_every: int = 8,
+    render_stride: int = 8,
+    reference_gif_model: str = "scripted",
+    simulator: Simulator = _simulate_spec,
+    max_records: int | None = None,
+    allow_local_heavy: bool = False,
+) -> list[ActionPlaygroundRecord]:
+    """Record action traces for model/task pairs without generating new GIF files."""
+
+    overrides = {key.strip().lower(): value for key, value in (remote_urls or {}).items()}
+    specs: list[PyBulletGifSpec] = []
+    for task in tasks:
+        task_id = _str_value(getattr(task, "task_id", None))
+        instruction = _str_value(getattr(task, "instruction", None))
+        cube_initial_position = _tuple3(
+            getattr(task, "cube_initial_position", None),
+            (0.58, -0.16, 0.035),
+        )
+        cube_goal_position = _tuple3(
+            getattr(task, "cube_goal_position", None),
+            (0.58, 0.22, 0.035),
+        )
+        goal_tolerance_m = _float_value(getattr(task, "goal_tolerance_m", None), 0.15)
+        if not task_id or not instruction:
+            continue
+        gif_model = reference_gif_model.strip() or "scripted"
+        for model_name in models:
+            canonical = model_name.strip().lower()
+            if not canonical:
+                continue
+            reference_gif = out_dir / f"simulation_{_slug(task_id)}_{_slug(gif_model)}.gif"
+            specs.append(
+                PyBulletGifSpec(
+                    model_name=model_name,
+                    task_id=task_id,
+                    instruction=instruction,
+                    out=reference_gif,
+                    runtime=runtime,
+                    remote_url=overrides.get(canonical, remote_url),
+                    model_call_every=model_call_every,
+                    render_stride=render_stride,
+                    cube_initial_position=cube_initial_position,
+                    cube_goal_position=cube_goal_position,
+                    goal_tolerance_m=goal_tolerance_m,
+                )
+            )
+    return build_action_playground_records_from_specs(
+        specs,
+        simulator=simulator,
+        max_records=max_records,
+        allow_local_heavy=allow_local_heavy,
+    )
 
 
 def write_action_playground_trace(path: Path, records: Sequence[ActionPlaygroundRecord]) -> None:
