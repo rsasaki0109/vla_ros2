@@ -179,6 +179,60 @@ def test_cli_report_bundle_creates_zip(tmp_path: Path) -> None:
     assert metadata["inputs"]["status_logs"] == [str(log)]
 
 
+def test_cli_ros_smoke_report_help() -> None:
+    result = CliRunner().invoke(app, ["ros", "smoke-report", "--help"])
+
+    assert result.exit_code == 0
+    assert "--duration-sec" in result.output
+    assert "--skip-launch" in result.output
+    assert "--fastdds-udp" in result.output
+
+
+def test_cli_ros_smoke_report_skip_launch(tmp_path: Path) -> None:
+    status_log = tmp_path / "vla_status.jsonl"
+    diagnostics_log = tmp_path / "vla_diagnostics.jsonl"
+    status_log.write_text(
+        json.dumps(
+            {
+                "model_name": "dummy",
+                "ready": True,
+                "last_latency_ms": 1.0,
+                "status_text": "ready",
+                "metadata": {"runtime": "local"},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    diagnostics_log.write_text(
+        json.dumps(
+            {
+                "status": [
+                    {
+                        "name": "vla_zoo/vla_runtime_node",
+                        "hardware_id": "dummy",
+                        "level": 0,
+                        "message": "ready",
+                        "values": [{"key": "runtime", "value": "local"}],
+                    }
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        app,
+        ["ros", "smoke-report", "--skip-launch", "--output-dir", str(tmp_path)],
+    )
+
+    assert result.exit_code == 0
+    assert (tmp_path / "dashboard.html").exists()
+    assert (tmp_path / "report_bundle.zip").exists()
+    assert "ROS2 smoke report written" in result.output
+
+
 def test_cli_compare_pybullet_help() -> None:
     result = CliRunner().invoke(app, ["compare", "pybullet", "--help"])
     assert result.exit_code == 0

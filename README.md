@@ -108,11 +108,7 @@ ros2 launch vla_zoo smoke.launch.py
 To record runtime logs for a static dashboard:
 
 ```bash
-ros2 launch vla_zoo smoke_record.launch.py output_dir:=results/ros2_smoke
-vla-zoo compare dashboard \
-  --status-log results/ros2_smoke/vla_status.jsonl \
-  --diagnostics-log results/ros2_smoke/vla_diagnostics.jsonl \
-  --out results/ros2_smoke/dashboard.html
+vla-zoo ros smoke-report --output-dir results/ros2_smoke
 ```
 
 | Topic | Type | Direction |

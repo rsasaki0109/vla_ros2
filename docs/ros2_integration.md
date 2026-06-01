@@ -41,6 +41,15 @@ dummy actions for logging/demo visibility.
 To record the same smoke run for dashboards and issue reports:
 
 ```bash
+vla-zoo ros smoke-report --output-dir results/ros2_smoke
+```
+
+That command runs `smoke_record.launch.py`, writes JSONL logs, and builds
+`dashboard.html` plus `report_bundle.zip`.
+
+The manual sequence is:
+
+```bash
 ros2 launch vla_zoo smoke_record.launch.py output_dir:=results/ros2_smoke
 ```
 
@@ -152,7 +161,7 @@ Useful launch arguments:
 The static dashboard can ingest JSONL logs shaped like `VLAStatus` and `DiagnosticArray` messages:
 
 ```bash
-ros2 launch vla_zoo smoke_record.launch.py output_dir:=results
+vla-zoo ros smoke-report --output-dir results
 vla-zoo compare dashboard \
   --status-log results/vla_status.jsonl \
   --diagnostics-log results/vla_diagnostics.jsonl \
