@@ -50,6 +50,23 @@ Then run the same deterministic PyBullet smoke scene for baseline methods and ru
 vla-zoo compare pybullet --models dummy,scripted,random,openvla,pi0,smolvla,groot
 ```
 
+For multiple runtime tasks, use the task suite:
+
+```bash
+vla-zoo compare tasks \
+  --models dummy,scripted,random \
+  --tasks all \
+  --out results/vla_task_verification/baseline_tasks.json \
+  --markdown-out results/vla_task_verification/baseline_tasks.md \
+  --html-out results/vla_task_verification/baseline_tasks.html
+```
+
+The built-in task suite currently covers `pick_red_block`, `move_red_block_left`,
+and `move_red_block_right`. It verifies adapter/runtime behavior across different
+instructions and cube start/goal positions. It is still not a real VLA policy
+skill benchmark because the bundled PyBullet scene uses scripted motion to
+exercise the runtime path.
+
 The local comparison skips heavy OpenVLA loading by default to avoid accidental downloads. The `dummy`, `scripted`, and `random` adapters are CPU smoke baselines for validating the runtime and metrics pipeline before comparing heavyweight VLA policies. For real model-to-model checks, run each VLA behind a remote GPU server and compare from the robot-side environment:
 
 ```bash

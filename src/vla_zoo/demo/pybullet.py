@@ -24,6 +24,8 @@ HEAVY_LOCAL_MODELS = frozenset({"openvla"})
 CUBE_INITIAL_POSITION = (0.58, -0.16, 0.035)
 CUBE_GOAL_POSITION = (0.58, 0.22, 0.035)
 TASK_GOAL_TOLERANCE_M = 0.15
+DEFAULT_TASK_ID = "pick_red_block"
+DEFAULT_INSTRUCTION = "pick up the red block"
 PHASE_ORDER = (
     "observe",
     "approach",
@@ -61,6 +63,59 @@ class Waypoint:
 
 
 @dataclass(frozen=True)
+class PyBulletTaskSpec:
+    task_id: str
+    instruction: str
+    cube_initial_position: tuple[float, float, float]
+    cube_goal_position: tuple[float, float, float]
+    goal_tolerance_m: float = TASK_GOAL_TOLERANCE_M
+    description: str = ""
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+DEFAULT_PYBULLET_TASK = PyBulletTaskSpec(
+    task_id=DEFAULT_TASK_ID,
+    instruction=DEFAULT_INSTRUCTION,
+    cube_initial_position=CUBE_INITIAL_POSITION,
+    cube_goal_position=CUBE_GOAL_POSITION,
+    description="Pick the red block and place it in the forward target zone.",
+)
+
+PYBULLET_TASK_SUITE = (
+    DEFAULT_PYBULLET_TASK,
+    PyBulletTaskSpec(
+        task_id="move_red_block_left",
+        instruction="move the red block to the left target zone",
+        cube_initial_position=(0.62, 0.16, 0.035),
+        cube_goal_position=(0.42, -0.18, 0.035),
+        description="Move the red block diagonally left across the table.",
+    ),
+    PyBulletTaskSpec(
+        task_id="move_red_block_right",
+        instruction="move the red block to the right target zone",
+        cube_initial_position=(0.52, -0.12, 0.035),
+        cube_goal_position=(0.68, 0.08, 0.035),
+        description="Move the red block diagonally right across the table.",
+    ),
+)
+
+
+def default_pybullet_tasks() -> list[PyBulletTaskSpec]:
+    return list(PYBULLET_TASK_SUITE)
+
+
+def pybullet_task_by_id(task_id: str) -> PyBulletTaskSpec:
+    normalized = task_id.strip().lower()
+    for task in PYBULLET_TASK_SUITE:
+        if task.task_id == normalized:
+            return task
+    available = ", ".join(task.task_id for task in PYBULLET_TASK_SUITE)
+    raise ValueError(f"unknown PyBullet task {task_id!r}; available tasks: {available}")
+
+
+@dataclass(frozen=True)
 class RenderSample:
     image: Image.Image
     phase: str
@@ -85,11 +140,30 @@ class PyBulletDemoConfig:
     model_name: str = "dummy"
     runtime: str = "local"
     remote_url: str = "http://localhost:8000"
-    instruction: str = "pick up the red block"
+    instruction: str = DEFAULT_INSTRUCTION
+    task_id: str = DEFAULT_TASK_ID
+    cube_initial_position: tuple[float, float, float] = CUBE_INITIAL_POSITION
+    cube_goal_position: tuple[float, float, float] = CUBE_GOAL_POSITION
+    goal_tolerance_m: float = TASK_GOAL_TOLERANCE_M
     out: Path = DEFAULT_OUT
     model_call_every: int = 8
     render_stride: int = 3
     adapter_kwargs: dict[str, Any] | None = None
+
+    @classmethod
+    def from_task(
+        cls,
+        task: PyBulletTaskSpec,
+        **kwargs: Any,
+    ) -> PyBulletDemoConfig:
+        return cls(
+            instruction=task.instruction,
+            task_id=task.task_id,
+            cube_initial_position=task.cube_initial_position,
+            cube_goal_position=task.cube_goal_position,
+            goal_tolerance_m=task.goal_tolerance_m,
+            **kwargs,
+        )
 
 
 @dataclass(frozen=True)
@@ -97,6 +171,8 @@ class PyBulletComparisonResult:
     model_name: str
     runtime: str
     ok: bool
+    task_id: str = DEFAULT_TASK_ID
+    instruction: str = DEFAULT_INSTRUCTION
     remote_url: str | None = None
     frames: int = 0
     adapter_queries: int = 0
@@ -220,7 +296,11 @@ def predict_adapter_action(
         return None, str(exc), None
 
 
-def setup_world(p: Any, pybullet_data: Any) -> tuple[int, int, int]:
+def setup_world(
+    p: Any,
+    pybullet_data: Any,
+    cube_initial_position: tuple[float, float, float] = CUBE_INITIAL_POSITION,
+) -> tuple[int, int, int]:
     p.connect(p.DIRECT)
     p.resetSimulation()
     p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -241,7 +321,7 @@ def setup_world(p: Any, pybullet_data: Any) -> tuple[int, int, int]:
         baseMass=0.08,
         baseCollisionShapeIndex=cube_collision,
         baseVisualShapeIndex=cube_visual,
-        basePosition=list(CUBE_INITIAL_POSITION),
+        basePosition=list(cube_initial_position),
         baseOrientation=[0, 0, 0, 1],
     )
     p.changeDynamics(cube, -1, lateralFriction=1.2, spinningFriction=0.02, rollingFriction=0.02)
@@ -403,23 +483,26 @@ def overlay(sample: RenderSample) -> Image.Image:
 def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
     model = make_model(config)
     p, pybullet_data = import_pybullet()
-    robot, cube, _ = setup_world(p, pybullet_data)
+    robot, cube, _ = setup_world(p, pybullet_data, config.cube_initial_position)
     set_initial_pose(p, robot)
 
     orientation = p.getQuaternionFromEuler([math.pi, 0.0, -math.pi / 4.0])
+    start_x, start_y, _ = config.cube_initial_position
+    goal_x, goal_y, _ = config.cube_goal_position
+    mid_y = (start_y + goal_y) * 0.5
     waypoints = [
-        Waypoint("observe", (0.42, -0.12, 0.36), 1.0, 45),
-        Waypoint("approach", (0.58, -0.16, 0.25), 1.0, 55),
-        Waypoint("descend", (0.58, -0.16, 0.105), 1.0, 45),
-        Waypoint("close gripper", (0.58, -0.16, 0.105), 0.0, 38, attach=True),
-        Waypoint("lift", (0.58, -0.16, 0.35), 0.0, 55),
-        Waypoint("transport", (0.58, 0.22, 0.35), 0.0, 70),
-        Waypoint("place", (0.58, 0.22, 0.105), 0.0, 50),
-        Waypoint("open gripper", (0.58, 0.22, 0.105), 1.0, 38, detach=True),
-        Waypoint("retreat", (0.38, 0.05, 0.38), 1.0, 55),
+        Waypoint("observe", (start_x - 0.20, start_y + 0.04, 0.36), 1.0, 45),
+        Waypoint("approach", (start_x, start_y, 0.25), 1.0, 55),
+        Waypoint("descend", (start_x, start_y, 0.105), 1.0, 45),
+        Waypoint("close gripper", (start_x, start_y, 0.105), 0.0, 38, attach=True),
+        Waypoint("lift", (start_x, start_y, 0.35), 0.0, 55),
+        Waypoint("transport", (goal_x, goal_y, 0.35), 0.0, 70),
+        Waypoint("place", (goal_x, goal_y, 0.105), 0.0, 50),
+        Waypoint("open gripper", (goal_x, goal_y, 0.105), 1.0, 38, detach=True),
+        Waypoint("retreat", (goal_x - 0.20, mid_y, 0.38), 1.0, 55),
     ]
 
-    current = (0.38, -0.08, 0.36)
+    current = (start_x - 0.20, start_y + 0.08, 0.36)
     current_gripper = 1.0
     grasp_constraint: int | None = None
     samples: list[RenderSample] = []
@@ -498,7 +581,7 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                         phase=waypoint.name,
                         position=target,
                         cube_position=cube_position,
-                        cube_goal_position=CUBE_GOAL_POSITION,
+                        cube_goal_position=config.cube_goal_position,
                         scripted_action=scripted_action,
                         adapter_action=last_adapter_action,
                         adapter_error=last_adapter_error,
@@ -537,7 +620,7 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                 phase=waypoints[-1].name,
                 position=current,
                 cube_position=cube_position,
-                cube_goal_position=CUBE_GOAL_POSITION,
+                cube_goal_position=config.cube_goal_position,
                 scripted_action=scripted_action,
                 adapter_action=last_adapter_action,
                 adapter_error=last_adapter_error,
@@ -561,6 +644,9 @@ def summarize_pybullet_samples(
     runtime: str,
     samples: list[RenderSample],
     *,
+    task_id: str = DEFAULT_TASK_ID,
+    instruction: str = DEFAULT_INSTRUCTION,
+    goal_tolerance_m: float = TASK_GOAL_TOLERANCE_M,
     remote_url: str | None = None,
     last_error: str | None = None,
 ) -> PyBulletComparisonResult:
@@ -609,7 +695,7 @@ def summarize_pybullet_samples(
         and cube_lifted
         and grasp_attached_frames > 0
         and final_cube_distance_to_goal is not None
-        and final_cube_distance_to_goal <= TASK_GOAL_TOLERANCE_M
+        and final_cube_distance_to_goal <= goal_tolerance_m
         and phase_completion >= 1.0
     )
     observed_error = last_error or next(
@@ -620,6 +706,8 @@ def summarize_pybullet_samples(
         model_name=model_name,
         runtime=runtime,
         ok=bool(samples) and query_count > 0 and not error_samples and observed_error is None,
+        task_id=task_id,
+        instruction=instruction,
         remote_url=remote_url,
         frames=len(samples),
         adapter_queries=query_count,
@@ -644,6 +732,10 @@ def compare_pybullet_models(
     remote_url: str = "http://localhost:8000",
     remote_urls: dict[str, str] | None = None,
     instruction: str = "pick up the red block",
+    task_id: str = DEFAULT_TASK_ID,
+    cube_initial_position: tuple[float, float, float] = CUBE_INITIAL_POSITION,
+    cube_goal_position: tuple[float, float, float] = CUBE_GOAL_POSITION,
+    goal_tolerance_m: float = TASK_GOAL_TOLERANCE_M,
     model_call_every: int = 8,
     render_stride: int = 12,
     allow_local_heavy: bool = False,
@@ -661,6 +753,10 @@ def compare_pybullet_models(
     return compare_pybullet_targets(
         targets,
         instruction=instruction,
+        task_id=task_id,
+        cube_initial_position=cube_initial_position,
+        cube_goal_position=cube_goal_position,
+        goal_tolerance_m=goal_tolerance_m,
         model_call_every=model_call_every,
         render_stride=render_stride,
         allow_local_heavy=allow_local_heavy,
@@ -671,6 +767,10 @@ def compare_pybullet_targets(
     targets: list[PyBulletComparisonTarget],
     *,
     instruction: str = "pick up the red block",
+    task_id: str = DEFAULT_TASK_ID,
+    cube_initial_position: tuple[float, float, float] = CUBE_INITIAL_POSITION,
+    cube_goal_position: tuple[float, float, float] = CUBE_GOAL_POSITION,
+    goal_tolerance_m: float = TASK_GOAL_TOLERANCE_M,
     model_call_every: int = 8,
     render_stride: int = 12,
     allow_local_heavy: bool = False,
@@ -688,6 +788,8 @@ def compare_pybullet_targets(
                     model_name=model_name,
                     runtime=runtime,
                     ok=False,
+                    task_id=task_id,
+                    instruction=instruction,
                     remote_url=None,
                     last_error=(
                         "local heavy adapter skipped to avoid model download; "
@@ -702,6 +804,10 @@ def compare_pybullet_targets(
             runtime=runtime,
             remote_url=target.remote_url,
             instruction=instruction,
+            task_id=task_id,
+            cube_initial_position=cube_initial_position,
+            cube_goal_position=cube_goal_position,
+            goal_tolerance_m=goal_tolerance_m,
             model_call_every=model_call_every,
             render_stride=render_stride,
             adapter_kwargs=target.adapter_kwargs,
@@ -714,6 +820,8 @@ def compare_pybullet_targets(
                     model_name=model_name,
                     runtime=runtime,
                     ok=False,
+                    task_id=task_id,
+                    instruction=instruction,
                     remote_url=target.remote_url if runtime == "remote" else None,
                     last_error=str(exc),
                 )
@@ -724,7 +832,36 @@ def compare_pybullet_targets(
                 model_name,
                 runtime,
                 samples,
+                task_id=task_id,
+                instruction=instruction,
+                goal_tolerance_m=goal_tolerance_m,
                 remote_url=target.remote_url if runtime == "remote" else None,
+            )
+        )
+    return results
+
+
+def compare_pybullet_task_suite(
+    targets: list[PyBulletComparisonTarget],
+    tasks: list[PyBulletTaskSpec],
+    *,
+    model_call_every: int = 8,
+    render_stride: int = 12,
+    allow_local_heavy: bool = False,
+) -> list[PyBulletComparisonResult]:
+    results: list[PyBulletComparisonResult] = []
+    for task in tasks:
+        results.extend(
+            compare_pybullet_targets(
+                targets,
+                instruction=task.instruction,
+                task_id=task.task_id,
+                cube_initial_position=task.cube_initial_position,
+                cube_goal_position=task.cube_goal_position,
+                goal_tolerance_m=task.goal_tolerance_m,
+                model_call_every=model_call_every,
+                render_stride=render_stride,
+                allow_local_heavy=allow_local_heavy,
             )
         )
     return results
@@ -738,13 +875,14 @@ def format_pybullet_comparison_markdown(
     lines = [
         f"## {title}",
         "",
-        "| Model | Runtime | Endpoint | OK | Frames | Queries | Errors | "
-        "Task | Lifted | Goal dist m | Cube moved m | Phase | Mean latency ms | "
+        "| Task | Instruction | Model | Runtime | Endpoint | OK | Frames | Queries | Errors | "
+        "Scene | Lifted | Goal dist m | Cube moved m | Phase | Mean latency ms | "
         "Mean abs action | Note |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
+        "|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for result in results:
         endpoint = result.remote_url or "-"
+        instruction = result.instruction.replace("|", "\\|")
         mean_latency = (
             f"{result.mean_latency_ms:0.2f}" if result.mean_latency_ms is not None else "-"
         )
@@ -764,7 +902,8 @@ def format_pybullet_comparison_markdown(
         phase = f"{result.phase_completion:0.2f}"
         note = (result.last_error or "-").replace("|", "\\|")
         lines.append(
-            f"| `{result.model_name}` | `{result.runtime}` | {endpoint} | "
+            f"| `{result.task_id}` | {instruction} | `{result.model_name}` | "
+            f"`{result.runtime}` | {endpoint} | "
             f"{str(result.ok).lower()} | {result.frames} | {result.adapter_queries} | "
             f"{result.adapter_errors} | {str(result.task_success).lower()} | "
             f"{str(result.cube_lifted).lower()} | {goal_distance} | {moved_distance} | "
@@ -834,6 +973,8 @@ def format_pybullet_comparison_html(
         moved_distance = _html_metric(result.cube_moved_distance, precision=3)
         rows.append(
             "<tr>"
+            f"<td><code>{escape(result.task_id)}</code></td>"
+            f"<td>{escape(result.instruction)}</td>"
             f"<td><code>{escape(result.model_name)}</code></td>"
             f"<td><code>{escape(result.runtime)}</code></td>"
             f"<td>{escape(result.remote_url or '-')}</td>"
@@ -999,8 +1140,9 @@ def format_pybullet_comparison_html(
     <table>
       <thead>
         <tr>
+          <th>Task</th><th>Instruction</th>
           <th>Model</th><th>Runtime</th><th>Endpoint</th><th>Status</th>
-          <th>Task</th><th>Lifted</th><th>Goal dist m</th><th>Moved m</th><th>Phase</th>
+          <th>Scene</th><th>Lifted</th><th>Goal dist m</th><th>Moved m</th><th>Phase</th>
           <th>Frames</th><th>Queries</th><th>Errors</th>
           <th>Mean latency ms</th><th>Mean abs action</th><th>Note</th>
         </tr>

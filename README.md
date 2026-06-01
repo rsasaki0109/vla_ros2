@@ -48,6 +48,35 @@ the resulting actions observable, replayable, and comparable.
 The implemented CPU baselines are for infrastructure validation. Model quality
 claims require real adapters, robot-specific calibration, and benchmark runs.
 
+## Verification Status
+
+Do not read this as "every VLA has been validated as a real robot policy." The
+current verification is runtime-centric and intentionally explicit about what
+did and did not run.
+
+| Adapter group | Multi-task runtime status | Real model status |
+|---|---|---|
+| `dummy`, `scripted`, `random` | Verified on 3 PyBullet runtime tasks | Baselines only, not VLA model quality |
+| `openvla` | Adapter scaffold exercised; local heavy runs are skipped by default | Weights/deps were present locally, but the CUDA prompt probe did not complete due to insufficient free GPU memory in this run |
+| `pi0` / `openpi` | Placeholder status recorded | Not verified as a real model in this repo yet |
+| `smolvla` | Placeholder status recorded | Not verified as a real model in this repo yet |
+| `groot` / `gr00t` | Experimental placeholder status recorded | Not verified as a real model in this repo yet |
+
+```bash
+vla-zoo compare tasks \
+  --models dummy,scripted,random \
+  --tasks all \
+  --out results/vla_task_verification/baseline_tasks.json \
+  --markdown-out results/vla_task_verification/baseline_tasks.md \
+  --html-out results/vla_task_verification/baseline_tasks.html
+```
+
+Sample artifacts:
+
+- Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
+- External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
+- OpenVLA prompt probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md
+
 ## Quickstart
 
 ```bash
@@ -189,6 +218,7 @@ Start by comparing adapter contracts without loading model weights:
 ```bash
 vla-zoo compare adapters
 vla-zoo compare methods --markdown-out results/vla_method_profiles.md
+vla-zoo compare tasks --models dummy,scripted,random --tasks all
 ```
 
 For real model-to-model checks, run heavyweight policies behind GPU servers and
