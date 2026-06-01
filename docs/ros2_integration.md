@@ -48,6 +48,21 @@ That command runs `smoke_record.launch.py`, writes JSONL logs, and builds
 `dashboard.html`, `action_trace.html`, `action_analysis.json`,
 `action_analysis.md`, and `report_bundle.zip`.
 
+For remote GPU inference, generate the matching GPU-server command, robot-side
+launch command, and report commands:
+
+```bash
+vla-zoo ros remote-smoke-plan \
+  --model openvla \
+  --remote-url http://gpu-box:8001 \
+  --output-dir results/ros2_remote_openvla \
+  --markdown-out results/ros2_remote_smoke_plan.md
+```
+
+The generated ROS2 launch uses `remote_smoke_record.launch.py`, keeps
+`dry_run:=true`, publishes typed actions only for report visibility, and records
+status/diagnostics/action JSONL in the selected output directory.
+
 The manual sequence is:
 
 ```bash

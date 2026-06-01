@@ -81,6 +81,37 @@ def test_cli_gpu_smoke_help() -> None:
     assert "--iterations" in result.output
 
 
+def test_cli_ros_remote_smoke_plan_writes_artifacts(tmp_path: Path) -> None:
+    json_out = tmp_path / "ros_remote.json"
+    markdown_out = tmp_path / "ros_remote.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ros",
+            "remote-smoke-plan",
+            "--model",
+            "smolvla",
+            "--remote-url",
+            "http://gpu-box:8003",
+            "--output-dir",
+            "results/ros2_smolvla",
+            "--out",
+            str(json_out),
+            "--markdown-out",
+            str(markdown_out),
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(json_out.read_text(encoding="utf-8"))
+    assert payload["model_name"] == "smolvla"
+    assert payload["remote_url"] == "http://gpu-box:8003"
+    assert "remote_smoke_record.launch.py" in result.output
+    assert "ROS2 Remote Smoke Plan" in markdown_out.read_text(encoding="utf-8")
+
+
 def test_cli_compare_adapters() -> None:
     result = CliRunner().invoke(app, ["compare", "adapters"])
     assert result.exit_code == 0

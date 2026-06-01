@@ -76,6 +76,7 @@ Sample artifacts:
 - Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
 - External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
 - GPU server plan: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
+- ROS2 remote smoke plan: https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md
 - OpenVLA prompt probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md
 - pi0 compatibility probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md
 - SmolVLA GPU probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md
@@ -213,6 +214,23 @@ Record status, diagnostics, and actions for reports:
 ```bash
 vla-zoo ros smoke-report --output-dir results/ros2_smoke
 ```
+
+Remote GPU smoke recording uses the same synthetic camera path but calls a GPU
+server from the robot-side ROS2 node:
+
+```bash
+vla-zoo ros remote-smoke-plan \
+  --model openvla \
+  --remote-url http://gpu-box:8001 \
+  --markdown-out results/ros2_remote_smoke_plan.md
+timeout 30s ros2 launch vla_zoo remote_smoke_record.launch.py \
+  model_name:=openvla \
+  remote_url:=http://gpu-box:8001 \
+  output_dir:=results/ros2_remote_openvla
+```
+
+Sample ROS2 remote smoke plan:
+https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md
 
 Replay recorded actions on a separate safe topic:
 
