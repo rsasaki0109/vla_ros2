@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 import numpy as np
@@ -17,6 +18,7 @@ WIDTH = 960
 HEIGHT = 540
 FPS = 24
 STEPS_PER_FRAME = 10
+HEAVY_LOCAL_MODELS = frozenset({"openvla"})
 
 
 def font(size: int, *, mono: bool = False) -> Any:
@@ -50,6 +52,7 @@ class RenderSample:
     scripted_action: tuple[float, float, float, float]
     adapter_action: tuple[float, float, float, float] | None
     adapter_error: str | None
+    adapter_latency_ms: float | None
     adapter_query_count: int
     adapter_query_fresh: bool
     attached: bool
@@ -69,6 +72,20 @@ class PyBulletDemoConfig:
     model_call_every: int = 8
     render_stride: int = 3
     adapter_kwargs: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class PyBulletComparisonResult:
+    model_name: str
+    runtime: str
+    ok: bool
+    frames: int = 0
+    adapter_queries: int = 0
+    adapter_errors: int = 0
+    mean_latency_ms: float | None = None
+    max_latency_ms: float | None = None
+    mean_abs_action: float | None = None
+    last_error: str | None = None
 
 
 def import_pybullet() -> tuple[Any, Any]:
@@ -138,7 +155,7 @@ def predict_adapter_action(
     gripper: float,
     attached: bool,
     sim_time: float,
-) -> tuple[tuple[float, float, float, float] | None, str | None]:
+) -> tuple[tuple[float, float, float, float] | None, str | None, float | None]:
     observation = VLAObservation(
         instruction=config.instruction,
         images={"primary": image},
@@ -155,9 +172,12 @@ def predict_adapter_action(
         },
     )
     try:
-        return prediction_to_demo_action(model.predict(observation=observation)), None
+        start = perf_counter()
+        prediction = model.predict(observation=observation)
+        latency_ms = (perf_counter() - start) * 1000.0
+        return prediction_to_demo_action(prediction), None, latency_ms
     except Exception as exc:
-        return None, str(exc)
+        return None, str(exc), None
 
 
 def setup_world(p: Any, pybullet_data: Any) -> tuple[int, int, int]:
@@ -295,6 +315,13 @@ def overlay(sample: RenderSample) -> Image.Image:
         fill=query_color,
         font=MONO,
     )
+    if sample.adapter_latency_ms is not None:
+        draw.text(
+            (800, 148),
+            f"{sample.adapter_latency_ms:0.1f}ms",
+            fill=(188, 199, 216),
+            font=MONO,
+        )
     labels = ("dx", "dy", "dz", "grip")
     for index, (label, value) in enumerate(zip(labels, action, strict=True)):
         y = 70 + index * 19
@@ -345,8 +372,8 @@ def overlay(sample: RenderSample) -> Image.Image:
 
 
 def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
-    p, pybullet_data = import_pybullet()
     model = make_model(config)
+    p, pybullet_data = import_pybullet()
     robot, cube, _ = setup_world(p, pybullet_data)
     set_initial_pose(p, robot)
 
@@ -371,6 +398,7 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
     last_target = current
     last_adapter_action: tuple[float, float, float, float] | None = None
     last_adapter_error: str | None = None
+    last_adapter_latency_ms: float | None = None
     rendered_frames = 0
     adapter_query_count = 0
 
@@ -412,7 +440,11 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                 )
                 if config.model_call_every > 0 and rendered_frames % config.model_call_every == 0:
                     adapter_query_count += 1
-                    last_adapter_action, last_adapter_error = predict_adapter_action(
+                    (
+                        last_adapter_action,
+                        last_adapter_error,
+                        last_adapter_latency_ms,
+                    ) = predict_adapter_action(
                         model,
                         raw,
                         config,
@@ -433,6 +465,7 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                         scripted_action=scripted_action,
                         adapter_action=last_adapter_action,
                         adapter_error=last_adapter_error,
+                        adapter_latency_ms=last_adapter_latency_ms,
                         adapter_query_count=adapter_query_count,
                         adapter_query_fresh=adapter_query_fresh,
                         attached=grasp_constraint is not None,
@@ -449,6 +482,101 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
 
     p.disconnect()
     return samples
+
+
+def summarize_pybullet_samples(
+    model_name: str,
+    runtime: str,
+    samples: list[RenderSample],
+    *,
+    last_error: str | None = None,
+) -> PyBulletComparisonResult:
+    fresh_samples = [sample for sample in samples if sample.adapter_query_fresh]
+    error_samples = [sample for sample in fresh_samples if sample.adapter_error is not None]
+    latencies = [
+        sample.adapter_latency_ms
+        for sample in fresh_samples
+        if sample.adapter_latency_ms is not None
+    ]
+    actions = [
+        np.asarray(sample.adapter_action, dtype=np.float32)
+        for sample in fresh_samples
+        if sample.adapter_action is not None
+    ]
+    query_count = max((sample.adapter_query_count for sample in samples), default=0)
+    action_values = np.concatenate(actions) if actions else np.asarray([], dtype=np.float32)
+    mean_abs_action = (
+        float(np.mean(np.abs(action_values))) if action_values.size else None
+    )
+    observed_error = last_error or next(
+        (sample.adapter_error for sample in reversed(fresh_samples) if sample.adapter_error),
+        None,
+    )
+    return PyBulletComparisonResult(
+        model_name=model_name,
+        runtime=runtime,
+        ok=bool(samples) and query_count > 0 and not error_samples and observed_error is None,
+        frames=len(samples),
+        adapter_queries=query_count,
+        adapter_errors=len(error_samples),
+        mean_latency_ms=float(np.mean(latencies)) if latencies else None,
+        max_latency_ms=float(np.max(latencies)) if latencies else None,
+        mean_abs_action=mean_abs_action,
+        last_error=observed_error,
+    )
+
+
+def compare_pybullet_models(
+    model_names: list[str],
+    *,
+    runtime: str = "local",
+    remote_url: str = "http://localhost:8000",
+    instruction: str = "pick up the red block",
+    model_call_every: int = 8,
+    render_stride: int = 12,
+    allow_local_heavy: bool = False,
+) -> list[PyBulletComparisonResult]:
+    results: list[PyBulletComparisonResult] = []
+    for model_name in model_names:
+        canonical = model_name.strip().lower()
+        if not canonical:
+            continue
+        if runtime == "local" and canonical in HEAVY_LOCAL_MODELS and not allow_local_heavy:
+            results.append(
+                PyBulletComparisonResult(
+                    model_name=model_name,
+                    runtime=runtime,
+                    ok=False,
+                    last_error=(
+                        "local heavy adapter skipped to avoid model download; "
+                        "use --allow-local-heavy or --runtime remote"
+                    ),
+                )
+            )
+            continue
+
+        config = PyBulletDemoConfig(
+            model_name=model_name,
+            runtime=runtime,
+            remote_url=remote_url,
+            instruction=instruction,
+            model_call_every=model_call_every,
+            render_stride=render_stride,
+        )
+        try:
+            samples = run_simulation(config)
+        except Exception as exc:
+            results.append(
+                PyBulletComparisonResult(
+                    model_name=model_name,
+                    runtime=runtime,
+                    ok=False,
+                    last_error=str(exc),
+                )
+            )
+            continue
+        results.append(summarize_pybullet_samples(model_name, runtime, samples))
+    return results
 
 
 def render_pybullet_demo(config: PyBulletDemoConfig) -> dict[str, object]:

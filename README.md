@@ -38,6 +38,29 @@ vla-zoo demo pybullet --model smolvla --runtime remote --remote-url http://gpu-b
 vla-zoo demo pybullet --model groot --runtime remote --remote-url http://gpu-box:8000
 ```
 
+## Compare VLA Runtime Paths
+
+Compare adapter availability without loading heavy model weights:
+
+```bash
+vla-zoo compare adapters
+```
+
+Run the same deterministic PyBullet smoke scene across adapters:
+
+```bash
+vla-zoo compare pybullet --models dummy,openvla,pi0,smolvla,groot
+```
+
+By default, the local PyBullet comparison skips heavy local OpenVLA loading so it does not accidentally download weights. Use a remote GPU server for real cross-model runtime checks:
+
+```bash
+vla-zoo compare pybullet \
+  --models openvla,pi0,smolvla,groot \
+  --runtime remote \
+  --remote-url http://gpu-box:8000
+```
+
 ## What works today
 
 - `load_model("dummy")` runs without a GPU or model download.
