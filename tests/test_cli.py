@@ -211,6 +211,35 @@ def test_cli_compare_methods_writes_markdown(tmp_path: Path) -> None:
     assert "`openvla`" in text
 
 
+def test_cli_compare_evidence_writes_artifacts(tmp_path: Path) -> None:
+    json_out = tmp_path / "evidence.json"
+    markdown_out = tmp_path / "evidence.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "compare",
+            "evidence",
+            "--models",
+            "openvla,smolvla",
+            "--out",
+            str(json_out),
+            "--markdown-out",
+            str(markdown_out),
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(json_out.read_text(encoding="utf-8"))
+    records = {record["model"]: record for record in payload["records"]}
+    assert records["openvla"]["evidence"]["gpu_inference"]["status"] == "blocked"
+    assert records["smolvla"]["evidence"]["gpu_inference"]["status"] == "verified"
+    text = markdown_out.read_text(encoding="utf-8")
+    assert "VLA Model Evidence Matrix" in text
+    assert "not a model-quality leaderboard" in text
+
+
 def test_cli_compare_suite_no_pybullet(tmp_path: Path) -> None:
     out_dir = tmp_path / "suite"
 
