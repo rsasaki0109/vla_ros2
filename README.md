@@ -23,6 +23,7 @@ vla-zoo doctor
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo compare adapters
 vla-zoo compare methods
+vla-zoo compare suite --no-pybullet --out-dir results/quick_suite
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 ```
 
@@ -79,6 +80,17 @@ vla-zoo compare methods --markdown-out results/vla_method_profiles.md
 This method profile table summarizes input requirements, action shape, action chunks,
 proprioception expectations, local/remote runtime support, dependency profile, and license
 caveats for baselines, OpenVLA, pi0/openpi, SmolVLA, and GR00T-style adapters.
+
+Generate a shareable comparison artifact directory:
+
+```bash
+vla-zoo compare suite --out-dir results/vla_compare_suite
+```
+
+The suite writes `method_profiles.json`, `method_profiles.md`, `pybullet_results.json`,
+`pybullet_results.md`, `pybullet_report.html`, `runtime_dashboard.html`, and a self-contained
+`README.md` under the output directory. Use `--no-pybullet` when you only want the lightweight
+method profile artifacts.
 
 Run the same deterministic PyBullet smoke scene across baseline methods and adapters:
 
@@ -164,6 +176,7 @@ vla-zoo predict --model dummy --instruction "hello"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 vla-zoo compare adapters
 vla-zoo compare methods
+vla-zoo compare suite --no-pybullet --out-dir results/quick_suite
 ```
 
 For remote-runtime smoke testing:

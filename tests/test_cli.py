@@ -61,6 +61,24 @@ def test_cli_compare_methods_writes_markdown(tmp_path: Path) -> None:
     assert "`openvla`" in text
 
 
+def test_cli_compare_suite_no_pybullet(tmp_path: Path) -> None:
+    out_dir = tmp_path / "suite"
+
+    result = CliRunner().invoke(
+        app,
+        ["compare", "suite", "--out-dir", str(out_dir), "--no-pybullet"],
+    )
+
+    assert result.exit_code == 0
+    assert (out_dir / "README.md").exists()
+    assert (out_dir / "method_profiles.json").exists()
+    assert (out_dir / "method_profiles.md").exists()
+    assert not (out_dir / "pybullet_results.json").exists()
+    readme = (out_dir / "README.md").read_text(encoding="utf-8")
+    assert "vla_zoo Comparison Suite" in readme
+    assert "Method profiles do not load model weights" in readme
+
+
 def test_cli_compare_dashboard_help() -> None:
     result = CliRunner().invoke(app, ["compare", "dashboard", "--help"])
     assert result.exit_code == 0
