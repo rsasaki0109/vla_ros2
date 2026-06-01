@@ -324,6 +324,7 @@
         <option value="latency">sort by latency</option>
         <option value="errors">sort by errors</option>
         <option value="queries">sort by queries</option>
+        <option value="task">sort by task score</option>
         <option value="action">sort by action magnitude</option>
         <option value="model">sort by model</option>
       </select>
@@ -354,6 +355,10 @@
         <div id="actionChart"></div>
       </div>
       <div class="panel">
+        <h2>Task Goal Distance</h2>
+        <div id="goalDistanceChart"></div>
+      </div>
+      <div class="panel">
         <h2>Triage Queue</h2>
         <div class="panel-body" id="triageQueue"></div>
       </div>
@@ -364,6 +369,7 @@
             <tr>
               <th>Model</th><th>Runtime</th><th>Endpoint</th><th>Status</th><th>Health</th>
               <th>Frames</th><th>Queries</th><th>Errors</th>
+              <th>Task</th><th>Lifted</th><th>Goal dist</th>
               <th>Mean latency</th><th>Max latency</th><th>Mean abs action</th><th>Note</th>
             </tr>
           </thead>
@@ -384,12 +390,18 @@
     "ok": true,
     "source": "docs/assets/sample_runtime_comparison.json",
     "remote_url": null,
-    "frames": 14,
-    "adapter_queries": 2,
+    "frames": 43,
+    "adapter_queries": 6,
     "adapter_errors": 0,
-    "mean_latency_ms": 0.03192148869857192,
-    "max_latency_ms": 0.036056037060916424,
+    "mean_latency_ms": 0.015848005811373394,
+    "max_latency_ms": 0.02687610685825348,
     "mean_abs_action": 0.0,
+    "task_success": true,
+    "cube_lifted": true,
+    "cube_moved_distance": 0.37145423719073145,
+    "final_cube_distance_to_goal": 0.011535157920753714,
+    "grasp_attached_frames": 20,
+    "phase_completion": 1.0,
     "last_error": null
   },
   {
@@ -404,6 +416,12 @@
     "mean_latency_ms": null,
     "max_latency_ms": null,
     "mean_abs_action": null,
+    "task_success": false,
+    "cube_lifted": false,
+    "cube_moved_distance": null,
+    "final_cube_distance_to_goal": null,
+    "grasp_attached_frames": 0,
+    "phase_completion": 0.0,
     "last_error": "local heavy adapter skipped to avoid model download; use --allow-local-heavy or --runtime remote"
   },
   {
@@ -412,13 +430,19 @@
     "ok": false,
     "source": "docs/assets/sample_runtime_comparison.json",
     "remote_url": null,
-    "frames": 14,
-    "adapter_queries": 2,
-    "adapter_errors": 2,
+    "frames": 43,
+    "adapter_queries": 6,
+    "adapter_errors": 6,
     "mean_latency_ms": null,
     "max_latency_ms": null,
     "mean_abs_action": null,
-    "last_error": "Local pi0/openpi inference is not implemented in vla_zoo MVP. Run pi0 in a dedicated server and load it with runtime='remote'."
+    "task_success": true,
+    "cube_lifted": true,
+    "cube_moved_distance": 0.37145423719073145,
+    "final_cube_distance_to_goal": 0.011535157920753714,
+    "grasp_attached_frames": 20,
+    "phase_completion": 1.0,
+    "last_error": "Local pi0/openpi inference is disabled by default because pi0 checkpoints are heavy and checkpoint/config compatibility varies by LeRobot version. Use runtime='remote' for robot-side deployment, or call load_model('pi0', enable_local=True, pretrained='lerobot/pi0_base') in a dedicated GPU environment."
   },
   {
     "model_name": "smolvla",
@@ -426,13 +450,19 @@
     "ok": false,
     "source": "docs/assets/sample_runtime_comparison.json",
     "remote_url": null,
-    "frames": 14,
-    "adapter_queries": 2,
-    "adapter_errors": 2,
+    "frames": 0,
+    "adapter_queries": 0,
+    "adapter_errors": 0,
     "mean_latency_ms": null,
     "max_latency_ms": null,
     "mean_abs_action": null,
-    "last_error": "Local SmolVLA inference is not implemented in vla_zoo MVP. Install LeRobot in a dedicated environment or use a remote adapter."
+    "task_success": false,
+    "cube_lifted": false,
+    "cube_moved_distance": null,
+    "final_cube_distance_to_goal": null,
+    "grasp_attached_frames": 0,
+    "phase_completion": 0.0,
+    "last_error": "local heavy adapter skipped to avoid model download; use --allow-local-heavy or --runtime remote"
   },
   {
     "model_name": "groot",
@@ -440,12 +470,18 @@
     "ok": false,
     "source": "docs/assets/sample_runtime_comparison.json",
     "remote_url": null,
-    "frames": 14,
-    "adapter_queries": 2,
-    "adapter_errors": 2,
+    "frames": 43,
+    "adapter_queries": 6,
+    "adapter_errors": 6,
     "mean_latency_ms": null,
     "max_latency_ms": null,
     "mean_abs_action": null,
+    "task_success": true,
+    "cube_lifted": true,
+    "cube_moved_distance": 0.37145423719073145,
+    "final_cube_distance_to_goal": 0.011535157920753714,
+    "grasp_attached_frames": 20,
+    "phase_completion": 1.0,
     "last_error": "Isaac GR00T dependencies are not installed. Install NVIDIA's GR00T stack in the serving environment before using this adapter."
   }
 ];
@@ -483,6 +519,41 @@
       return "ready";
     }
 
+    function hasTaskMetrics(record) {
+      return record.task_success !== null && record.task_success !== undefined ||
+        record.cube_lifted !== null && record.cube_lifted !== undefined ||
+        record.final_cube_distance_to_goal !== null &&
+          record.final_cube_distance_to_goal !== undefined ||
+        record.phase_completion !== null && record.phase_completion !== undefined;
+    }
+
+    function taskScore(record) {
+      if (!hasTaskMetrics(record)) return null;
+      let score = 0;
+      if (record.task_success) score += 55;
+      if (record.cube_lifted) score += 15;
+      if (record.phase_completion !== null && record.phase_completion !== undefined) {
+        score += clamp(Number(record.phase_completion) * 15, 0, 15);
+      }
+      if (record.final_cube_distance_to_goal !== null &&
+          record.final_cube_distance_to_goal !== undefined) {
+        score += clamp((0.25 - Number(record.final_cube_distance_to_goal)) / 0.25 * 15, 0, 15);
+      }
+      return Math.round(clamp(score, 0, 100));
+    }
+
+    function taskLabel(record) {
+      if (!hasTaskMetrics(record)) return "-";
+      const score = taskScore(record);
+      if (record.task_success) return `success ${score}%`;
+      return `miss ${score}%`;
+    }
+
+    function liftedLabel(record) {
+      if (record.cube_lifted === null || record.cube_lifted === undefined) return "-";
+      return String(record.cube_lifted);
+    }
+
     function stateBadge(record) {
       const state = recordState(record);
       if (state === "ready") return '<span class="badge ok">ready</span>';
@@ -496,8 +567,13 @@
       if (!record.ok && error.includes("local heavy")) {
         return "Run remotely, or use --allow-local-heavy only when downloads are intended.";
       }
-      if (!record.ok && error.includes("dedicated server")) {
-        return "Start a model-specific remote server and compare through runtime=remote.";
+      if (
+        !record.ok &&
+        (error.includes("dedicated server") ||
+          error.includes("enable_local") ||
+          error.includes("runtime='remote'"))
+      ) {
+        return "Start a GPU server, or enable local loading only in a pinned GPU env.";
       }
       if (!record.ok && error.includes("dependencies")) {
         return "Install adapter dependencies in the serving environment, not the base package.";
@@ -543,6 +619,7 @@
         if (sort === "health") return healthScore(a) - healthScore(b);
         if (sort === "errors") return b.adapter_errors - a.adapter_errors;
         if (sort === "queries") return b.adapter_queries - a.adapter_queries;
+        if (sort === "task") return (taskScore(b) ?? -1) - (taskScore(a) ?? -1);
         if (sort === "action") return (b.mean_abs_action ?? -1) - (a.mean_abs_action ?? -1);
         if (sort === "model") return text(a.model_name).localeCompare(text(b.model_name));
         return (b.mean_latency_ms ?? -1) - (a.mean_latency_ms ?? -1);
@@ -562,12 +639,15 @@
         ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length
         : null;
       const errorRate = queries > 0 ? errors / queries * 100 : 0;
+      const taskRows = rows.filter(record => hasTaskMetrics(record));
+      const taskOk = taskRows.filter(record => record.task_success).length;
       const health = rows.length
         ? rows.reduce((sum, record) => sum + healthScore(record), 0) / rows.length
         : 0;
       document.getElementById("summary").innerHTML = [
         ["health", `${Math.round(health)}%`, "mean readiness score"],
         ["ready", `${ok}/${rows.length}`, "passing adapters"],
+        ["task", taskRows.length ? `${taskOk}/${taskRows.length}` : "-", "PyBullet scene success"],
         ["queries", queries, `${frames} frames observed`],
         ["error rate", `${fmt(errorRate, 1)}%`, `${errors} adapter errors`],
         ["avg latency", `${fmt(avgLatency)} ms`, "mean over available rows"],
@@ -686,6 +766,9 @@
         <td>${record.frames}</td>
         <td>${record.adapter_queries}</td>
         <td>${record.adapter_errors}</td>
+        <td>${esc(taskLabel(record))}</td>
+        <td>${esc(liftedLabel(record))}</td>
+        <td>${fmt(record.final_cube_distance_to_goal, 3)} m</td>
         <td>${fmt(record.mean_latency_ms)} ms</td>
         <td>${fmt(record.max_latency_ms)} ms</td>
         <td>${fmt(record.mean_abs_action, 3)}</td>
@@ -697,7 +780,9 @@
       const headers = [
         "model_name", "runtime", "ok", "health", "remote_url", "frames",
         "adapter_queries", "adapter_errors", "mean_latency_ms", "max_latency_ms",
-        "mean_abs_action", "last_error", "source"
+        "mean_abs_action", "task_success", "cube_lifted", "cube_moved_distance",
+        "final_cube_distance_to_goal", "grasp_attached_frames", "phase_completion",
+        "last_error", "source"
       ];
       const quote = value => `"${text(value).replaceAll('"', '""')}"`;
       const csv = [
@@ -741,6 +826,7 @@
       renderBarChart("latencyChart", rows, "mean_latency_ms", 2);
       renderBarChart("errorChart", rows, "error_rate", 1, "error");
       renderBarChart("actionChart", rows, "mean_abs_action", 3, "action");
+      renderBarChart("goalDistanceChart", rows, "final_cube_distance_to_goal", 3, "neutral");
       renderTriage(rows);
       renderRows(rows);
       document.getElementById("raw").textContent = JSON.stringify(rows, null, 2);

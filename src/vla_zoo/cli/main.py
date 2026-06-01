@@ -88,6 +88,13 @@ def _parse_remote_map(value: str | None) -> dict[str, str]:
     return parsed
 
 
+def _parse_name_list(value: str) -> list[str]:
+    names = [item.strip() for item in value.split(",") if item.strip()]
+    if not names:
+        raise typer.BadParameter("At least one model name is required.")
+    return names
+
+
 def _model_load_kwargs(
     *,
     pretrained: str | None,
@@ -409,6 +416,85 @@ def predict(
             "metadata": action.metadata,
         }
     typer.echo(json.dumps(payload, indent=2))
+
+
+@app.command("serve-plan")
+def serve_plan(
+    models: Annotated[
+        str,
+        typer.Option(
+            "--models",
+            help="Comma-separated model servers to plan.",
+        ),
+    ] = "openvla,pi0,smolvla,groot",
+    host: Annotated[str, typer.Option("--host", help="Bind host for each GPU server.")] = "0.0.0.0",
+    public_host: Annotated[
+        str,
+        typer.Option("--public-host", help="Hostname/IP reachable from the robot-side runtime."),
+    ] = "gpu-box",
+    base_port: Annotated[
+        int,
+        typer.Option("--base-port", help="First port; later models increment by one."),
+    ] = 8001,
+    device: Annotated[
+        str,
+        typer.Option("--device", help="Device passed to local GPU adapters."),
+    ] = "cuda:0",
+    dtype: Annotated[
+        str | None,
+        typer.Option("--dtype", help="Optional dtype for adapters that expose dtype."),
+    ] = None,
+    unnorm_key: Annotated[
+        str | None,
+        typer.Option("--unnorm-key", help="OpenVLA dataset/action unnormalization key."),
+    ] = "bridge_orig",
+    pretrained_map: Annotated[
+        str | None,
+        typer.Option(
+            "--pretrained-map",
+            help=(
+                "Comma-separated model=checkpoint overrides, for example "
+                "pi0=lerobot/pi0_base,smolvla=lerobot/smolvla_base."
+            ),
+        ),
+    ] = None,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON server plan."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write Markdown server plan."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print JSON instead of Markdown."),
+    ] = False,
+) -> None:
+    """Generate a remote GPU server plan for heavyweight VLA comparisons."""
+
+    from vla_zoo.runtime.server_plan import build_server_plan, format_server_plan_markdown
+
+    plan = build_server_plan(
+        _parse_name_list(models),
+        host=host,
+        public_host=public_host,
+        base_port=base_port,
+        device=device,
+        dtype=dtype,
+        unnorm_key=unnorm_key,
+        pretrained=_parse_remote_map(pretrained_map),
+    )
+    payload = plan.to_dict()
+    markdown = format_server_plan_markdown(plan)
+    if out is not None:
+        _write_text(out, json.dumps(payload, indent=2) + "\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, markdown)
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(markdown)
 
 
 @app.command()

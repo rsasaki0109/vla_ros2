@@ -7,6 +7,7 @@ from vla_zoo.demo.pybullet import (
     PHASE_ORDER,
     PyBulletComparisonResult,
     RenderSample,
+    compare_pybullet_models,
     format_pybullet_comparison_html,
     format_pybullet_comparison_markdown,
     summarize_pybullet_samples,
@@ -67,6 +68,14 @@ def test_pybullet_comparison_markdown_includes_remote_url() -> None:
     assert "`pick_red_block`" in markdown
     assert "Goal dist m" in markdown
     assert "true" in markdown
+
+
+def test_pybullet_comparison_skips_smolvla_local_heavy_by_default() -> None:
+    result = compare_pybullet_models(["smolvla"])[0]
+
+    assert result.ok is False
+    assert result.last_error is not None
+    assert "local heavy adapter skipped" in result.last_error
 
 
 def test_pybullet_comparison_html_includes_summary_and_json() -> None:

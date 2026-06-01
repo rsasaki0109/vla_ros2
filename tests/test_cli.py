@@ -43,6 +43,35 @@ def test_cli_serve_help_exposes_gpu_options() -> None:
     assert "--unnorm-key" in result.output
 
 
+def test_cli_serve_plan_writes_artifacts(tmp_path: Path) -> None:
+    json_out = tmp_path / "servers.json"
+    markdown_out = tmp_path / "servers.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "serve-plan",
+            "--models",
+            "openvla,pi0",
+            "--public-host",
+            "gpu-box",
+            "--base-port",
+            "8101",
+            "--out",
+            str(json_out),
+            "--markdown-out",
+            str(markdown_out),
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(json_out.read_text(encoding="utf-8"))
+    assert payload["remote_map"] == "openvla=http://gpu-box:8101,pi0=http://gpu-box:8102"
+    assert "lerobot/pi0_base" in result.output
+    assert "VLA GPU Server Plan" in markdown_out.read_text(encoding="utf-8")
+
+
 def test_cli_gpu_smoke_help() -> None:
     result = CliRunner().invoke(app, ["gpu", "smoke", "--help"])
 

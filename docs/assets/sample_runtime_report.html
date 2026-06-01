@@ -127,28 +127,33 @@
     <p>
       Static VLA runtime report generated from the deterministic PyBullet smoke scene.
       It is useful for comparing adapter availability, remote server wiring, latency, and
-      action magnitude. It is not a model-quality benchmark.
+      scripted-scene task telemetry. It is not a model-quality benchmark.
     </p>
     <section class="cards">
       <div class="card"><div class="label">models</div><div class="value">5</div></div>
       <div class="card"><div class="label">ok</div><div class="value">1</div></div>
       <div class="card">
-        <div class="label">adapter queries</div><div class="value">8</div>
+        <div class="label">task success</div><div class="value">3</div>
       </div>
       <div class="card">
-        <div class="label">adapter errors</div><div class="value">6</div>
+        <div class="label">adapter queries</div><div class="value">18</div>
+      </div>
+      <div class="card">
+        <div class="label">adapter errors</div><div class="value">12</div>
       </div>
     </section>
     <table>
       <thead>
         <tr>
+          <th>Task</th><th>Instruction</th>
           <th>Model</th><th>Runtime</th><th>Endpoint</th><th>Status</th>
+          <th>Scene</th><th>Lifted</th><th>Goal dist m</th><th>Moved m</th><th>Phase</th>
           <th>Frames</th><th>Queries</th><th>Errors</th>
           <th>Mean latency ms</th><th>Mean abs action</th><th>Note</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td><code>dummy</code></td><td><code>local</code></td><td>-</td><td><span class="badge ok">ok</span></td><td>14</td><td>2</td><td>0</td><td>0.03<div class="meter"><span style="width:100.0%;background:#22c55e"></span></div></td><td>0.000<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>-</td></tr><tr><td><code>openvla</code></td><td><code>local</code></td><td>-</td><td><span class="badge error">error</span></td><td>0</td><td>0</td><td>0</td><td>-<div class="meter"><span style="width:0.0%;background:#22c55e"></span></div></td><td>-<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>local heavy adapter skipped to avoid model download; use --allow-local-heavy or --runtime remote</td></tr><tr><td><code>pi0</code></td><td><code>local</code></td><td>-</td><td><span class="badge error">error</span></td><td>14</td><td>2</td><td>2</td><td>-<div class="meter"><span style="width:0.0%;background:#22c55e"></span></div></td><td>-<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>Local pi0/openpi inference is not implemented in vla_zoo MVP. Run pi0 in a dedicated server and load it with runtime=&#x27;remote&#x27;.</td></tr><tr><td><code>smolvla</code></td><td><code>local</code></td><td>-</td><td><span class="badge error">error</span></td><td>14</td><td>2</td><td>2</td><td>-<div class="meter"><span style="width:0.0%;background:#22c55e"></span></div></td><td>-<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>Local SmolVLA inference is not implemented in vla_zoo MVP. Install LeRobot in a dedicated environment or use a remote adapter.</td></tr><tr><td><code>groot</code></td><td><code>local</code></td><td>-</td><td><span class="badge error">error</span></td><td>14</td><td>2</td><td>2</td><td>-<div class="meter"><span style="width:0.0%;background:#22c55e"></span></div></td><td>-<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>Isaac GR00T dependencies are not installed. Install NVIDIA&#x27;s GR00T stack in the serving environment before using this adapter.</td></tr>
+        <tr><td><code>pick_red_block</code></td><td>pick up the red block</td><td><code>dummy</code></td><td><code>local</code></td><td>-</td><td><span class="badge ok">ok</span></td><td><span class="badge ok">success</span></td><td>true</td><td>0.012</td><td>0.371</td><td>1.00</td><td>43</td><td>6</td><td>0</td><td>0.02<div class="meter"><span style="width:100.0%;background:#22c55e"></span></div></td><td>0.000<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>-</td></tr><tr><td><code>pick_red_block</code></td><td>pick up the red block</td><td><code>openvla</code></td><td><code>local</code></td><td>-</td><td><span class="badge error">error</span></td><td><span class="badge error">miss</span></td><td>false</td><td>-</td><td>-</td><td>0.00</td><td>0</td><td>0</td><td>0</td><td>-<div class="meter"><span style="width:0.0%;background:#22c55e"></span></div></td><td>-<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>local heavy adapter skipped to avoid model download; use --allow-local-heavy or --runtime remote</td></tr><tr><td><code>pick_red_block</code></td><td>pick up the red block</td><td><code>pi0</code></td><td><code>local</code></td><td>-</td><td><span class="badge error">error</span></td><td><span class="badge ok">success</span></td><td>true</td><td>0.012</td><td>0.371</td><td>1.00</td><td>43</td><td>6</td><td>6</td><td>-<div class="meter"><span style="width:0.0%;background:#22c55e"></span></div></td><td>-<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>Local pi0/openpi inference is disabled by default because pi0 checkpoints are heavy and checkpoint/config compatibility varies by LeRobot version. Use runtime=&#x27;remote&#x27; for robot-side deployment, or call load_model(&#x27;pi0&#x27;, enable_local=True, pretrained=&#x27;lerobot/pi0_base&#x27;) in a dedicated GPU environment.</td></tr><tr><td><code>pick_red_block</code></td><td>pick up the red block</td><td><code>smolvla</code></td><td><code>local</code></td><td>-</td><td><span class="badge error">error</span></td><td><span class="badge error">miss</span></td><td>false</td><td>-</td><td>-</td><td>0.00</td><td>0</td><td>0</td><td>0</td><td>-<div class="meter"><span style="width:0.0%;background:#22c55e"></span></div></td><td>-<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>local heavy adapter skipped to avoid model download; use --allow-local-heavy or --runtime remote</td></tr><tr><td><code>pick_red_block</code></td><td>pick up the red block</td><td><code>groot</code></td><td><code>local</code></td><td>-</td><td><span class="badge error">error</span></td><td><span class="badge ok">success</span></td><td>true</td><td>0.012</td><td>0.371</td><td>1.00</td><td>43</td><td>6</td><td>6</td><td>-<div class="meter"><span style="width:0.0%;background:#22c55e"></span></div></td><td>-<div class="meter"><span style="width:0.0%;background:#38bdf8"></span></div></td><td>Isaac GR00T dependencies are not installed. Install NVIDIA&#x27;s GR00T stack in the serving environment before using this adapter.</td></tr>
       </tbody>
     </table>
     <details>
@@ -158,19 +163,29 @@
     &quot;model_name&quot;: &quot;dummy&quot;,
     &quot;runtime&quot;: &quot;local&quot;,
     &quot;ok&quot;: true,
+    &quot;task_id&quot;: &quot;pick_red_block&quot;,
+    &quot;instruction&quot;: &quot;pick up the red block&quot;,
     &quot;remote_url&quot;: null,
-    &quot;frames&quot;: 14,
-    &quot;adapter_queries&quot;: 2,
+    &quot;frames&quot;: 43,
+    &quot;adapter_queries&quot;: 6,
     &quot;adapter_errors&quot;: 0,
-    &quot;mean_latency_ms&quot;: 0.03192148869857192,
-    &quot;max_latency_ms&quot;: 0.036056037060916424,
+    &quot;mean_latency_ms&quot;: 0.015848005811373394,
+    &quot;max_latency_ms&quot;: 0.02687610685825348,
     &quot;mean_abs_action&quot;: 0.0,
+    &quot;task_success&quot;: true,
+    &quot;cube_lifted&quot;: true,
+    &quot;cube_moved_distance&quot;: 0.37145423719073145,
+    &quot;final_cube_distance_to_goal&quot;: 0.011535157920753714,
+    &quot;grasp_attached_frames&quot;: 20,
+    &quot;phase_completion&quot;: 1.0,
     &quot;last_error&quot;: null
   },
   {
     &quot;model_name&quot;: &quot;openvla&quot;,
     &quot;runtime&quot;: &quot;local&quot;,
     &quot;ok&quot;: false,
+    &quot;task_id&quot;: &quot;pick_red_block&quot;,
+    &quot;instruction&quot;: &quot;pick up the red block&quot;,
     &quot;remote_url&quot;: null,
     &quot;frames&quot;: 0,
     &quot;adapter_queries&quot;: 0,
@@ -178,45 +193,75 @@
     &quot;mean_latency_ms&quot;: null,
     &quot;max_latency_ms&quot;: null,
     &quot;mean_abs_action&quot;: null,
+    &quot;task_success&quot;: false,
+    &quot;cube_lifted&quot;: false,
+    &quot;cube_moved_distance&quot;: null,
+    &quot;final_cube_distance_to_goal&quot;: null,
+    &quot;grasp_attached_frames&quot;: 0,
+    &quot;phase_completion&quot;: 0.0,
     &quot;last_error&quot;: &quot;local heavy adapter skipped to avoid model download; use --allow-local-heavy or --runtime remote&quot;
   },
   {
     &quot;model_name&quot;: &quot;pi0&quot;,
     &quot;runtime&quot;: &quot;local&quot;,
     &quot;ok&quot;: false,
+    &quot;task_id&quot;: &quot;pick_red_block&quot;,
+    &quot;instruction&quot;: &quot;pick up the red block&quot;,
     &quot;remote_url&quot;: null,
-    &quot;frames&quot;: 14,
-    &quot;adapter_queries&quot;: 2,
-    &quot;adapter_errors&quot;: 2,
+    &quot;frames&quot;: 43,
+    &quot;adapter_queries&quot;: 6,
+    &quot;adapter_errors&quot;: 6,
     &quot;mean_latency_ms&quot;: null,
     &quot;max_latency_ms&quot;: null,
     &quot;mean_abs_action&quot;: null,
-    &quot;last_error&quot;: &quot;Local pi0/openpi inference is not implemented in vla_zoo MVP. Run pi0 in a dedicated server and load it with runtime=&#x27;remote&#x27;.&quot;
+    &quot;task_success&quot;: true,
+    &quot;cube_lifted&quot;: true,
+    &quot;cube_moved_distance&quot;: 0.37145423719073145,
+    &quot;final_cube_distance_to_goal&quot;: 0.011535157920753714,
+    &quot;grasp_attached_frames&quot;: 20,
+    &quot;phase_completion&quot;: 1.0,
+    &quot;last_error&quot;: &quot;Local pi0/openpi inference is disabled by default because pi0 checkpoints are heavy and checkpoint/config compatibility varies by LeRobot version. Use runtime=&#x27;remote&#x27; for robot-side deployment, or call load_model(&#x27;pi0&#x27;, enable_local=True, pretrained=&#x27;lerobot/pi0_base&#x27;) in a dedicated GPU environment.&quot;
   },
   {
     &quot;model_name&quot;: &quot;smolvla&quot;,
     &quot;runtime&quot;: &quot;local&quot;,
     &quot;ok&quot;: false,
+    &quot;task_id&quot;: &quot;pick_red_block&quot;,
+    &quot;instruction&quot;: &quot;pick up the red block&quot;,
     &quot;remote_url&quot;: null,
-    &quot;frames&quot;: 14,
-    &quot;adapter_queries&quot;: 2,
-    &quot;adapter_errors&quot;: 2,
+    &quot;frames&quot;: 0,
+    &quot;adapter_queries&quot;: 0,
+    &quot;adapter_errors&quot;: 0,
     &quot;mean_latency_ms&quot;: null,
     &quot;max_latency_ms&quot;: null,
     &quot;mean_abs_action&quot;: null,
-    &quot;last_error&quot;: &quot;Local SmolVLA inference is not implemented in vla_zoo MVP. Install LeRobot in a dedicated environment or use a remote adapter.&quot;
+    &quot;task_success&quot;: false,
+    &quot;cube_lifted&quot;: false,
+    &quot;cube_moved_distance&quot;: null,
+    &quot;final_cube_distance_to_goal&quot;: null,
+    &quot;grasp_attached_frames&quot;: 0,
+    &quot;phase_completion&quot;: 0.0,
+    &quot;last_error&quot;: &quot;local heavy adapter skipped to avoid model download; use --allow-local-heavy or --runtime remote&quot;
   },
   {
     &quot;model_name&quot;: &quot;groot&quot;,
     &quot;runtime&quot;: &quot;local&quot;,
     &quot;ok&quot;: false,
+    &quot;task_id&quot;: &quot;pick_red_block&quot;,
+    &quot;instruction&quot;: &quot;pick up the red block&quot;,
     &quot;remote_url&quot;: null,
-    &quot;frames&quot;: 14,
-    &quot;adapter_queries&quot;: 2,
-    &quot;adapter_errors&quot;: 2,
+    &quot;frames&quot;: 43,
+    &quot;adapter_queries&quot;: 6,
+    &quot;adapter_errors&quot;: 6,
     &quot;mean_latency_ms&quot;: null,
     &quot;max_latency_ms&quot;: null,
     &quot;mean_abs_action&quot;: null,
+    &quot;task_success&quot;: true,
+    &quot;cube_lifted&quot;: true,
+    &quot;cube_moved_distance&quot;: 0.37145423719073145,
+    &quot;final_cube_distance_to_goal&quot;: 0.011535157920753714,
+    &quot;grasp_attached_frames&quot;: 20,
+    &quot;phase_completion&quot;: 1.0,
     &quot;last_error&quot;: &quot;Isaac GR00T dependencies are not installed. Install NVIDIA&#x27;s GR00T stack in the serving environment before using this adapter.&quot;
   }
 ]</pre>
