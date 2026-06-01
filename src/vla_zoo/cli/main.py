@@ -2320,5 +2320,74 @@ def demo_gif_report(
         raise typer.Exit(1)
 
 
+@demo_app.command("action-playground")
+def demo_action_playground(
+    manifest: Annotated[
+        Path,
+        typer.Option("--manifest", help="GIF suite manifest JSON path."),
+    ] = Path("docs/assets/gif_suite/gif_manifest.json"),
+    out: Annotated[
+        Path,
+        typer.Option("--out", "-o", help="Output static HTML playground path."),
+    ] = Path("docs/assets/action_playground.html"),
+    trace_out: Annotated[
+        Path,
+        typer.Option("--trace-out", help="Output machine-readable action trace JSON path."),
+    ] = Path("docs/assets/action_playground.json"),
+    title: Annotated[
+        str,
+        typer.Option("--title", help="HTML report title."),
+    ] = "vla_zoo Action Playground",
+    max_records: Annotated[
+        int | None,
+        typer.Option("--max-records", help="Limit records while developing reports."),
+    ] = None,
+    allow_local_heavy: Annotated[
+        bool,
+        typer.Option(
+            "--allow-local-heavy",
+            help="Allow local heavy adapters such as OpenVLA to load real model weights.",
+        ),
+    ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable summary."),
+    ] = False,
+) -> None:
+    """Build a static playground that scrubs PyBullet action traces beside GIFs."""
+
+    from vla_zoo.demo.action_playground import (
+        build_action_playground_records,
+        write_action_playground_html,
+        write_action_playground_trace,
+    )
+
+    try:
+        records = build_action_playground_records(
+            manifest,
+            max_records=max_records,
+            allow_local_heavy=allow_local_heavy,
+        )
+        write_action_playground_trace(trace_out, records)
+        write_action_playground_html(out, records, title=title)
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    ok_count = sum(1 for record in records if record.ok)
+    payload = {
+        "manifest": str(manifest),
+        "html": str(out),
+        "trace": str(trace_out),
+        "records": len(records),
+        "ok": ok_count,
+    }
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(f"Action playground written to {out} ({ok_count}/{len(records)} ok)")
+        typer.echo(f"Trace JSON written to {trace_out}")
+
+
 if __name__ == "__main__":
     app()

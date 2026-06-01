@@ -50,6 +50,14 @@ def test_cli_demo_gif_report_help() -> None:
     assert "--check-json-out" in result.output
 
 
+def test_cli_demo_action_playground_help() -> None:
+    result = CliRunner().invoke(app, ["demo", "action-playground", "--help"])
+    assert result.exit_code == 0
+    assert "--manifest" in result.output
+    assert "--trace-out" in result.output
+    assert "--allow-local-heavy" in result.output
+
+
 def test_cli_doctor_json() -> None:
     result = CliRunner().invoke(app, ["doctor", "--json", "--no-ros"])
     assert result.exit_code == 0
