@@ -74,6 +74,10 @@ vla-zoo compare dashboard \
   --status-log results/vla_status.jsonl \
   --diagnostics-log results/vla_diagnostics.jsonl \
   --out results/vla_ros_runtime_dashboard.html
+vla-zoo report bundle \
+  --status-log results/vla_status.jsonl \
+  --diagnostics-log results/vla_diagnostics.jsonl \
+  --out results/vla_runtime_report_bundle.zip
 ```
 
 The comparison output is intentionally runtime-centric: frames, adapter query count, adapter errors, latency, and action magnitude. It is not a claim of task success or model quality.
