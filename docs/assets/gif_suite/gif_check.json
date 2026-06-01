@@ -1,0 +1,88 @@
+{
+  "manifest": "docs/assets/gif_suite/gif_manifest.json",
+  "ok": true,
+  "assets": [
+    {
+      "path": "docs/assets/gif_suite/simulation_pick_red_block_dummy.gif",
+      "ok": true,
+      "frames": 60,
+      "width": 960,
+      "height": 540,
+      "bytes": 1645249,
+      "issues": []
+    },
+    {
+      "path": "docs/assets/gif_suite/simulation_pick_red_block_scripted.gif",
+      "ok": true,
+      "frames": 60,
+      "width": 960,
+      "height": 540,
+      "bytes": 1653805,
+      "issues": []
+    },
+    {
+      "path": "docs/assets/gif_suite/simulation_pick_red_block_random.gif",
+      "ok": true,
+      "frames": 60,
+      "width": 960,
+      "height": 540,
+      "bytes": 1645485,
+      "issues": []
+    },
+    {
+      "path": "docs/assets/gif_suite/simulation_move_red_block_left_dummy.gif",
+      "ok": true,
+      "frames": 60,
+      "width": 960,
+      "height": 540,
+      "bytes": 1632011,
+      "issues": []
+    },
+    {
+      "path": "docs/assets/gif_suite/simulation_move_red_block_left_scripted.gif",
+      "ok": true,
+      "frames": 60,
+      "width": 960,
+      "height": 540,
+      "bytes": 1638930,
+      "issues": []
+    },
+    {
+      "path": "docs/assets/gif_suite/simulation_move_red_block_left_random.gif",
+      "ok": true,
+      "frames": 60,
+      "width": 960,
+      "height": 540,
+      "bytes": 1632805,
+      "issues": []
+    },
+    {
+      "path": "docs/assets/gif_suite/simulation_move_red_block_right_dummy.gif",
+      "ok": true,
+      "frames": 60,
+      "width": 960,
+      "height": 540,
+      "bytes": 1655339,
+      "issues": []
+    },
+    {
+      "path": "docs/assets/gif_suite/simulation_move_red_block_right_scripted.gif",
+      "ok": true,
+      "frames": 60,
+      "width": 960,
+      "height": 540,
+      "bytes": 1663123,
+      "issues": []
+    },
+    {
+      "path": "docs/assets/gif_suite/simulation_move_red_block_right_random.gif",
+      "ok": true,
+      "frames": 60,
+      "width": 960,
+      "height": 540,
+      "bytes": 1656960,
+      "issues": []
+    }
+  ],
+  "issues": []
+}

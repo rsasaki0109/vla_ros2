@@ -2188,5 +2188,137 @@ def demo_gif_suite(
         typer.echo(f"Markdown: {markdown_path}")
 
 
+@demo_app.command("gif-check")
+def demo_gif_check(
+    path: Annotated[
+        Path,
+        typer.Argument(help="GIF suite directory or gif_manifest.json path."),
+    ] = Path("docs/assets/gif_suite"),
+    expected_width: Annotated[int, typer.Option("--expected-width")] = 960,
+    expected_height: Annotated[int, typer.Option("--expected-height")] = 540,
+    min_frames: Annotated[int, typer.Option("--min-frames")] = 12,
+    min_bytes: Annotated[int, typer.Option("--min-bytes")] = 1024,
+    link_files: Annotated[
+        str | None,
+        typer.Option(
+            "--link-files",
+            help="Comma-separated README/Page files whose local GIF/gallery links should exist.",
+        ),
+    ] = "README.md,docs/index.html,docs/assets/gif_suite/README.md",
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON check report."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write Markdown check report."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable JSON."),
+    ] = False,
+    strict: Annotated[
+        bool,
+        typer.Option("--strict/--no-strict", help="Exit non-zero when GIF checks fail."),
+    ] = True,
+) -> None:
+    """Validate PyBullet GIF assets, manifest consistency, and README/Page links."""
+
+    from vla_zoo.demo.gif_suite import check_gif_suite, format_gif_check_markdown
+
+    report = check_gif_suite(
+        path,
+        expected_width=expected_width,
+        expected_height=expected_height,
+        min_frames=min_frames,
+        min_bytes=min_bytes,
+        link_files=_parse_optional_paths(link_files),
+    )
+    payload = json.dumps(report.to_dict(), indent=2)
+    markdown = format_gif_check_markdown(report)
+    if out is not None:
+        _write_text(out, f"{payload}\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, markdown)
+    if json_output:
+        typer.echo(payload)
+    else:
+        typer.echo(
+            f"{'gif':<48} {'status':<8} {'frames':<6} {'resolution':<11} size"
+        )
+        typer.echo(f"{'-' * 48} {'-' * 8} {'-' * 6} {'-' * 11} {'-' * 10}")
+        for asset in report.assets:
+            typer.echo(
+                f"{Path(asset.path).name:<48} "
+                f"{('ok' if asset.ok else 'failed'):<8} "
+                f"{asset.frames:<6} "
+                f"{asset.width}x{asset.height:<7} "
+                f"{asset.bytes}"
+            )
+        if report.issues:
+            typer.echo("Suite issues:")
+            for issue in report.issues:
+                typer.echo(f"- {issue.level}: {issue.message}")
+    if out is not None:
+        typer.echo(f"JSON written to {out}")
+    if markdown_out is not None:
+        typer.echo(f"Markdown written to {markdown_out}")
+    if strict and not report.ok:
+        raise typer.Exit(1)
+
+
+@demo_app.command("gif-report")
+def demo_gif_report(
+    manifest: Annotated[
+        Path,
+        typer.Option("--manifest", help="GIF suite manifest JSON path."),
+    ] = Path("docs/assets/gif_suite/gif_manifest.json"),
+    expected_width: Annotated[int, typer.Option("--expected-width")] = 960,
+    expected_height: Annotated[int, typer.Option("--expected-height")] = 540,
+    min_frames: Annotated[int, typer.Option("--min-frames")] = 12,
+    min_bytes: Annotated[int, typer.Option("--min-bytes")] = 1024,
+    html_out: Annotated[
+        Path,
+        typer.Option("--html-out", help="Output HTML gallery path."),
+    ] = Path("docs/assets/gif_suite/index.html"),
+    check_json_out: Annotated[
+        Path | None,
+        typer.Option("--check-json-out", help="Optional JSON check report path."),
+    ] = None,
+    link_files: Annotated[
+        str | None,
+        typer.Option("--link-files", help="Comma-separated README/Page link files to check."),
+    ] = "README.md,docs/index.html,docs/assets/gif_suite/README.md",
+    title: Annotated[
+        str,
+        typer.Option("--title", help="HTML report title."),
+    ] = "vla_zoo PyBullet GIF Gallery",
+    strict: Annotated[
+        bool,
+        typer.Option("--strict/--no-strict", help="Exit non-zero when GIF checks fail."),
+    ] = True,
+) -> None:
+    """Build a static HTML gallery and QA report for generated PyBullet GIFs."""
+
+    from vla_zoo.demo.gif_suite import check_gif_suite, write_gif_report_html
+
+    report = check_gif_suite(
+        manifest,
+        expected_width=expected_width,
+        expected_height=expected_height,
+        min_frames=min_frames,
+        min_bytes=min_bytes,
+        link_files=_parse_optional_paths(link_files),
+    )
+    write_gif_report_html(html_out, report, title=title)
+    if check_json_out is not None:
+        _write_text(check_json_out, json.dumps(report.to_dict(), indent=2) + "\n")
+    typer.echo(f"HTML written to {html_out}")
+    if check_json_out is not None:
+        typer.echo(f"JSON written to {check_json_out}")
+    if strict and not report.ok:
+        raise typer.Exit(1)
+
+
 if __name__ == "__main__":
     app()

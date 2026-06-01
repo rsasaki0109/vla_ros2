@@ -34,6 +34,22 @@ def test_cli_demo_gif_suite_help() -> None:
     assert "--markdown-out" in result.output
 
 
+def test_cli_demo_gif_check_help() -> None:
+    result = CliRunner().invoke(app, ["demo", "gif-check", "--help"])
+    assert result.exit_code == 0
+    assert "--expected-width" in result.output
+    assert "--link-files" in result.output
+    assert "--markdown-out" in result.output
+
+
+def test_cli_demo_gif_report_help() -> None:
+    result = CliRunner().invoke(app, ["demo", "gif-report", "--help"])
+    assert result.exit_code == 0
+    assert "--manifest" in result.output
+    assert "--html-out" in result.output
+    assert "--check-json-out" in result.output
+
+
 def test_cli_doctor_json() -> None:
     result = CliRunner().invoke(app, ["doctor", "--json", "--no-ros"])
     assert result.exit_code == 0

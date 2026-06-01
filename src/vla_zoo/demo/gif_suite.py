@@ -4,7 +4,10 @@ import json
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
+from html import escape
 from pathlib import Path
+
+from PIL import Image, ImageSequence, ImageStat
 
 from vla_zoo.demo.pybullet import (
     PyBulletDemoConfig,
@@ -15,6 +18,9 @@ from vla_zoo.demo.pybullet import (
 )
 
 GifRenderer = Callable[[PyBulletDemoConfig], dict[str, object]]
+LOCAL_LINK_RE = re.compile(
+    r"""(?:!\[[^\]]*\]\(([^)]+)\)|\[[^\]]+\]\(([^)]+)\)|(?:href|src)=["']([^"']+)["'])"""
+)
 
 
 @dataclass(frozen=True)
@@ -91,6 +97,42 @@ class PyBulletGifResult:
             "bytes": self.bytes,
             "error": self.error,
         }
+
+
+@dataclass(frozen=True)
+class GifCheckIssue:
+    level: str
+    code: str
+    message: str
+    path: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class GifAssetCheck:
+    path: str
+    ok: bool
+    frames: int
+    width: int
+    height: int
+    bytes: int
+    issues: tuple[GifCheckIssue, ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class GifSuiteCheckReport:
+    manifest: str
+    ok: bool
+    assets: tuple[GifAssetCheck, ...]
+    issues: tuple[GifCheckIssue, ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
 
 
 def _slug(value: str) -> str:
@@ -172,6 +214,295 @@ def _object_to_int(value: object, *, default: int) -> int:
     return default
 
 
+def _manifest_spec_out(result: dict[str, object]) -> str | None:
+    raw_spec = result.get("spec")
+    if not isinstance(raw_spec, dict):
+        return None
+    raw_out = raw_spec.get("out")
+    return raw_out if isinstance(raw_out, str) else None
+
+
+def _resolve_asset_path(manifest_path: Path, raw_path: str) -> Path:
+    path = Path(raw_path)
+    if path.exists():
+        return path
+    candidate = manifest_path.parent / path.name
+    if candidate.exists():
+        return candidate
+    return path
+
+
+def _local_links_from_text(text: str) -> list[str]:
+    links: list[str] = []
+    for match in LOCAL_LINK_RE.finditer(text):
+        raw = next((group for group in match.groups() if group), "")
+        link = raw.split("#", 1)[0].strip()
+        if not link or link.startswith(("http://", "https://", "mailto:", "#")):
+            continue
+        if link.endswith(".gif") or "gif_suite" in link:
+            links.append(link)
+    return links
+
+
+def _check_link_file(path: Path) -> list[GifCheckIssue]:
+    issues: list[GifCheckIssue] = []
+    if not path.exists():
+        return [
+            GifCheckIssue(
+                level="warning",
+                code="link_file_missing",
+                message=f"link file does not exist: {path}",
+                path=str(path),
+            )
+        ]
+    text = path.read_text(encoding="utf-8")
+    for link in _local_links_from_text(text):
+        target = path.parent / link
+        if not target.exists():
+            issues.append(
+                GifCheckIssue(
+                    level="error",
+                    code="broken_link",
+                    message=f"local link target does not exist: {link}",
+                    path=str(path),
+                )
+            )
+    return issues
+
+
+def _is_low_variance_frame(frame: Image.Image, *, threshold: int) -> bool:
+    stat = ImageStat.Stat(frame.convert("RGB").resize((32, 18)))
+    ranges = [int(high - low) for low, high in stat.extrema]
+    return max(ranges, default=0) <= threshold
+
+
+def _inspect_gif(path: Path, *, blank_threshold: int) -> tuple[int, int, int, bool]:
+    with Image.open(path) as image:
+        width, height = image.size
+        frame_count = getattr(image, "n_frames", 1)
+        sample_indices = {0, max(0, frame_count // 2), max(0, frame_count - 1)}
+        low_variance = True
+        for index, frame in enumerate(ImageSequence.Iterator(image)):
+            if index not in sample_indices:
+                continue
+            if not _is_low_variance_frame(frame, threshold=blank_threshold):
+                low_variance = False
+                break
+        return int(frame_count), int(width), int(height), low_variance
+
+
+def check_gif_suite(
+    path: Path,
+    *,
+    expected_width: int = 960,
+    expected_height: int = 540,
+    min_frames: int = 12,
+    min_bytes: int = 1024,
+    blank_threshold: int = 4,
+    link_files: Sequence[Path] = (),
+) -> GifSuiteCheckReport:
+    """Validate generated GIFs, manifest consistency, and optional README/Page links."""
+
+    manifest_path = path if path.is_file() else path / "gif_manifest.json"
+    issues: list[GifCheckIssue] = []
+    assets: list[GifAssetCheck] = []
+    if not manifest_path.exists():
+        issue = GifCheckIssue(
+            level="error",
+            code="manifest_missing",
+            message=f"manifest does not exist: {manifest_path}",
+            path=str(manifest_path),
+        )
+        return GifSuiteCheckReport(str(manifest_path), ok=False, assets=(), issues=(issue,))
+
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        issue = GifCheckIssue(
+            level="error",
+            code="manifest_invalid_json",
+            message=str(exc),
+            path=str(manifest_path),
+        )
+        return GifSuiteCheckReport(str(manifest_path), ok=False, assets=(), issues=(issue,))
+
+    raw_results = payload.get("results") if isinstance(payload, dict) else None
+    if not isinstance(raw_results, list):
+        issues.append(
+            GifCheckIssue(
+                level="error",
+                code="manifest_results_missing",
+                message="manifest does not contain a results list",
+                path=str(manifest_path),
+            )
+        )
+        raw_results = []
+
+    manifest_paths: set[Path] = set()
+    for index, raw_result in enumerate(raw_results):
+        result = raw_result if isinstance(raw_result, dict) else {}
+        raw_out = _manifest_spec_out(result)
+        if raw_out is None:
+            issue = GifCheckIssue(
+                level="error",
+                code="manifest_out_missing",
+                message=f"manifest result {index} does not declare spec.out",
+                path=str(manifest_path),
+            )
+            assets.append(
+                GifAssetCheck(
+                    path=f"manifest[{index}]",
+                    ok=False,
+                    frames=0,
+                    width=0,
+                    height=0,
+                    bytes=0,
+                    issues=(issue,),
+                )
+            )
+            continue
+
+        asset_path = _resolve_asset_path(manifest_path, raw_out)
+        manifest_paths.add(asset_path)
+        asset_issues: list[GifCheckIssue] = []
+        if not asset_path.exists():
+            asset_issues.append(
+                GifCheckIssue(
+                    level="error",
+                    code="gif_missing",
+                    message="GIF file does not exist",
+                    path=str(asset_path),
+                )
+            )
+            assets.append(
+                GifAssetCheck(
+                    str(asset_path),
+                    ok=False,
+                    frames=0,
+                    width=0,
+                    height=0,
+                    bytes=0,
+                    issues=tuple(asset_issues),
+                )
+            )
+            continue
+
+        size = asset_path.stat().st_size
+        if size < min_bytes:
+            asset_issues.append(
+                GifCheckIssue(
+                    level="error",
+                    code="gif_too_small",
+                    message=f"GIF size {size} is below minimum {min_bytes}",
+                    path=str(asset_path),
+                )
+            )
+
+        try:
+            frames, width, height, low_variance = _inspect_gif(
+                asset_path,
+                blank_threshold=blank_threshold,
+            )
+        except OSError as exc:
+            asset_issues.append(
+                GifCheckIssue(
+                    level="error",
+                    code="gif_decode_error",
+                    message=str(exc),
+                    path=str(asset_path),
+                )
+            )
+            assets.append(
+                GifAssetCheck(
+                    str(asset_path),
+                    ok=False,
+                    frames=0,
+                    width=0,
+                    height=0,
+                    bytes=size,
+                    issues=tuple(asset_issues),
+                )
+            )
+            continue
+
+        if frames < min_frames:
+            asset_issues.append(
+                GifCheckIssue(
+                    level="error",
+                    code="gif_too_few_frames",
+                    message=f"GIF has {frames} frames; expected at least {min_frames}",
+                    path=str(asset_path),
+                )
+            )
+        if width != expected_width or height != expected_height:
+            asset_issues.append(
+                GifCheckIssue(
+                    level="error",
+                    code="gif_wrong_resolution",
+                    message=(
+                        f"GIF resolution is {width}x{height}; "
+                        f"expected {expected_width}x{expected_height}"
+                    ),
+                    path=str(asset_path),
+                )
+            )
+        if low_variance:
+            asset_issues.append(
+                GifCheckIssue(
+                    level="error",
+                    code="gif_low_variance",
+                    message="sampled GIF frames have very low pixel variance",
+                    path=str(asset_path),
+                )
+            )
+
+        manifest_bytes = result.get("bytes")
+        if isinstance(manifest_bytes, int) and manifest_bytes != size:
+            asset_issues.append(
+                GifCheckIssue(
+                    level="warning",
+                    code="manifest_size_mismatch",
+                    message=f"manifest bytes={manifest_bytes}; actual bytes={size}",
+                    path=str(asset_path),
+                )
+            )
+        assets.append(
+            GifAssetCheck(
+                str(asset_path),
+                ok=not any(issue.level == "error" for issue in asset_issues),
+                frames=frames,
+                width=width,
+                height=height,
+                bytes=size,
+                issues=tuple(asset_issues),
+            )
+        )
+
+    search_dir = manifest_path.parent
+    for extra in sorted(search_dir.glob("*.gif")):
+        if extra not in manifest_paths:
+            issues.append(
+                GifCheckIssue(
+                    level="warning",
+                    code="gif_not_in_manifest",
+                    message=f"GIF file is not listed in manifest: {extra.name}",
+                    path=str(extra),
+                )
+            )
+    for link_file in link_files:
+        issues.extend(_check_link_file(link_file))
+
+    has_error = any(issue.level == "error" for issue in issues) or any(
+        issue.level == "error" for asset in assets for issue in asset.issues
+    )
+    return GifSuiteCheckReport(
+        manifest=str(manifest_path),
+        ok=not has_error,
+        assets=tuple(assets),
+        issues=tuple(issues),
+    )
+
+
 def write_gif_manifest(path: Path, results: Sequence[PyBulletGifResult]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -239,3 +570,121 @@ def write_gif_gallery(path: Path, results: Sequence[PyBulletGifResult]) -> None:
         format_gif_gallery_markdown(results, path_relative_to=path.parent),
         encoding="utf-8",
     )
+
+
+def format_gif_check_markdown(report: GifSuiteCheckReport) -> str:
+    lines = [
+        "## PyBullet GIF Check",
+        "",
+        f"- manifest: `{report.manifest}`",
+        f"- status: {'ok' if report.ok else 'failed'}",
+        f"- assets: {len(report.assets)}",
+        "",
+        "| GIF | Status | Frames | Resolution | Size | Issues |",
+        "|---|---|---:|---|---:|---|",
+    ]
+    for asset in report.assets:
+        issues = "<br>".join(issue.message for issue in asset.issues) or "-"
+        lines.append(
+            f"| `{Path(asset.path).name}` | {'ok' if asset.ok else 'failed'} | "
+            f"{asset.frames} | {asset.width}x{asset.height} | {asset.bytes} | {issues} |"
+        )
+    if report.issues:
+        lines.extend(["", "### Suite Issues", ""])
+        for issue in report.issues:
+            lines.append(f"- {issue.level}: {issue.message}")
+    return "\n".join(lines) + "\n"
+
+
+def format_gif_report_html(
+    report: GifSuiteCheckReport,
+    *,
+    title: str = "vla_zoo GIF Gallery",
+) -> str:
+    manifest_path = Path(report.manifest)
+    cards: list[str] = []
+    for asset in report.assets:
+        path = Path(asset.path)
+        try:
+            src = path.relative_to(manifest_path.parent).as_posix()
+        except ValueError:
+            src = str(path)
+        issues = "".join(
+            f"<li>{escape(issue.level)}: {escape(issue.message)}</li>" for issue in asset.issues
+        )
+        issue_html = f"<ul>{issues}</ul>" if issues else "<p>No issues.</p>"
+        cards.append(
+            f"""
+            <article class="card {'ok' if asset.ok else 'bad'}">
+              <img src="{escape(src)}" alt="{escape(path.stem)} PyBullet simulation">
+              <h2>{escape(path.stem)}</h2>
+              <dl>
+                <dt>Status</dt><dd>{'ok' if asset.ok else 'failed'}</dd>
+                <dt>Frames</dt><dd>{asset.frames}</dd>
+                <dt>Resolution</dt><dd>{asset.width}x{asset.height}</dd>
+                <dt>Size</dt><dd>{asset.bytes} bytes</dd>
+              </dl>
+              {issue_html}
+            </article>
+            """
+        )
+    suite_issues = "".join(
+        f"<li>{escape(issue.level)}: {escape(issue.message)}</li>" for issue in report.issues
+    )
+    html = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{escape(title)}</title>
+  <style>
+    :root {{ color-scheme: light; font-family: Inter, system-ui, sans-serif; }}
+    body {{ margin: 0; background: #f8fafc; color: #111827; }}
+    header {{ padding: 32px min(6vw, 72px) 18px; background: #111827; color: #f9fafb; }}
+    main {{ padding: 28px min(6vw, 72px) 48px; }}
+    .summary {{ display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }}
+    .pill {{ border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff; }}
+    .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px; }}
+    .card {{ background: #fff; border: 1px solid #dbe3ef; border-radius: 8px; padding: 14px; }}
+    .card.ok {{ border-top: 4px solid #16a34a; }}
+    .card.bad {{ border-top: 4px solid #dc2626; }}
+    img {{ width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; }}
+    h1 {{ margin: 0; font-size: clamp(28px, 4vw, 42px); }}
+    h2 {{ font-size: 16px; margin: 12px 0; }}
+    dl {{ display: grid; grid-template-columns: 92px 1fr; gap: 4px 10px; margin: 0; }}
+    dt {{ color: #64748b; }}
+    dd {{ margin: 0; }}
+    ul {{ padding-left: 20px; }}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>{escape(title)}</h1>
+    <p>Real PyBullet simulation GIFs generated by <code>vla-zoo demo gif-suite</code>.</p>
+  </header>
+  <main>
+    <section class="summary">
+      <div class="pill">status: <strong>{'ok' if report.ok else 'failed'}</strong></div>
+      <div class="pill">assets: <strong>{len(report.assets)}</strong></div>
+      <div class="pill">manifest: <code>{escape(Path(report.manifest).name)}</code></div>
+    </section>
+    {f'<section><h2>Suite Issues</h2><ul>{suite_issues}</ul></section>' if suite_issues else ''}
+    <section class="grid">
+      {''.join(cards)}
+    </section>
+  </main>
+</body>
+</html>
+"""
+    return "\n".join(line.rstrip() for line in html.splitlines()) + "\n"
+
+
+def write_gif_report_html(
+    path: Path,
+    report: GifSuiteCheckReport,
+    *,
+    title: str = "vla_zoo GIF Gallery",
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(format_gif_report_html(report, title=title), encoding="utf-8")

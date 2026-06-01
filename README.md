@@ -76,7 +76,8 @@ Sample artifacts:
 - Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
 - External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
 - Adapter capability cards: [docs/adapters/README.md](docs/adapters/README.md)
-- PyBullet GIF gallery: [docs/assets/gif_suite/README.md](docs/assets/gif_suite/README.md)
+- PyBullet GIF gallery: [docs/assets/gif_suite/index.html](docs/assets/gif_suite/index.html)
+- PyBullet GIF QA report: [docs/assets/gif_suite/gif_check.md](docs/assets/gif_suite/gif_check.md)
 - Robot compatibility report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md
 - GPU server plan: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
 - ROS2 remote smoke plan: https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md
@@ -276,6 +277,8 @@ vla-zoo demo gif-suite \
   --models dummy,scripted,random \
   --tasks all \
   --out-dir docs/assets/gif_suite
+vla-zoo demo gif-check docs/assets/gif_suite
+vla-zoo demo gif-report --manifest docs/assets/gif_suite/gif_manifest.json
 vla-zoo compare suite --out-dir results/vla_compare_suite
 ```
 
