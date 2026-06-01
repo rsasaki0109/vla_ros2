@@ -6,12 +6,12 @@
   <title>vla_zoo demo</title>
   <meta
     name="description"
-    content="ROS2-native runtime, benchmark, adapter hub, and report generator for VLA models."
+    content="ROS2-native runtime boundary for VLA models with OpenVLA GPU inference, ROS2 integration, PyBullet demos, and visible reports."
   >
   <meta property="og:title" content="vla_zoo">
   <meta
     property="og:description"
-    content="Run, connect, and compare VLA policies through ROS2-native runtime boundaries."
+    content="Camera + instruction + robot state to typed actions through Python, ROS2, local CUDA, or a remote GPU server."
   >
   <meta
     property="og:image"
@@ -23,7 +23,7 @@
   <meta name="twitter:title" content="vla_zoo">
   <meta
     name="twitter:description"
-    content="ROS2-native runtime, benchmark, and adapter hub for VLA models."
+    content="ROS2-native runtime boundary for Vision-Language-Action models."
   >
   <meta
     name="twitter:image"
@@ -256,15 +256,18 @@
       <span class="eyebrow">ROS2-native VLA runtime infrastructure</span>
       <h1>vla_zoo</h1>
       <p>
-        Runtime boundary, ROS2 node, remote inference server, real PyBullet smoke demo,
-        and shareable comparison reports for Vision-Language-Action policies.
+        Stable runtime boundary for VLA policies: camera + instruction + robot state
+        to typed actions through Python, ROS2, local CUDA, or a remote GPU server.
       </p>
       <div class="hero-actions">
         <a class="button primary" href="assets/sample_compare_suite/pybullet_report.html">
-          Open PyBullet report
+          Open reports
+        </a>
+        <a class="button" href="https://github.com/rsasaki0109/vla_zoo#quickstart">
+          Read quickstart
         </a>
         <a class="button" href="assets/sample_compare_suite/runtime_dashboard.html">
-          Open suite dashboard
+          Runtime dashboard
         </a>
         <a class="button" href="https://github.com/rsasaki0109/vla_zoo">GitHub</a>
       </div>
@@ -273,31 +276,30 @@
 
   <main>
     <section class="section">
-      <h2>What This Shows</h2>
+      <h2>What Works Now</h2>
       <p class="lead">
-        This demo page is generated from the repository's CPU smoke path. The PyBullet scene is
-        deterministic; the selected adapter is queried through the same `BaseVLA.predict()`
-        boundary used by Python, HTTP server, ROS2, and benchmarks.
+        The same <code>BaseVLA.predict()</code> boundary is used by the Python API,
+        OpenVLA adapter, HTTP server, ROS2 node, benchmark runner, and report generator.
       </p>
       <div class="quick-grid">
         <div class="tile">
-          <h3>CPU smoke demo</h3>
-          <p>Run the dummy adapter and verify the runtime API without downloading weights.</p>
-          <a href="assets/sample_runtime_comparison.json">View sample JSON</a>
+          <h3>OpenVLA GPU path</h3>
+          <p>CUDA inference was verified with <code>openvla/openvla-7b</code> through the adapter.</p>
+          <a href="https://github.com/rsasaki0109/vla_zoo#openvla-on-gpu">Run OpenVLA</a>
         </div>
         <div class="tile">
-          <h3>Comparison suite</h3>
-          <p>Method profiles, PyBullet metrics, dashboard, and reproduce commands.</p>
+          <h3>ROS2 runtime</h3>
+          <p>Launchable node with typed instruction, action, action chunk, status, and diagnostics.</p>
+          <a href="https://github.com/rsasaki0109/vla_zoo#ros2">Launch ROS2</a>
+        </div>
+        <div class="tile">
+          <h3>PyBullet simulation</h3>
+          <p>Deterministic smoke scene for runtime demos, GIFs, and method comparisons.</p>
           <a href="assets/sample_compare_suite/pybullet_report.html">Open PyBullet report</a>
         </div>
         <div class="tile">
-          <h3>Suite dashboard</h3>
-          <p>Filter latency, errors, action scale, and task telemetry from the suite JSON.</p>
-          <a href="assets/sample_compare_suite/runtime_dashboard.html">Open suite dashboard</a>
-        </div>
-        <div class="tile">
-          <h3>ROS2 log dashboard</h3>
-          <p>Summarize VLAStatus and diagnostics JSONL into runtime health and triage.</p>
+          <h3>Visible reports</h3>
+          <p>Static dashboards for runtime health, method profiles, and shareable issue reports.</p>
           <a href="assets/sample_ros_runtime_dashboard.html">Open ROS2 dashboard</a>
         </div>
       </div>
@@ -310,6 +312,7 @@
           Copy
         </button>
         <pre><code id="local-command">pip install -e ".[dev,cli,server,sim]"
+vla-zoo doctor --no-ros
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 vla-zoo compare suite --out-dir results/vla_compare_suite</code></pre>
@@ -319,9 +322,8 @@ vla-zoo compare suite --out-dir results/vla_compare_suite</code></pre>
     <section class="section">
       <h2>GPU VLA Path</h2>
       <p class="lead">
-        Heavyweight VLA inference should run on CUDA locally or on a GPU workstation
-        serving the robot-side ROS2 process over the same prediction boundary.
-        The smoke command runs a real torch CUDA matmul before model weights are loaded.
+        Heavyweight VLA inference should run on CUDA locally or on a GPU workstation.
+        The robot-side process can call the same prediction boundary through the remote client.
       </p>
       <div class="command-block">
         <button class="copy-button" type="button" data-copy-target="gpu-command">
@@ -330,6 +332,12 @@ vla-zoo compare suite --out-dir results/vla_compare_suite</code></pre>
         <pre><code id="gpu-command">pip install -e ".[cli,server,sim,gpu,openvla]"
 vla-zoo doctor --no-ros
 vla-zoo gpu smoke --device cuda:0 --dtype float16
+python examples/python/load_openvla.py \
+  --pretrained openvla/openvla-7b \
+  --device cuda:0 \
+  --dtype bfloat16 \
+  --unnorm-key bridge_orig
+
 vla-zoo serve --model openvla \
   --host 0.0.0.0 \
   --port 8000 \
@@ -341,10 +349,28 @@ vla-zoo serve --model openvla \
     </section>
 
     <section class="section">
+      <h2>ROS2 Path</h2>
+      <p class="lead">
+        The ROS2 package is separate from the Python wheel. It imports the same runtime
+        package and publishes typed action/status messages instead of commanding hardware.
+      </p>
+      <div class="command-block">
+        <button class="copy-button" type="button" data-copy-target="ros-command">
+          Copy
+        </button>
+        <pre><code id="ros-command">pip install -e .
+colcon build --base-paths ros2 --symlink-install
+source install/setup.bash
+ros2 launch vla_zoo dummy.launch.py publish_actions_in_dry_run:=true
+ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre>
+      </div>
+    </section>
+
+    <section class="section">
       <h2>Visible Reports</h2>
       <p class="lead">
-        The comparison suite writes static artifacts that can be attached to issues,
-        linked from READMEs, or published through GitHub Pages.
+        These are static artifacts generated by the runtime demo/report path. They are meant
+        to be linked from README, GitHub Pages, issues, and benchmark notes.
       </p>
       <div class="quick-grid">
         <div class="tile">
@@ -361,6 +387,11 @@ vla-zoo serve --model openvla \
           <h3>Method profiles</h3>
           <p>Adapter input requirements, action shape, chunking, dependencies, and caveats.</p>
           <a href="assets/sample_compare_suite/method_profiles.md">Open profiles</a>
+        </div>
+        <div class="tile">
+          <h3>Result JSON</h3>
+          <p>Machine-readable comparison artifact for dashboards and reproducible triage.</p>
+          <a href="assets/sample_compare_suite/pybullet_results.json">Open JSON</a>
         </div>
       </div>
       <img
@@ -384,12 +415,17 @@ vla-zoo serve --model openvla \
           <tr>
             <td><code>dummy</code></td>
             <td><span class="badge ok">available</span></td>
-            <td>Dry-run adapter for CI, docs, ROS2 launch, and CPU smoke demos.</td>
+            <td>Dry-run adapter for CI, docs, ROS2 launch, and deterministic smoke demos.</td>
+          </tr>
+          <tr>
+            <td><code>scripted</code>, <code>random</code></td>
+            <td><span class="badge ok">available</span></td>
+            <td>Baselines for the bundled PyBullet scene and comparison reports.</td>
           </tr>
           <tr>
             <td><code>openvla</code></td>
-            <td><span class="badge planned">optional</span></td>
-            <td>Lazy Hugging Face OpenVLA integration behind <code>vla_zoo[openvla]</code>.</td>
+            <td><span class="badge ok">optional</span></td>
+            <td>Lazy Hugging Face OpenVLA integration with verified local CUDA path.</td>
           </tr>
           <tr>
             <td><code>pi0</code>, <code>smolvla</code>, <code>groot</code></td>
