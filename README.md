@@ -198,6 +198,20 @@ vla-zoo serve --model openvla \
 ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000
 ```
 
+Before driving the robot-side runtime, run a health-first probe that checks
+`/health` and then records one `/v1/predict` response:
+
+```bash
+vla-zoo remote-probe --model openvla --remote-url http://gpu-box:8000 \
+  --out results/openvla_remote_probe.json --strict
+```
+
+See [OpenVLA remote GPU path](docs/openvla_remote.md). The probe tool itself is
+verified end-to-end against the `dummy` server
+([sample](docs/assets/sample_task_verification/remote_probe_dummy.md)); the
+OpenVLA `remote_server` evidence cell stays `planned` until a real recorded
+OpenVLA response is checked in.
+
 For multi-model comparisons, generate one GPU-server command per adapter:
 
 ```bash

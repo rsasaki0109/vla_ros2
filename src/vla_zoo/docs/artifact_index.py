@@ -211,6 +211,15 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Operations guidance; no policy-quality claim.",
     ),
     ArtifactEntry(
+        title="OpenVLA remote GPU path",
+        path="docs/openvla_remote.md",
+        category="adapter docs",
+        status="manual",
+        kind="manual",
+        source_command=None,
+        caveat="Remote serving + health-first probe guidance; no task-success claim.",
+    ),
+    ArtifactEntry(
         title="Adapter cards index",
         path="docs/adapters/README.md",
         category="adapter docs",
@@ -251,6 +260,15 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
             "Local CUDA prompt probe blocked by insufficient free VRAM; "
             "remote GPU path is next."
         ),
+    ),
+    ArtifactEntry(
+        title="Remote probe tool sample (dummy)",
+        path="docs/assets/sample_task_verification/remote_probe_dummy.md",
+        category="GPU probes",
+        status="verified",
+        kind="checked",
+        source_command="vla-zoo remote-probe --model dummy --remote-url http://127.0.0.1:PORT",
+        caveat="Verifies the health-first remote probe tool; not an OpenVLA claim.",
     ),
     ArtifactEntry(
         title="pi0 compatibility probe",

@@ -446,35 +446,26 @@ Remaining/next useful tasks:
 
 Do not claim policy-quality success.
 
-### 7.5 OpenVLA 7B Path
+### 7.5 OpenVLA 7B Path (health-first remote probe DONE)
+
+Status: `vla-zoo remote-probe` (`src/vla_zoo/runtime/remote_probe.py`) checks a server's
+`/health` first and only then records one `/v1/predict` response, with three statuses
+(`ok`/`unreachable`/`predict_failed`) and `--out`/`--markdown-out`/`--strict`. The Python
+entry point is `examples/python/openvla_remote_probe.py`. `docs/openvla_remote.md`
+documents the remote GPU bring-up and probe. The tool is verified end-to-end against the
+in-repo `dummy` server (`docs/assets/sample_task_verification/remote_probe_dummy.{md,json}`)
+without any model download. The OpenVLA `remote_server` evidence cell stays `planned`
+(no real recorded OpenVLA `/v1/predict` yet) and now links the remote path docs and the
+tooling sample. Tests in `tests/test_remote_probe.py` (injected fakes + a real
+unreachable-server path; no downloads).
 
 Reason: OpenVLA is important for credibility, but local 7B inference was blocked by
 free VRAM. The correct next path is a remote GPU server with enough memory.
 
-Target:
+Remaining/next useful tasks:
 
-```bash
-vla-zoo serve --model openvla \
-  --host 0.0.0.0 \
-  --port 8000 \
-  --device cuda:0 \
-  --pretrained openvla/openvla-7b \
-  --unnorm-key bridge_orig
-```
-
-Then robot/client side:
-
-```bash
-vla-zoo predict --model openvla --runtime remote --remote-url http://GPU_BOX:8000 \
-  --instruction "pick up the red block"
-```
-
-Work items:
-
-- Add a remote OpenVLA probe script that checks server health first.
-- Record `/v1/predict` response artifact if the server actually runs.
-- Update evidence matrix from `planned` to `verified` only after real recorded response.
-- Keep model download out of tests.
+- Run a real OpenVLA server on a GPU box and record a real `/v1/predict` artifact.
+- Promote the `remote_server` cell from `planned` to `verified` only then.
 
 ### 7.6 pi0/openpi Path
 
@@ -634,27 +625,28 @@ Shell/tooling conventions in this environment:
 
 ## 13. Current Best Next Commit
 
-The docs link checker (7.1), artifact index (7.2), ROS2 metadata tests (7.3), and the
-SmolVLA remote serving plan + isolation docs (7.4) are now done. The next best commit is:
+The docs link checker (7.1), artifact index (7.2), ROS2 metadata tests (7.3), the SmolVLA
+remote serving plan + isolation docs (7.4), and the OpenVLA health-first remote probe
+(7.5) are now done. The next best commit is:
 
 ```text
-add remote OpenVLA 7B GPU path (7.5)
+add pi0/openpi remote-first path (7.6)
 ```
 
-Reason: OpenVLA local inference was blocked by free VRAM, so the correct next path is a
-remote GPU server. Add a remote OpenVLA probe script that checks server `/health` first,
-record a `/v1/predict` response artifact only if a real server runs, and promote the
-evidence matrix from `planned` to `verified` only after a real recorded response. Keep
-model downloads out of tests.
+Reason: pi0/openpi should not be forced into the base env; treat it as remote-first. Add
+`examples/python/load_pi0_remote.py`, a pi0 server plan artifact, and LeRobot/openpi
+version-compatibility docs. Record a real remote action probe only if a real server
+becomes available, and promote evidence from `planned` only then. Keep model downloads
+out of tests.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_smolvla_remote_plan.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_remote_probe.py tests/test_cli.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/smolvla_remote.md,docs/assets/smolvla_remote_smoke_plan.md,docs/index.html \
+  --paths docs/openvla_remote.md,docs/index.html,docs/assets/vla_model_evidence_matrix.html \
   --strict
 ```
 

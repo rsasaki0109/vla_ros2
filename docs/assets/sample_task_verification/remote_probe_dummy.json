@@ -1,0 +1,50 @@
+{
+  "model_name": "dummy",
+  "remote_url": "http://127.0.0.1:8077",
+  "instruction": "pick up the red block",
+  "status": "ok",
+  "health": {
+    "ready": true,
+    "model": "dummy",
+    "runtime": "server",
+    "status": "ok"
+  },
+  "action": {
+    "action_space": "eef_delta",
+    "data": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "shape": [
+      7
+    ],
+    "names": [
+      "x",
+      "y",
+      "z",
+      "roll",
+      "pitch",
+      "yaw",
+      "gripper"
+    ],
+    "frame_id": "base_link",
+    "control_hz": 5.0,
+    "normalized": true,
+    "dt": 0.2,
+    "confidence": 1.0,
+    "chunk_index": null,
+    "metadata": {
+      "model": "dummy",
+      "adapter": "DummyAdapter",
+      "instruction": "pick up the red block",
+      "dry_run": true,
+      "latency_ms": 0.03584497608244419
+    }
+  },
+  "error": null
+}
