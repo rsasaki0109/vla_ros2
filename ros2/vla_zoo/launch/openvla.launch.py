@@ -19,6 +19,13 @@ def generate_launch_description():
         DeclareLaunchArgument("image_topic", default_value="/camera/image_raw"),
         DeclareLaunchArgument("instruction_topic", default_value="/vla/instruction"),
         DeclareLaunchArgument("action_topic", default_value="/vla/action"),
+        DeclareLaunchArgument("diagnostics_topic", default_value="/diagnostics"),
+        DeclareLaunchArgument("publish_diagnostics", default_value="true"),
+        DeclareLaunchArgument("publish_actions_in_dry_run", default_value="false"),
+        DeclareLaunchArgument("require_image", default_value="true"),
+        DeclareLaunchArgument("stale_image_timeout_sec", default_value="1.0"),
+        DeclareLaunchArgument("stale_instruction_timeout_sec", default_value="5.0"),
+        DeclareLaunchArgument("clip_actions", default_value="true"),
         DeclareLaunchArgument("device", default_value="cuda:0"),
         DeclareLaunchArgument("pretrained", default_value="openvla/openvla-7b"),
         DeclareLaunchArgument("unnorm_key", default_value="bridge_orig"),
@@ -38,6 +45,17 @@ def generate_launch_description():
                 "image_topic": LaunchConfiguration("image_topic"),
                 "instruction_topic": LaunchConfiguration("instruction_topic"),
                 "action_topic": LaunchConfiguration("action_topic"),
+                "diagnostics_topic": LaunchConfiguration("diagnostics_topic"),
+                "publish_diagnostics": LaunchConfiguration("publish_diagnostics"),
+                "publish_actions_in_dry_run": LaunchConfiguration(
+                    "publish_actions_in_dry_run"
+                ),
+                "require_image": LaunchConfiguration("require_image"),
+                "stale_image_timeout_sec": LaunchConfiguration("stale_image_timeout_sec"),
+                "stale_instruction_timeout_sec": LaunchConfiguration(
+                    "stale_instruction_timeout_sec"
+                ),
+                "clip_actions": LaunchConfiguration("clip_actions"),
                 "device": LaunchConfiguration("device"),
                 "pretrained": LaunchConfiguration("pretrained"),
                 "unnorm_key": LaunchConfiguration("unnorm_key"),
