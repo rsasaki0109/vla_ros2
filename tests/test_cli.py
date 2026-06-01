@@ -214,6 +214,7 @@ def test_cli_compare_methods_writes_markdown(tmp_path: Path) -> None:
 def test_cli_compare_evidence_writes_artifacts(tmp_path: Path) -> None:
     json_out = tmp_path / "evidence.json"
     markdown_out = tmp_path / "evidence.md"
+    html_out = tmp_path / "evidence.html"
 
     result = CliRunner().invoke(
         app,
@@ -226,6 +227,8 @@ def test_cli_compare_evidence_writes_artifacts(tmp_path: Path) -> None:
             str(json_out),
             "--markdown-out",
             str(markdown_out),
+            "--html-out",
+            str(html_out),
             "--json",
         ],
     )
@@ -238,6 +241,10 @@ def test_cli_compare_evidence_writes_artifacts(tmp_path: Path) -> None:
     text = markdown_out.read_text(encoding="utf-8")
     assert "VLA Model Evidence Matrix" in text
     assert "not a model-quality leaderboard" in text
+    html = html_out.read_text(encoding="utf-8")
+    assert "VLA Model Evidence Matrix" in html
+    assert "status-verified" in html
+    assert "This is not a model-quality leaderboard" in html
 
 
 def test_cli_compare_suite_no_pybullet(tmp_path: Path) -> None:
