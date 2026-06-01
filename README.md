@@ -75,6 +75,7 @@ Sample artifacts:
 
 - Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
 - External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
+- Adapter capability cards: [docs/adapters/README.md](docs/adapters/README.md)
 - GPU server plan: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
 - ROS2 remote smoke plan: https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md
 - OpenVLA prompt probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md
@@ -304,17 +305,21 @@ The output is runtime-centric: latency, action magnitude, action rate, adapter
 errors, task telemetry, and self-contained HTML/JSON artifacts. Treat PyBullet
 smoke numbers as deployment-path checks, not robot skill claims.
 
-## Adapter Matrix
+## Adapter Cards
 
-| Adapter | Runtime status | Action contract | Notes |
-|---|---|---|---|
-| `dummy` | implemented | 7-DoF `eef_delta` | Neutral action for CI, docs, ROS2 dry-runs |
-| `scripted` | implemented | 7-DoF `eef_delta` | Rule-based PyBullet smoke baseline |
-| `random` | implemented | 7-DoF `eef_delta` | Seeded baseline for report and metric plumbing |
-| `openvla` | implemented scaffold | 7-DoF `eef_delta` | Lazy CUDA/HF path; external weights required |
-| `pi0` / `openpi` | remote-first adapter | checkpoint-specific | Optional LeRobot local load via `enable_local=True`; remote runtime recommended |
-| `smolvla` | implemented local adapter | 6D `custom` for `lerobot/smolvla_base` | LeRobot policy path; multi-camera/state expected; optional chunk output |
-| `groot` / `gr00t` | experimental placeholder | model-specific | Humanoid/generalist target; no hard dependency |
+Full adapter capability cards live in [docs/adapters/README.md](docs/adapters/README.md).
+They record input requirements, action shape, chunking behavior, local/remote
+runtime support, dependencies, license caveats, and verification status.
+
+| Adapter | Runtime contract | Card |
+|---|---|---|
+| `dummy` | base install, neutral 7-DoF `eef_delta` | [card](docs/adapters/dummy.md) |
+| `scripted` | base install, phase-aware PyBullet smoke baseline | [card](docs/adapters/scripted.md) |
+| `random` | base install, seeded random baseline | [card](docs/adapters/random.md) |
+| `openvla` | single-image OpenVLA-style 7-DoF `eef_delta` | [card](docs/adapters/openvla.md) |
+| `pi0` / `openpi` | remote-first, checkpoint-specific action chunks | [card](docs/adapters/pi0.md) |
+| `smolvla` | multi-camera/state LeRobot policy path | [card](docs/adapters/smolvla.md) |
+| `groot` / `gr00t` | experimental humanoid/generalist placeholder | [card](docs/adapters/groot.md) |
 
 External projects can register adapters through the `vla_zoo.adapters` entry point.
 Every serious adapter should declare input requirements, action spec, control
