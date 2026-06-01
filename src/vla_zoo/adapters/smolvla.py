@@ -207,7 +207,7 @@ class SmolVLAAdapter(VLAAdapter):
         else:
             if hasattr(image, "convert"):
                 image = image.convert("RGB")
-            array = np.asarray(image)
+            array = np.array(image, copy=True)
             if array.ndim == 2:
                 array = np.repeat(array[..., None], 3, axis=-1)
             if array.ndim != 3:

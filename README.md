@@ -77,6 +77,7 @@ Sample artifacts:
 - External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
 - OpenVLA prompt probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md
 - SmolVLA GPU probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md
+- SmolVLA PyBullet probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_pybullet_report.html
 
 ## Quickstart
 
@@ -115,6 +116,10 @@ The current local probe used `lerobot/smolvla_base` on an GPU and
 returned a 6D `custom` action through `load_model("smolvla")`. This proves the
 adapter and GPU inference path, not robot task success. SmolVLA base still needs
 robot/task-specific fine-tuning and calibrated camera/state/action interfaces.
+
+The first PyBullet-rendered SmolVLA probe also runs locally: 3 adapter queries,
+0 adapter errors, mean latency about 1.0 s, and a 6D action emitted from the
+same 3-camera + state observation path used by the comparison runner.
 
 ## OpenVLA On GPU
 
