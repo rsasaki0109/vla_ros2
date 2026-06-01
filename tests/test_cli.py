@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from zipfile import ZipFile
 
 from typer.testing import CliRunner
 
@@ -63,6 +64,49 @@ def test_cli_compare_dashboard_accepts_status_log(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert out.exists()
     assert "Fleet Health" in out.read_text(encoding="utf-8")
+
+
+def test_cli_report_bundle_help() -> None:
+    result = CliRunner().invoke(app, ["report", "bundle", "--help"])
+    assert result.exit_code == 0
+    assert "--status-log" in result.output
+    assert "--diagnostics-log" in result.output
+    assert "--out" in result.output
+
+
+def test_cli_report_bundle_creates_zip(tmp_path: Path) -> None:
+    log = tmp_path / "status.jsonl"
+    log.write_text(
+        json.dumps(
+            {
+                "model_name": "dummy",
+                "ready": True,
+                "last_latency_ms": 1.0,
+                "status_text": "ready",
+                "metadata": {"runtime": "local"},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "bundle.zip"
+
+    result = CliRunner().invoke(
+        app,
+        ["report", "bundle", "--status-log", str(log), "--out", str(out)],
+    )
+
+    assert result.exit_code == 0
+    with ZipFile(out) as bundle:
+        names = set(bundle.namelist())
+        assert "README.txt" in names
+        assert "dashboard.html" in names
+        assert "records.json" in names
+        assert "metadata.json" in names
+        assert "inputs/status/00_status.jsonl" in names
+        metadata = json.loads(bundle.read("metadata.json"))
+    assert metadata["record_count"] == 1
+    assert metadata["inputs"]["status_logs"] == [str(log)]
 
 
 def test_cli_compare_pybullet_help() -> None:

@@ -125,6 +125,10 @@ vla-zoo compare dashboard \
   --status-log results/vla_status.jsonl \
   --diagnostics-log results/vla_diagnostics.jsonl \
   --out results/vla_ros_runtime_dashboard.html
+vla-zoo report bundle \
+  --status-log results/vla_status.jsonl \
+  --diagnostics-log results/vla_diagnostics.jsonl \
+  --out results/vla_runtime_report_bundle.zip
 ```
 
 ## What works today

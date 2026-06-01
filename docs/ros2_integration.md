@@ -88,9 +88,14 @@ vla-zoo compare dashboard \
   --status-log results/vla_status.jsonl \
   --diagnostics-log results/vla_diagnostics.jsonl \
   --out results/vla_ros_runtime_dashboard.html
+vla-zoo report bundle \
+  --status-log results/vla_status.jsonl \
+  --diagnostics-log results/vla_diagnostics.jsonl \
+  --out results/vla_runtime_report_bundle.zip
 ```
 
 This is intended for issue reports and field debugging: attach the JSONL plus generated HTML instead of screenshots alone.
+The bundle command packages the logs, normalized records, generated dashboard, and adapter inventory into one zip.
 
 The recorder node subscribes to `/vla/status` and `/diagnostics` by default. It does not command hardware and can run beside `dummy.launch.py`, `openvla.launch.py`, or `remote.launch.py`.
 

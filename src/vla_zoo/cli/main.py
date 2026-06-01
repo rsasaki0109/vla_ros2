@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
+from datetime import datetime, timezone
 from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import typer
 
@@ -22,8 +24,10 @@ app = typer.Typer(
 )
 demo_app = typer.Typer(help="Generate runnable demos.")
 compare_app = typer.Typer(help="Compare VLA adapters and runtime paths.")
+report_app = typer.Typer(help="Package runtime logs and report artifacts.")
 app.add_typer(demo_app, name="demo")
 app.add_typer(compare_app, name="compare")
+app.add_typer(report_app, name="report")
 
 
 def _adapter_status(name: str) -> str:
@@ -364,6 +368,122 @@ def compare_dashboard(
         raise typer.Exit(1)
     _write_text(out, format_comparison_dashboard_html(records, title=title))
     typer.echo(f"Dashboard written to {out}")
+
+
+def _adapter_inventory() -> list[dict[str, Any]]:
+    adapters: list[dict[str, Any]] = []
+    for adapter in list_models():
+        adapters.append(
+            {
+                "name": adapter.name,
+                "source": adapter.source,
+                "status": _adapter_status(adapter.name),
+                "aliases": list(adapter.aliases),
+                "experimental": adapter.experimental,
+                "domain": adapter.domain,
+                "description": adapter.description,
+                "install_hint": adapter.install_hint,
+            }
+        )
+    return adapters
+
+
+def _bundle_arcname(kind: str, path: Path, index: int) -> str:
+    return f"inputs/{kind}/{index:02d}_{path.name}"
+
+
+@report_app.command("bundle")
+def report_bundle(
+    results: Annotated[
+        str | None,
+        typer.Option(
+            "--results",
+            "-r",
+            help="Comma-separated comparison JSON or JSONL result paths.",
+        ),
+    ] = None,
+    status_logs: Annotated[
+        str | None,
+        typer.Option(
+            "--status-log",
+            help="Comma-separated ROS2 VLAStatus JSON or JSONL paths.",
+        ),
+    ] = None,
+    diagnostics_logs: Annotated[
+        str | None,
+        typer.Option(
+            "--diagnostics-log",
+            help="Comma-separated DiagnosticArray/DiagnosticStatus JSON or JSONL paths.",
+        ),
+    ] = None,
+    out: Annotated[
+        Path,
+        typer.Option("--out", "-o", help="Output zip bundle path."),
+    ] = Path("results/vla_runtime_report_bundle.zip"),
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Dashboard title."),
+    ] = "vla_zoo Runtime Report",
+) -> None:
+    """Package runtime logs, dashboard HTML, and metadata into one zip artifact."""
+
+    from vla_zoo.runtime.dashboard import (
+        format_comparison_dashboard_html,
+        load_dashboard_records,
+        load_runtime_dashboard_records,
+    )
+
+    result_paths = _parse_optional_paths(results)
+    status_paths = _parse_optional_paths(status_logs)
+    diagnostics_paths = _parse_optional_paths(diagnostics_logs)
+    try:
+        records = load_dashboard_records(result_paths)
+        records.extend(load_runtime_dashboard_records([*status_paths, *diagnostics_paths]))
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    if not records:
+        typer.echo(
+            "At least one --results, --status-log, or --diagnostics-log path is required.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    records_payload = [asdict(record) for record in records]
+    dashboard_html = format_comparison_dashboard_html(records, title=title)
+    metadata = {
+        "schema": "vla_zoo.report_bundle.v1",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "title": title,
+        "record_count": len(records),
+        "inputs": {
+            "results": [str(path) for path in result_paths],
+            "status_logs": [str(path) for path in status_paths],
+            "diagnostics_logs": [str(path) for path in diagnostics_paths],
+        },
+        "adapters": _adapter_inventory(),
+    }
+    readme = (
+        "vla_zoo runtime report bundle\n\n"
+        "Open dashboard.html in a browser first. records.json contains the normalized "
+        "dashboard records. metadata.json contains adapter inventory and input paths. "
+        "Original inputs are copied under inputs/.\n"
+    )
+
+    with ZipFile(out, "w", compression=ZIP_DEFLATED) as bundle:
+        bundle.writestr("README.txt", readme)
+        bundle.writestr("dashboard.html", dashboard_html)
+        bundle.writestr("records.json", json.dumps(records_payload, indent=2) + "\n")
+        bundle.writestr("metadata.json", json.dumps(metadata, indent=2) + "\n")
+        for index, path in enumerate(result_paths):
+            bundle.write(path, _bundle_arcname("results", path, index))
+        for index, path in enumerate(status_paths):
+            bundle.write(path, _bundle_arcname("status", path, index))
+        for index, path in enumerate(diagnostics_paths):
+            bundle.write(path, _bundle_arcname("diagnostics", path, index))
+
+    typer.echo(f"Report bundle written to {out}")
 
 
 @compare_app.command("pybullet")
