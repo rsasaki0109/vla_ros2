@@ -308,7 +308,7 @@
         <pre><code id="local-command">pip install -e ".[dev,cli,server,sim]"
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
-vla-zoo compare pybullet --models dummy,openvla,pi0,smolvla,groot \
+vla-zoo compare pybullet --models dummy,scripted,random,openvla,pi0,smolvla,groot \
   --out results/vla_runtime_comparison.json \
   --html-out results/vla_runtime_comparison.html
 vla-zoo compare dashboard \

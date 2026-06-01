@@ -21,13 +21,13 @@ vla-zoo doctor --no-ros
 vla-zoo compare adapters
 ```
 
-Then run the same deterministic PyBullet smoke scene for each runtime path:
+Then run the same deterministic PyBullet smoke scene for baseline methods and runtime paths:
 
 ```bash
-vla-zoo compare pybullet --models dummy,openvla,pi0,smolvla,groot
+vla-zoo compare pybullet --models dummy,scripted,random,openvla,pi0,smolvla,groot
 ```
 
-The local comparison skips heavy OpenVLA loading by default to avoid accidental downloads. For real model-to-model checks, run each VLA behind a remote server and compare from the robot-side environment:
+The local comparison skips heavy OpenVLA loading by default to avoid accidental downloads. The `dummy`, `scripted`, and `random` adapters are no-GPU baselines for validating the runtime and metrics pipeline before comparing heavyweight VLA policies. For real model-to-model checks, run each VLA behind a remote server and compare from the robot-side environment:
 
 ```bash
 vla-zoo compare pybullet \
