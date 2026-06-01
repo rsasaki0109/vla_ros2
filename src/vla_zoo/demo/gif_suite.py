@@ -118,6 +118,10 @@ class GifAssetCheck:
     width: int
     height: int
     bytes: int
+    model_name: str | None = None
+    task_id: str | None = None
+    instruction: str | None = None
+    command: str | None = None
     issues: tuple[GifCheckIssue, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
@@ -214,11 +218,20 @@ def _object_to_int(value: object, *, default: int) -> int:
     return default
 
 
-def _manifest_spec_out(result: dict[str, object]) -> str | None:
+def _manifest_spec(result: dict[str, object]) -> dict[str, object]:
     raw_spec = result.get("spec")
     if not isinstance(raw_spec, dict):
-        return None
-    raw_out = raw_spec.get("out")
+        return {}
+    return raw_spec
+
+
+def _manifest_spec_string(result: dict[str, object], key: str) -> str | None:
+    raw_value = _manifest_spec(result).get(key)
+    return raw_value if isinstance(raw_value, str) else None
+
+
+def _manifest_spec_out(result: dict[str, object]) -> str | None:
+    raw_out = _manifest_spec(result).get("out")
     return raw_out if isinstance(raw_out, str) else None
 
 
@@ -341,6 +354,12 @@ def check_gif_suite(
     manifest_paths: set[Path] = set()
     for index, raw_result in enumerate(raw_results):
         result = raw_result if isinstance(raw_result, dict) else {}
+        asset_metadata = {
+            "model_name": _manifest_spec_string(result, "model_name"),
+            "task_id": _manifest_spec_string(result, "task_id"),
+            "instruction": _manifest_spec_string(result, "instruction"),
+            "command": _manifest_spec_string(result, "command"),
+        }
         raw_out = _manifest_spec_out(result)
         if raw_out is None:
             issue = GifCheckIssue(
@@ -357,6 +376,7 @@ def check_gif_suite(
                     width=0,
                     height=0,
                     bytes=0,
+                    **asset_metadata,
                     issues=(issue,),
                 )
             )
@@ -382,6 +402,7 @@ def check_gif_suite(
                     width=0,
                     height=0,
                     bytes=0,
+                    **asset_metadata,
                     issues=tuple(asset_issues),
                 )
             )
@@ -420,6 +441,7 @@ def check_gif_suite(
                     width=0,
                     height=0,
                     bytes=size,
+                    **asset_metadata,
                     issues=tuple(asset_issues),
                 )
             )
@@ -474,6 +496,7 @@ def check_gif_suite(
                 width=width,
                 height=height,
                 bytes=size,
+                **asset_metadata,
                 issues=tuple(asset_issues),
             )
         )
@@ -600,33 +623,148 @@ def format_gif_check_markdown(report: GifSuiteCheckReport) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _human_label(value: str | None, *, fallback: str) -> str:
+    if not value:
+        return fallback
+    return value.replace("_", " ")
+
+
+def _asset_task_id(asset: GifAssetCheck) -> str:
+    if asset.task_id:
+        return asset.task_id
+    stem = Path(asset.path).stem
+    if stem.startswith("simulation_"):
+        parts = stem.split("_")
+        if len(parts) > 2:
+            return "_".join(parts[1:-1])
+    return "unknown_task"
+
+
+def _asset_model_name(asset: GifAssetCheck) -> str:
+    if asset.model_name:
+        return asset.model_name
+    stem = Path(asset.path).stem
+    if stem.startswith("simulation_"):
+        parts = stem.split("_")
+        if len(parts) > 2:
+            return parts[-1]
+    return "unknown_model"
+
+
+def _ordered_unique(values: Sequence[str]) -> list[str]:
+    unique: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        unique.append(value)
+    return unique
+
+
+def _asset_src(asset: GifAssetCheck, *, relative_to: Path) -> str:
+    path = Path(asset.path)
+    try:
+        return path.relative_to(relative_to).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def _format_size(value: int) -> str:
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.1f} MB"
+    if value >= 1_000:
+        return f"{value / 1_000:.1f} KB"
+    return f"{value} B"
+
+
+def _format_gif_comparison_matrix(report: GifSuiteCheckReport, *, manifest_path: Path) -> str:
+    if not report.assets:
+        return ""
+    tasks = _ordered_unique([_asset_task_id(asset) for asset in report.assets])
+    models = _ordered_unique([_asset_model_name(asset) for asset in report.assets])
+    by_cell = {(_asset_task_id(asset), _asset_model_name(asset)): asset for asset in report.assets}
+    header_cells = "".join(
+        f"<th>{escape(_human_label(model, fallback='model'))}</th>" for model in models
+    )
+    rows: list[str] = []
+    for task in tasks:
+        cells: list[str] = []
+        for model in models:
+            asset = by_cell.get((task, model))
+            if asset is None:
+                cells.append('<td><span class="missing">missing</span></td>')
+                continue
+            src = _asset_src(asset, relative_to=manifest_path.parent)
+            status = "ok" if asset.ok else "failed"
+            instruction = f"<p>{escape(asset.instruction)}</p>" if asset.instruction else ""
+            cells.append(
+                "<td>"
+                f'<img src="{escape(src)}" '
+                f'alt="{escape(model)} {escape(task)} PyBullet simulation">'
+                f'<span class="status {status}">{status}</span>'
+                f"{instruction}"
+                f"<small>{asset.frames} frames &middot; {asset.width}x{asset.height} &middot; "
+                f"{escape(_format_size(asset.bytes))}</small>"
+                "</td>"
+            )
+        rows.append(
+            "<tr>"
+            f"<th>{escape(_human_label(task, fallback='task'))}</th>"
+            f"{''.join(cells)}"
+            "</tr>"
+        )
+    return (
+        '<section class="matrix-section">'
+        "<h2>Task x Adapter Matrix</h2>"
+        "<p>Each cell is a checked GIF generated from the same PyBullet runtime boundary.</p>"
+        '<div class="matrix-scroll">'
+        '<table class="matrix">'
+        f"<thead><tr><th>Task</th>{header_cells}</tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody>"
+        "</table>"
+        "</div>"
+        "</section>"
+    )
+
+
 def format_gif_report_html(
     report: GifSuiteCheckReport,
     *,
     title: str = "vla_zoo GIF Gallery",
 ) -> str:
     manifest_path = Path(report.manifest)
+    task_count = len(_ordered_unique([_asset_task_id(asset) for asset in report.assets]))
+    model_count = len(_ordered_unique([_asset_model_name(asset) for asset in report.assets]))
+    matrix_html = _format_gif_comparison_matrix(report, manifest_path=manifest_path)
     cards: list[str] = []
     for asset in report.assets:
         path = Path(asset.path)
-        try:
-            src = path.relative_to(manifest_path.parent).as_posix()
-        except ValueError:
-            src = str(path)
+        src = _asset_src(asset, relative_to=manifest_path.parent)
         issues = "".join(
             f"<li>{escape(issue.level)}: {escape(issue.message)}</li>" for issue in asset.issues
         )
         issue_html = f"<ul>{issues}</ul>" if issues else "<p>No issues.</p>"
+        label = (
+            f"{_human_label(asset.model_name, fallback=path.stem)} / "
+            f"{_human_label(asset.task_id, fallback='task')}"
+        )
+        command_html = (
+            f"<dt>Command</dt><dd><code>{escape(asset.command)}</code></dd>"
+            if asset.command
+            else ""
+        )
         cards.append(
             f"""
             <article class="card {'ok' if asset.ok else 'bad'}">
               <img src="{escape(src)}" alt="{escape(path.stem)} PyBullet simulation">
-              <h2>{escape(path.stem)}</h2>
+              <h2>{escape(label)}</h2>
               <dl>
                 <dt>Status</dt><dd>{'ok' if asset.ok else 'failed'}</dd>
                 <dt>Frames</dt><dd>{asset.frames}</dd>
                 <dt>Resolution</dt><dd>{asset.width}x{asset.height}</dd>
-                <dt>Size</dt><dd>{asset.bytes} bytes</dd>
+                <dt>Size</dt><dd>{escape(_format_size(asset.bytes))}</dd>
+                {command_html}
               </dl>
               {issue_html}
             </article>
@@ -652,6 +790,23 @@ def format_gif_report_html(
       gap: 16px; margin: 22px 0; }}
     .truth-card {{ background: #fff; border: 1px solid #dbe3ef; border-radius: 8px;
       padding: 16px; }}
+    .matrix-section {{ margin: 24px 0; }}
+    .matrix-section > p {{ color: #64748b; margin-top: -2px; }}
+    .matrix-scroll {{ overflow-x: auto; border: 1px solid #dbe3ef; border-radius: 8px;
+      background: #fff; }}
+    .matrix {{ width: 100%; min-width: 820px; border-collapse: collapse; }}
+    .matrix th, .matrix td {{ border-bottom: 1px solid #dbe3ef; border-right: 1px solid #dbe3ef;
+      padding: 12px; vertical-align: top; text-align: left; }}
+    .matrix th {{ background: #eef4f8; color: #111827; }}
+    .matrix td {{ width: 28%; }}
+    .matrix img {{ margin-bottom: 8px; }}
+    .matrix small {{ display: block; color: #64748b; margin-top: 6px; }}
+    .matrix p {{ margin: 4px 0; font-size: 13px; color: #334155; }}
+    .status {{ display: inline-block; border-radius: 999px; padding: 3px 8px;
+      color: #fff; font-size: 12px; font-weight: 800; text-transform: uppercase; }}
+    .status.ok {{ background: #16a34a; }}
+    .status.failed {{ background: #dc2626; }}
+    .missing {{ color: #64748b; font-style: italic; }}
     .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px; }}
     .card {{ background: #fff; border: 1px solid #dbe3ef; border-radius: 8px; padding: 14px; }}
@@ -662,7 +817,8 @@ def format_gif_report_html(
     h2 {{ font-size: 16px; margin: 12px 0; }}
     dl {{ display: grid; grid-template-columns: 92px 1fr; gap: 4px 10px; margin: 0; }}
     dt {{ color: #64748b; }}
-    dd {{ margin: 0; }}
+    dd {{ margin: 0; overflow-wrap: anywhere; }}
+    code {{ font-size: 12px; }}
     ul {{ padding-left: 20px; }}
   </style>
 </head>
@@ -675,6 +831,8 @@ def format_gif_report_html(
     <section class="summary">
       <div class="pill">status: <strong>{'ok' if report.ok else 'failed'}</strong></div>
       <div class="pill">assets: <strong>{len(report.assets)}</strong></div>
+      <div class="pill">tasks: <strong>{task_count}</strong></div>
+      <div class="pill">adapters: <strong>{model_count}</strong></div>
       <div class="pill">manifest: <code>{escape(Path(report.manifest).name)}</code></div>
     </section>
     <section class="truth">
@@ -698,6 +856,7 @@ def format_gif_report_html(
       </div>
     </section>
     {f'<section><h2>Suite Issues</h2><ul>{suite_issues}</ul></section>' if suite_issues else ''}
+    {matrix_html}
     <section class="grid">
       {''.join(cards)}
     </section>
