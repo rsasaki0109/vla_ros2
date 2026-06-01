@@ -1,0 +1,2737 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>vla_zoo ROS2 Remote Dummy Smoke: Actions</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #d8e2ee;
+      --accent: #0f6f9f;
+      --green: #12843b;
+      --red: #c51f46;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 30px 18px 46px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: 0;
+    }
+    p { margin: 7px 0 0; color: var(--muted); line-height: 1.55; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      padding: 4px 10px;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .card {
+      min-height: 92px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 13px;
+    }
+    .card span { color: var(--muted); font-size: 13px; }
+    .card strong { display: block; margin-top: 8px; font-size: 24px; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .panel h2 {
+      margin: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 13px 15px;
+      font-size: 16px;
+    }
+    .panel-body { padding: 14px; }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 320px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 12px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    input[type="range"] { width: 100%; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th { color: #475569; font-size: 12px; text-transform: uppercase; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+    .detail {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 10px;
+      color: #334155;
+      font-size: 14px;
+    }
+    .detail strong { color: var(--text); }
+    @media (max-width: 860px) {
+      header { display: block; }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .controls, .detail { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>vla_zoo ROS2 Remote Dummy Smoke: Actions</h1>
+        <p>Static replay of VLA action messages recorded from ROS2.</p>
+      </div>
+      <span class="pill" id="model-pill">no model</span>
+    </header>
+
+    <section class="cards">
+      <div class="card"><span>Actions</span><strong id="count">0</strong></div>
+      <div class="card"><span>Duration</span><strong id="duration">0.00s</strong></div>
+      <div class="card"><span>Mean |action|</span><strong id="mean-mag">-</strong></div>
+      <div class="card"><span>Max |action|</span><strong id="max-mag">-</strong></div>
+      <div class="card"><span>Action Space</span><strong id="space">-</strong></div>
+    </section>
+
+    <section class="panel">
+      <h2>Action Timeline</h2>
+      <div class="panel-body">
+        <canvas id="chart" width="1200" height="360"></canvas>
+        <div class="controls">
+          <input id="scrubber" type="range" min="0" max="0" value="0">
+          <span class="pill" id="scrub-label">event 0 / 0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Selected Action</h2>
+      <div class="panel-body detail" id="detail"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Recent Events</h2>
+      <div class="panel-body">
+        <table>
+          <thead>
+            <tr>
+              <th>t</th>
+              <th>model</th>
+              <th>space</th>
+              <th>|action|</th>
+              <th>data</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const trace = {
+  "summary": {
+    "action_count": 69,
+    "duration_sec": 27.19996738433838,
+    "model_names": [
+      "dummy"
+    ],
+    "action_spaces": [
+      "eef_delta"
+    ],
+    "mean_magnitude": 0.0,
+    "max_magnitude": 0.0
+  },
+  "events": [
+    {
+      "timestamp_sec": 1780399609.813349,
+      "relative_sec": 0.0,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.03264984115958214
+      }
+    },
+    {
+      "timestamp_sec": 1780399610.2138054,
+      "relative_sec": 0.40045642852783203,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.0238178763538599
+      }
+    },
+    {
+      "timestamp_sec": 1780399610.6133087,
+      "relative_sec": 0.799959659576416,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.01884414814412594
+      }
+    },
+    {
+      "timestamp_sec": 1780399611.0138376,
+      "relative_sec": 1.200488567352295,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018710969015955925
+      }
+    },
+    {
+      "timestamp_sec": 1780399611.4137669,
+      "relative_sec": 1.6004178524017334,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.019785016775131226
+      }
+    },
+    {
+      "timestamp_sec": 1780399611.841132,
+      "relative_sec": 2.027782917022705,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.019824830815196037
+      }
+    },
+    {
+      "timestamp_sec": 1780399612.2133274,
+      "relative_sec": 2.3999783992767334,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.01881900243461132
+      }
+    },
+    {
+      "timestamp_sec": 1780399612.6133282,
+      "relative_sec": 2.7999792098999023,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.01882808282971382
+      }
+    },
+    {
+      "timestamp_sec": 1780399613.013452,
+      "relative_sec": 3.2001030445098877,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.032800016924738884
+      }
+    },
+    {
+      "timestamp_sec": 1780399613.413468,
+      "relative_sec": 3.60011887550354,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.016900012269616127
+      }
+    },
+    {
+      "timestamp_sec": 1780399613.8156946,
+      "relative_sec": 4.002345561981201,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.024215085431933403
+      }
+    },
+    {
+      "timestamp_sec": 1780399614.2134316,
+      "relative_sec": 4.400082588195801,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018887920305132866
+      }
+    },
+    {
+      "timestamp_sec": 1780399614.6133132,
+      "relative_sec": 4.799964189529419,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018385006114840508
+      }
+    },
+    {
+      "timestamp_sec": 1780399615.0133114,
+      "relative_sec": 5.199962377548218,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017595011740922928
+      }
+    },
+    {
+      "timestamp_sec": 1780399615.4132931,
+      "relative_sec": 5.599944114685059,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.07737684063613415
+      }
+    },
+    {
+      "timestamp_sec": 1780399615.8132615,
+      "relative_sec": 5.99991250038147,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.019151950255036354
+      }
+    },
+    {
+      "timestamp_sec": 1780399616.2133024,
+      "relative_sec": 6.399953365325928,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018735183402895927
+      }
+    },
+    {
+      "timestamp_sec": 1780399616.6133363,
+      "relative_sec": 6.799987316131592,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.016137026250362396
+      }
+    },
+    {
+      "timestamp_sec": 1780399617.013274,
+      "relative_sec": 7.199924945831299,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017154961824417114
+      }
+    },
+    {
+      "timestamp_sec": 1780399617.415447,
+      "relative_sec": 7.602097988128662,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.013305805623531342
+      }
+    },
+    {
+      "timestamp_sec": 1780399617.8133085,
+      "relative_sec": 7.999959468841553,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.014622928574681282
+      }
+    },
+    {
+      "timestamp_sec": 1780399618.2133937,
+      "relative_sec": 8.400044679641724,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.016913050785660744
+      }
+    },
+    {
+      "timestamp_sec": 1780399618.613244,
+      "relative_sec": 8.79989504814148,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.03108987584710121
+      }
+    },
+    {
+      "timestamp_sec": 1780399619.0972197,
+      "relative_sec": 9.283870697021484,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017320970073342323
+      }
+    },
+    {
+      "timestamp_sec": 1780399619.4133074,
+      "relative_sec": 9.599958419799805,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.016276026144623756
+      }
+    },
+    {
+      "timestamp_sec": 1780399619.8133233,
+      "relative_sec": 9.999974250793457,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017135171219706535
+      }
+    },
+    {
+      "timestamp_sec": 1780399620.2133014,
+      "relative_sec": 10.399952411651611,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.022531021386384964
+      }
+    },
+    {
+      "timestamp_sec": 1780399620.6132848,
+      "relative_sec": 10.799935817718506,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.01760711893439293
+      }
+    },
+    {
+      "timestamp_sec": 1780399621.013299,
+      "relative_sec": 11.199949979782104,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.021592946723103523
+      }
+    },
+    {
+      "timestamp_sec": 1780399621.4133422,
+      "relative_sec": 11.599993228912354,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.016419915482401848
+      }
+    },
+    {
+      "timestamp_sec": 1780399621.8132489,
+      "relative_sec": 11.999899864196777,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.013869022950530052
+      }
+    },
+    {
+      "timestamp_sec": 1780399622.2133062,
+      "relative_sec": 12.399957180023193,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.014957040548324585
+      }
+    },
+    {
+      "timestamp_sec": 1780399622.613274,
+      "relative_sec": 12.799925088882446,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.01892494037747383
+      }
+    },
+    {
+      "timestamp_sec": 1780399623.0132968,
+      "relative_sec": 13.199947834014893,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018399907276034355
+      }
+    },
+    {
+      "timestamp_sec": 1780399623.4141448,
+      "relative_sec": 13.60079574584961,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.01781596802175045
+      }
+    },
+    {
+      "timestamp_sec": 1780399623.816894,
+      "relative_sec": 14.003545045852661,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018591992557048798
+      }
+    },
+    {
+      "timestamp_sec": 1780399624.2132757,
+      "relative_sec": 14.399926662445068,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.019416911527514458
+      }
+    },
+    {
+      "timestamp_sec": 1780399624.614323,
+      "relative_sec": 14.800973892211914,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.019072089344263077
+      }
+    },
+    {
+      "timestamp_sec": 1780399625.013306,
+      "relative_sec": 15.199956893920898,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017283018678426743
+      }
+    },
+    {
+      "timestamp_sec": 1780399625.4133027,
+      "relative_sec": 15.599953651428223,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018595950677990913
+      }
+    },
+    {
+      "timestamp_sec": 1780399625.8133314,
+      "relative_sec": 15.999982357025146,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017930055037140846
+      }
+    },
+    {
+      "timestamp_sec": 1780399626.2132814,
+      "relative_sec": 16.399932384490967,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.01723296009004116
+      }
+    },
+    {
+      "timestamp_sec": 1780399626.613316,
+      "relative_sec": 16.799967050552368,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.02064509317278862
+      }
+    },
+    {
+      "timestamp_sec": 1780399627.0143232,
+      "relative_sec": 17.200974225997925,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.027153873816132545
+      }
+    },
+    {
+      "timestamp_sec": 1780399627.413315,
+      "relative_sec": 17.599966049194336,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.0181740615516901
+      }
+    },
+    {
+      "timestamp_sec": 1780399627.8133056,
+      "relative_sec": 17.999956607818604,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018651830032467842
+      }
+    },
+    {
+      "timestamp_sec": 1780399628.2133043,
+      "relative_sec": 18.39995527267456,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.02057594247162342
+      }
+    },
+    {
+      "timestamp_sec": 1780399628.61331,
+      "relative_sec": 18.79996109008789,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018552178516983986
+      }
+    },
+    {
+      "timestamp_sec": 1780399629.0132942,
+      "relative_sec": 19.199945211410522,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.016212929040193558
+      }
+    },
+    {
+      "timestamp_sec": 1780399629.4133594,
+      "relative_sec": 19.60001039505005,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.01908489502966404
+      }
+    },
+    {
+      "timestamp_sec": 1780399629.8132393,
+      "relative_sec": 19.999890327453613,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.013009179383516312
+      }
+    },
+    {
+      "timestamp_sec": 1780399630.213306,
+      "relative_sec": 20.399956941604614,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.013420125469565392
+      }
+    },
+    {
+      "timestamp_sec": 1780399630.613301,
+      "relative_sec": 20.799952030181885,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017286045476794243
+      }
+    },
+    {
+      "timestamp_sec": 1780399631.0133083,
+      "relative_sec": 21.19995927810669,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.02164393663406372
+      }
+    },
+    {
+      "timestamp_sec": 1780399631.4132402,
+      "relative_sec": 21.599891185760498,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018076971173286438
+      }
+    },
+    {
+      "timestamp_sec": 1780399631.8133287,
+      "relative_sec": 21.999979734420776,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.01829606480896473
+      }
+    },
+    {
+      "timestamp_sec": 1780399632.2133427,
+      "relative_sec": 22.399993658065796,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017422018572688103
+      }
+    },
+    {
+      "timestamp_sec": 1780399632.6133354,
+      "relative_sec": 22.799986362457275,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018120044842362404
+      }
+    },
+    {
+      "timestamp_sec": 1780399633.0133135,
+      "relative_sec": 23.19996452331543,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.018145190551877022
+      }
+    },
+    {
+      "timestamp_sec": 1780399633.4133065,
+      "relative_sec": 23.59995746612549,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.014818040654063225
+      }
+    },
+    {
+      "timestamp_sec": 1780399633.8132594,
+      "relative_sec": 23.999910354614258,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017940066754817963
+      }
+    },
+    {
+      "timestamp_sec": 1780399634.2133148,
+      "relative_sec": 24.39996576309204,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.020753825083374977
+      }
+    },
+    {
+      "timestamp_sec": 1780399634.6133277,
+      "relative_sec": 24.799978733062744,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.019225990399718285
+      }
+    },
+    {
+      "timestamp_sec": 1780399635.0132544,
+      "relative_sec": 25.199905395507812,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.020662089809775352
+      }
+    },
+    {
+      "timestamp_sec": 1780399635.4138436,
+      "relative_sec": 25.600494623184204,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.019286060705780983
+      }
+    },
+    {
+      "timestamp_sec": 1780399635.8133192,
+      "relative_sec": 25.999970197677612,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.019608065485954285
+      }
+    },
+    {
+      "timestamp_sec": 1780399636.2132878,
+      "relative_sec": 26.399938821792603,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.017909100279211998
+      }
+    },
+    {
+      "timestamp_sec": 1780399636.6132488,
+      "relative_sec": 26.79989981651306,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.0178520567715168
+      }
+    },
+    {
+      "timestamp_sec": 1780399637.0133164,
+      "relative_sec": 27.19996738433838,
+      "model_name": "dummy",
+      "adapter_name": "RemoteVLAClient",
+      "action_space": "eef_delta",
+      "data": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "names": [
+        "x",
+        "y",
+        "z",
+        "roll",
+        "pitch",
+        "yaw",
+        "gripper"
+      ],
+      "confidence": 1.0,
+      "dt": 0.20000000298023224,
+      "chunk_index": 0,
+      "metadata": {
+        "model": "dummy",
+        "adapter": "DummyAdapter",
+        "instruction": "pick up the red block",
+        "dry_run": true,
+        "latency_ms": 0.016982899978756905
+      }
+    }
+  ]
+};
+    const events = trace.events || [];
+    const summary = trace.summary || {};
+    const fmt = (value, digits = 2) => Number.isFinite(value) ? value.toFixed(digits) : "-";
+
+    document.getElementById("count").textContent = summary.action_count ?? 0;
+    document.getElementById("duration").textContent = `${fmt(summary.duration_sec || 0)}s`;
+    document.getElementById("mean-mag").textContent = fmt(summary.mean_magnitude);
+    document.getElementById("max-mag").textContent = fmt(summary.max_magnitude);
+    document.getElementById("space").textContent = (summary.action_spaces || []).join(", ") || "-";
+    document.getElementById("model-pill").textContent =
+      (summary.model_names || []).join(", ") || "no model";
+
+    const scrubber = document.getElementById("scrubber");
+    scrubber.max = Math.max(0, events.length - 1);
+
+    function magnitude(event) {
+      return (event.data || []).reduce((sum, value) => sum + Math.abs(Number(value) || 0), 0);
+    }
+
+    function draw(selectedIndex = 0) {
+      const canvas = document.getElementById("chart");
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      const pad = 42;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fbfdff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "#d8e2ee";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 5; i += 1) {
+        const y = pad + i * ((height - pad * 2) / 4);
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(width - pad, y);
+        ctx.stroke();
+      }
+      if (!events.length) {
+        ctx.fillStyle = "#64748b";
+        ctx.font = "18px sans-serif";
+        ctx.fillText("No action records", pad, height / 2);
+        return;
+      }
+      const maxT = Math.max(...events.map((event) => event.relative_sec || 0), 1);
+      const mags = events.map(magnitude);
+      const maxM = Math.max(...mags, 1e-6);
+      ctx.strokeStyle = "#0f6f9f";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      events.forEach((event, index) => {
+        const x = pad + ((event.relative_sec || 0) / maxT) * (width - pad * 2);
+        const y = height - pad - (mags[index] / maxM) * (height - pad * 2);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      events.forEach((event, index) => {
+        const x = pad + ((event.relative_sec || 0) / maxT) * (width - pad * 2);
+        const y = height - pad - (mags[index] / maxM) * (height - pad * 2);
+        ctx.fillStyle = index === selectedIndex ? "#c51f46" : "#12843b";
+        ctx.beginPath();
+        ctx.arc(x, y, index === selectedIndex ? 6 : 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = "#64748b";
+      ctx.font = "13px sans-serif";
+      ctx.fillText("time", width - pad - 24, height - 12);
+      ctx.fillText("|action|", 10, pad - 14);
+    }
+
+    function showDetail(index) {
+      const event = events[index];
+      document.getElementById("scrub-label").textContent =
+        events.length ? `event ${index + 1} / ${events.length}` : "event 0 / 0";
+      if (!event) {
+        document.getElementById("detail").innerHTML = "<p>No event selected.</p>";
+        return;
+      }
+      const named = (event.data || []).map((value, itemIndex) => {
+        const name = (event.names || [])[itemIndex] || `a${itemIndex}`;
+        return `${name}: ${Number(value).toFixed(4)}`;
+      });
+      document.getElementById("detail").innerHTML = `
+        <div>Time</div><strong>${fmt(event.relative_sec, 3)}s</strong>
+        <div>Model</div><strong>${event.model_name} / ${event.adapter_name || "-"}</strong>
+        <div>Action space</div><strong>${event.action_space}</strong>
+        <div>Magnitude</div><strong>${fmt(magnitude(event), 4)}</strong>
+        <div>Confidence</div><strong>${fmt(event.confidence, 3)}</strong>
+        <div>Data</div><code>${named.join(" | ")}</code>
+      `;
+    }
+
+    function renderRows() {
+      const rows = document.getElementById("rows");
+      rows.innerHTML = events.slice(-80).reverse().map((event) => `
+        <tr>
+          <td>${fmt(event.relative_sec, 3)}s</td>
+          <td>${event.model_name}</td>
+          <td>${event.action_space}</td>
+          <td>${fmt(magnitude(event), 4)}</td>
+          <td><code>${
+            (event.data || []).map((value) => Number(value).toFixed(4)).join(", ")
+          }</code></td>
+        </tr>
+      `).join("");
+    }
+
+    scrubber.addEventListener("input", () => {
+      const index = Number(scrubber.value);
+      draw(index);
+      showDetail(index);
+    });
+    draw(0);
+    showDetail(0);
+    renderRows();
+  </script>
+</body>
+</html>
