@@ -222,6 +222,47 @@ def info(model: str) -> None:
 
 
 @app.command()
+def doctor(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Emit machine-readable JSON."),
+    ] = False,
+    no_ros: Annotated[
+        bool,
+        typer.Option("--no-ros", help="Skip ros2 and colcon command checks."),
+    ] = False,
+    remote_url: Annotated[
+        str | None,
+        typer.Option("--remote-url", help="Check a remote vla-zoo server /health endpoint."),
+    ] = None,
+    strict: Annotated[
+        bool,
+        typer.Option("--strict", help="Exit non-zero if any error-level check fails."),
+    ] = False,
+) -> None:
+    """Run local environment and runtime readiness checks."""
+
+    from vla_zoo.runtime.doctor import format_doctor_table, run_doctor, summarize_checks
+
+    checks = run_doctor(include_ros=not no_ros, remote_url=remote_url)
+    summary = summarize_checks(checks)
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {
+                    "summary": summary,
+                    "checks": [check.to_dict() for check in checks],
+                },
+                indent=2,
+            )
+        )
+    else:
+        typer.echo(format_doctor_table(checks))
+    if strict and summary["error"] > 0:
+        raise typer.Exit(1)
+
+
+@app.command()
 def predict(
     model: Annotated[str, typer.Option("--model", "-m")] = "dummy",
     instruction: Annotated[str, typer.Option("--instruction", "-i")] = "test",

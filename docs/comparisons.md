@@ -17,6 +17,7 @@
 Use the adapter table first. It does not load model weights:
 
 ```bash
+vla-zoo doctor --no-ros
 vla-zoo compare adapters
 ```
 

@@ -19,6 +19,7 @@ Live demo page: https://rsasaki0109.github.io/vla_zoo/
 
 ```bash
 pip install -e ".[dev,cli,server,sim]"
+vla-zoo doctor
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo compare adapters
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
@@ -134,6 +135,7 @@ vla-zoo report bundle \
 ## What works today
 
 - `load_model("dummy")` runs without a GPU or model download.
+- `vla-zoo doctor` reports local dependency, adapter, ROS2, and optional remote health.
 - `vla-zoo predict --model dummy --instruction "hello"` returns a typed `VLAAction`.
 - `vla-zoo serve --model dummy --port 8000` exposes `/health`, `/v1/models`, and `/v1/predict`.
 - `ros2 launch vla_zoo dummy.launch.py` starts a dry-run ROS2 runtime node with status and diagnostics.
@@ -143,6 +145,7 @@ vla-zoo report bundle \
 
 ```bash
 pip install -e ".[dev,cli,server,sim]"
+vla-zoo doctor --no-ros
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 vla-zoo compare adapters
@@ -161,6 +164,7 @@ For ROS2 dry-run testing:
 pip install -e .
 colcon build --base-paths ros2 --symlink-install
 source install/setup.bash
+vla-zoo doctor
 ros2 launch vla_zoo dummy.launch.py
 ```
 
