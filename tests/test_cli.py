@@ -23,6 +23,14 @@ def test_cli_demo_pybullet_help() -> None:
     assert "--runtime" in result.output
 
 
+def test_cli_doctor_json() -> None:
+    result = CliRunner().invoke(app, ["doctor", "--json", "--no-ros"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["summary"]["ok"] >= 1
+    assert any(check["name"] == "adapter.dummy.predict" for check in payload["checks"])
+
+
 def test_cli_compare_adapters() -> None:
     result = CliRunner().invoke(app, ["compare", "adapters"])
     assert result.exit_code == 0

@@ -11,6 +11,7 @@ The ROS2 workspace contains two packages:
 pip install -e .
 colcon build --base-paths ros2 --symlink-install
 source install/setup.bash
+vla-zoo doctor
 ros2 launch vla_zoo dummy.launch.py
 ```
 
