@@ -290,6 +290,7 @@ vla-zoo compare suite --out-dir results/vla_compare_suite
 Live artifacts:
 
 - Action Playground: https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html
+  task-level adapter cards, action magnitude comparison, and frame-by-frame traces
 - PyBullet report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html
 - Runtime dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/runtime_dashboard.html
 - ROS2 dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html
