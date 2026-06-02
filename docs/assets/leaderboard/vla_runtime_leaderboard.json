@@ -1,0 +1,68 @@
+{
+  "schema_version": "vla-zoo-leaderboard/v1",
+  "metric": "latency_ms_p50",
+  "lower_is_better": true,
+  "count": 4,
+  "entries": [
+    {
+      "rank": 1,
+      "model": "smolvla",
+      "status": "verified",
+      "metric": "latency_ms_p50",
+      "metric_value": 381.9219139404595,
+      "latency_ms_p50": 381.9219139404595,
+      "latency_ms_p95": 571.6380481608212,
+      "action_rate_hz": 1.0666666666666667,
+      "sample_count": 21,
+      "memory_gb": 0.97,
+      "memory_note": "local GPU, full precision",
+      "evidence_link": "../sample_pybullet_smolvla/runtime_action_probe.md",
+      "note": "Real-scene PyBullet action probe (6-DoF on rendered frames); bf16 --dtype serve recorded."
+    },
+    {
+      "rank": 2,
+      "model": "openvla",
+      "status": "verified",
+      "metric": "latency_ms_p50",
+      "metric_value": 1996.7553580645472,
+      "latency_ms_p50": 1996.7553580645472,
+      "latency_ms_p95": 3675.923877162859,
+      "action_rate_hz": 1.0666666666666667,
+      "sample_count": 21,
+      "memory_gb": 4.6,
+      "memory_note": "4-bit (bitsandbytes nf4); bf16 weights ~15 GB OOM a 16 GB card",
+      "evidence_link": "../sample_pybullet_openvla/runtime_action_probe.md",
+      "note": "Real-scene PyBullet action probe (7-DoF on rendered frames); local 4-bit + remote + ROS2 traces recorded."
+    },
+    {
+      "rank": null,
+      "model": "pi0",
+      "status": "blocked",
+      "metric": "latency_ms_p50",
+      "metric_value": null,
+      "latency_ms_p50": null,
+      "latency_ms_p95": null,
+      "action_rate_hz": null,
+      "sample_count": 0,
+      "memory_gb": 8.9,
+      "memory_note": "lerobot/pi0_base bf16 (measured during load); float32 config OOMs",
+      "evidence_link": "../sample_task_verification/pi0_compatibility_probe.md",
+      "note": "Version-matched checkpoint resolves; local inference blocked on the gated google/paligemma-3b-pt-224 tokenizer. Use the remote runtime."
+    },
+    {
+      "rank": null,
+      "model": "groot",
+      "status": "blocked",
+      "metric": "latency_ms_p50",
+      "metric_value": null,
+      "latency_ms_p50": null,
+      "latency_ms_p95": null,
+      "action_rate_hz": null,
+      "sample_count": 0,
+      "memory_gb": null,
+      "memory_note": "n/a (no local runtime)",
+      "evidence_link": "../sample_task_verification/groot_block_probe.md",
+      "note": "Adapter refuses rather than fabricating; no GR00T package on PyPI. Real runtime is the NVIDIA Isaac-GR00T GitHub stack."
+    }
+  ]
+}
