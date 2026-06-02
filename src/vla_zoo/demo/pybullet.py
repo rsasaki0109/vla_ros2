@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from html import escape
 from pathlib import Path
@@ -263,20 +264,31 @@ def prediction_to_demo_action(
 
 def predict_adapter_action(
     model: BaseVLA,
-    image: Image.Image,
+    images: Mapping[str, Image.Image],
     config: PyBulletDemoConfig,
     *,
     phase: str,
     target: tuple[float, float, float],
+    cube_position: tuple[float, float, float],
+    cube_goal_position: tuple[float, float, float],
     gripper: float,
     attached: bool,
     sim_time: float,
 ) -> tuple[tuple[float, float, float, float] | None, str | None, float | None]:
+    state_vector = simulation_state_vector(
+        target=target,
+        cube_position=cube_position,
+        gripper=gripper,
+    )
     observation = VLAObservation(
         instruction=config.instruction,
-        images={"primary": image},
+        images=dict(images),
         state={
+            "state": state_vector,
+            "simulation_state": state_vector,
             "end_effector_target": target,
+            "cube_position": cube_position,
+            "cube_goal_position": cube_goal_position,
             "gripper_open": gripper,
             "attached": attached,
         },
@@ -285,6 +297,16 @@ def predict_adapter_action(
             "demo": "pybullet",
             "phase": phase,
             "runtime": config.runtime,
+            "state_names": (
+                "eef_target_x",
+                "eef_target_y",
+                "eef_target_z",
+                "cube_x",
+                "cube_y",
+                "gripper_open",
+            ),
+            "camera_keys": tuple(images.keys()),
+            "cube_goal_distance_m": distance3(cube_position, cube_goal_position),
         },
     )
     try:
@@ -373,13 +395,42 @@ def control_robot(
         )
 
 
-def render_camera(p: Any) -> Image.Image:
+def simulation_state_vector(
+    *,
+    target: tuple[float, float, float],
+    cube_position: tuple[float, float, float],
+    gripper: float,
+) -> np.ndarray:
+    """Build the fixed 6D state vector used by PyBullet VLA probes."""
+
+    return np.asarray(
+        [
+            target[0],
+            target[1],
+            target[2],
+            cube_position[0],
+            cube_position[1],
+            gripper,
+        ],
+        dtype=np.float32,
+    )
+
+
+def render_camera_view(
+    p: Any,
+    *,
+    camera_target: tuple[float, float, float] = (0.48, 0.02, 0.28),
+    distance: float = 1.85,
+    yaw: float = 48,
+    pitch: float = -30,
+    roll: float = 0,
+) -> Image.Image:
     view = p.computeViewMatrixFromYawPitchRoll(
-        cameraTargetPosition=[0.48, 0.02, 0.28],
-        distance=1.85,
-        yaw=48,
-        pitch=-30,
-        roll=0,
+        cameraTargetPosition=list(camera_target),
+        distance=distance,
+        yaw=yaw,
+        pitch=pitch,
+        roll=roll,
         upAxisIndex=2,
     )
     proj = p.computeProjectionMatrixFOV(fov=48, aspect=WIDTH / HEIGHT, nearVal=0.02, farVal=5.0)
@@ -392,6 +443,24 @@ def render_camera(p: Any) -> Image.Image:
     )
     array = np.asarray(rgba, dtype=np.uint8).reshape((HEIGHT, WIDTH, 4))
     return Image.fromarray(array[:, :, :3], "RGB")
+
+
+def render_camera(p: Any) -> Image.Image:
+    return render_camera_view(p)
+
+
+def render_observation_images(
+    p: Any,
+    *,
+    primary: Image.Image | None = None,
+) -> dict[str, Image.Image]:
+    primary_image = primary or render_camera(p)
+    return {
+        "primary": primary_image,
+        "observation.images.camera1": primary_image,
+        "observation.images.camera2": render_camera_view(p, yaw=-35, pitch=-28, distance=1.70),
+        "observation.images.camera3": render_camera_view(p, yaw=92, pitch=-62, distance=1.45),
+    }
 
 
 def overlay(sample: RenderSample) -> Image.Image:
@@ -550,6 +619,12 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                     (target[2] - last_target[2]) * 8.0,
                     1.0 - gripper,
                 )
+                cube_position_raw, _ = p.getBasePositionAndOrientation(cube)
+                cube_position = (
+                    float(cube_position_raw[0]),
+                    float(cube_position_raw[1]),
+                    float(cube_position_raw[2]),
+                )
                 if config.model_call_every > 0 and rendered_frames % config.model_call_every == 0:
                     adapter_query_count += 1
                     (
@@ -558,10 +633,12 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                         last_adapter_latency_ms,
                     ) = predict_adapter_action(
                         model,
-                        raw,
+                        render_observation_images(p, primary=raw),
                         config,
                         phase=waypoint.name,
                         target=target,
+                        cube_position=cube_position,
+                        cube_goal_position=config.cube_goal_position,
                         gripper=gripper,
                         attached=grasp_constraint is not None,
                         sim_time=sim_step / 240.0,
@@ -569,12 +646,6 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                     adapter_query_fresh = True
                 else:
                     adapter_query_fresh = False
-                cube_position_raw, _ = p.getBasePositionAndOrientation(cube)
-                cube_position = (
-                    float(cube_position_raw[0]),
-                    float(cube_position_raw[1]),
-                    float(cube_position_raw[2]),
-                )
                 samples.append(
                     RenderSample(
                         image=raw,

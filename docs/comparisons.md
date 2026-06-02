@@ -67,6 +67,13 @@ instructions and cube start/goal positions. It is still not a real VLA policy
 skill benchmark because the bundled PyBullet scene uses scripted motion to
 exercise the runtime path.
 
+For model-facing observations, the PyBullet runtime sends rendered RGB images
+and a compact simulation state through the same `VLAObservation` contract used
+by ROS2 and the server. The current local observation package includes
+`primary`, `observation.images.camera1`, `observation.images.camera2`,
+`observation.images.camera3`, and a 6D state vector
+`[eef_target_x, eef_target_y, eef_target_z, cube_x, cube_y, gripper_open]`.
+
 The local comparison skips heavy OpenVLA loading by default to avoid accidental downloads. The `dummy`, `scripted`, and `random` adapters are CPU smoke baselines for validating the runtime and metrics pipeline before comparing heavyweight VLA policies. For real model-to-model checks, run each VLA behind a remote GPU server and compare from the robot-side environment:
 
 ```bash
