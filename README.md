@@ -75,7 +75,7 @@ Sample artifacts:
 
 | Pillar | Artifacts |
 |---|---|
-| Visual demos | [Action Playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html), [PyBullet GIF gallery](docs/assets/gif_suite/index.html), [GIF QA](docs/assets/gif_suite/gif_check.md), [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
+| Visual demos | [Action Playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html), [Action Playground verification](docs/reports/model_comparison.md), [PyBullet GIF gallery](docs/assets/gif_suite/index.html), [GIF QA](docs/assets/gif_suite/gif_check.md), [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
 | Adapter/runtime truth | [Adapter cards](docs/adapters/README.md), [external adapter status](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html), [robot compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md) |
 | ROS2 deployment | [ROS2 remote smoke plan](https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md), [ROS2 dashboard](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html) |
 | Heavy VLA probes | [GPU server plan](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md), [OpenVLA prompt probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md), [pi0 compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md), [SmolVLA GPU probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md) |
@@ -294,6 +294,10 @@ vla-zoo demo action-playground-view \
   --trace docs/assets/action_playground.json,results/openvla/action_playground.json \
   --merged-out results/action_playground_merged.json \
   --out docs/assets/action_playground.html
+vla-zoo demo action-playground-check \
+  --trace docs/assets/action_playground.json \
+  --out docs/assets/action_playground_check.json \
+  --markdown-out docs/reports/model_comparison.md
 vla-zoo compare suite --out-dir results/vla_compare_suite
 ```
 
@@ -301,6 +305,8 @@ Live artifacts:
 
 - Action Playground: https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html
   task-level adapter cards, action magnitude comparison, and frame-by-frame traces
+- Action Playground verification: https://rsasaki0109.github.io/vla_zoo/reports/model_comparison.md
+  9/9 recorded PyBullet runtime traces checked for frames, GIF links, and adapter errors
 - PyBullet report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html
 - Runtime dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/runtime_dashboard.html
 - ROS2 dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html
