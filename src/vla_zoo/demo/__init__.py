@@ -3,6 +3,7 @@
 from vla_zoo.demo.action_playground import (
     ActionPlaygroundRecord,
     build_action_playground_records,
+    build_action_playground_task_records,
     format_action_playground_html,
     load_action_playground_trace,
     load_action_playground_traces,
@@ -23,6 +24,7 @@ __all__ = [
     "PyBulletGifResult",
     "PyBulletGifSpec",
     "build_action_playground_records",
+    "build_action_playground_task_records",
     "build_pybullet_gif_specs",
     "format_action_playground_html",
     "format_gif_gallery_markdown",

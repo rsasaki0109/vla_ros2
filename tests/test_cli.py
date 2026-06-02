@@ -58,6 +58,15 @@ def test_cli_demo_action_playground_help() -> None:
     assert "--allow-local-heavy" in result.output
 
 
+def test_cli_demo_action_playground_record_help() -> None:
+    result = CliRunner().invoke(app, ["demo", "action-playground-record", "--help"])
+    assert result.exit_code == 0
+    assert "--model" in result.output
+    assert "--runtime" in result.output
+    assert "--remote-map" in result.output
+    assert "--reference-gif-model" in result.output
+
+
 def test_cli_demo_action_playground_view_help() -> None:
     result = CliRunner().invoke(app, ["demo", "action-playground-view", "--help"])
     assert result.exit_code == 0

@@ -8,6 +8,7 @@ from PIL import Image
 from vla_zoo.demo.action_playground import (
     ActionPlaygroundRecord,
     build_action_playground_records,
+    build_action_playground_task_records,
     format_action_playground_html,
     load_action_playground_trace,
     load_action_playground_traces,
@@ -18,7 +19,7 @@ from vla_zoo.demo.action_playground import (
     write_action_playground_trace,
 )
 from vla_zoo.demo.gif_suite import PyBulletGifResult, PyBulletGifSpec, write_gif_manifest
-from vla_zoo.demo.pybullet import RenderSample
+from vla_zoo.demo.pybullet import RenderSample, pybullet_task_by_id
 
 
 def _sample(
@@ -169,3 +170,31 @@ def test_action_playground_trace_load_and_merge(tmp_path: Path) -> None:
     assert len(merged) == 1
     assert merged[0].error == "external trace replacement"
     assert loaded_merged[0].summary["adapter_queries"] == 99
+
+
+def test_build_action_playground_task_records_uses_remote_and_reference_gif(
+    tmp_path: Path,
+) -> None:
+    seen_specs: list[PyBulletGifSpec] = []
+
+    def fake_simulator(spec: PyBulletGifSpec) -> list[RenderSample]:
+        seen_specs.append(spec)
+        return [_sample(frame_index=0)]
+
+    records = build_action_playground_task_records(
+        models=("openvla",),
+        tasks=(pybullet_task_by_id("pick_red_block"),),
+        out_dir=tmp_path,
+        runtime="remote",
+        remote_url="http://default:8000",
+        remote_urls={"openvla": "http://gpu-box:8001"},
+        reference_gif_model="scripted",
+        simulator=fake_simulator,
+    )
+
+    assert len(records) == 1
+    assert records[0].model_name == "openvla"
+    assert records[0].runtime == "remote"
+    assert records[0].gif_path.endswith("simulation_pick_red_block_scripted.gif")
+    assert records[0].summary["remote_url"] == "http://gpu-box:8001"
+    assert seen_specs[0].remote_url == "http://gpu-box:8001"
