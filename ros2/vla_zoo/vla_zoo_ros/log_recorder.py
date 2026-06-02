@@ -8,9 +8,9 @@ import rclpy
 from builtin_interfaces.msg import Time
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from rclpy.node import Node
-from vla_zoo_msgs.msg import VLAStatus
+from vla_zoo_msgs.msg import VLAAction, VLAStatus
 
-from vla_zoo_ros.qos import status_qos
+from vla_zoo_ros.qos import action_qos, status_qos
 
 
 def _stamp_to_dict(stamp: Time) -> dict[str, int]:
@@ -78,28 +78,68 @@ def diagnostics_msg_to_dict(msg: DiagnosticArray) -> dict[str, Any]:
     }
 
 
+def action_msg_to_dict(msg: VLAAction) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "header": {
+            "stamp": _stamp_to_dict(msg.header.stamp),
+            "frame_id": msg.header.frame_id,
+        },
+        "model_name": msg.model_name,
+        "adapter_name": msg.adapter_name,
+        "action_space": msg.action_space,
+        "control_mode": msg.control_mode,
+        "frame_id": msg.frame_id,
+        "dt": float(msg.dt),
+        "data": [float(value) for value in msg.data],
+        "names": list(msg.names),
+        "confidence": float(msg.confidence),
+        "chunk_index": int(msg.chunk_index),
+        "metadata_json": msg.metadata_json,
+    }
+    if msg.metadata_json:
+        try:
+            payload["metadata"] = json.loads(msg.metadata_json)
+        except json.JSONDecodeError:
+            payload["metadata"] = {}
+    return payload
+
+
 class RuntimeLogRecorder(Node):
     def __init__(self) -> None:
         super().__init__("vla_runtime_log_recorder")
+        self.declare_parameter("action_topic", "/vla/action")
         self.declare_parameter("status_topic", "/vla/status")
         self.declare_parameter("diagnostics_topic", "/diagnostics")
+        self.declare_parameter("action_log_path", "results/vla_actions.jsonl")
         self.declare_parameter("status_log_path", "results/vla_status.jsonl")
         self.declare_parameter("diagnostics_log_path", "results/vla_diagnostics.jsonl")
+        self.declare_parameter("record_actions", True)
         self.declare_parameter("record_status", True)
         self.declare_parameter("record_diagnostics", True)
         self.declare_parameter("max_records", 0)
         self.declare_parameter("flush_every", 1)
 
+        self.action_topic = str(self.get_parameter("action_topic").value)
         self.status_topic = str(self.get_parameter("status_topic").value)
         self.diagnostics_topic = str(self.get_parameter("diagnostics_topic").value)
+        self.record_actions = _bool_param(self.get_parameter("record_actions").value)
         self.record_status = _bool_param(self.get_parameter("record_status").value)
         self.record_diagnostics = _bool_param(self.get_parameter("record_diagnostics").value)
         self.max_records = int(self.get_parameter("max_records").value)
         self.flush_every = max(1, int(self.get_parameter("flush_every").value))
         self._records_written = 0
+        self._action_file: TextIO | None = None
         self._status_file: TextIO | None = None
         self._diagnostics_file: TextIO | None = None
 
+        if self.record_actions:
+            self._action_file = self._open_log(str(self.get_parameter("action_log_path").value))
+            self.create_subscription(
+                VLAAction,
+                self.action_topic,
+                self._action_cb,
+                action_qos(10),
+            )
         if self.record_status:
             self._status_file = self._open_log(str(self.get_parameter("status_log_path").value))
             self.create_subscription(
@@ -121,7 +161,8 @@ class RuntimeLogRecorder(Node):
 
         self.get_logger().info(
             "vla_runtime_log_recorder ready: "
-            f"status={self.record_status} diagnostics={self.record_diagnostics}"
+            f"actions={self.record_actions} status={self.record_status} "
+            f"diagnostics={self.record_diagnostics}"
         )
 
     def _open_log(self, path_text: str) -> TextIO:
@@ -139,6 +180,9 @@ class RuntimeLogRecorder(Node):
         if self._records_written % self.flush_every == 0:
             file.flush()
 
+    def _action_cb(self, msg: VLAAction) -> None:
+        self._write_jsonl(self._action_file, action_msg_to_dict(msg))
+
     def _status_cb(self, msg: VLAStatus) -> None:
         self._write_jsonl(self._status_file, status_msg_to_dict(msg))
 
@@ -146,7 +190,7 @@ class RuntimeLogRecorder(Node):
         self._write_jsonl(self._diagnostics_file, diagnostics_msg_to_dict(msg))
 
     def destroy_node(self) -> None:
-        for file in (self._status_file, self._diagnostics_file):
+        for file in (self._action_file, self._status_file, self._diagnostics_file):
             if file is not None:
                 file.flush()
                 file.close()
