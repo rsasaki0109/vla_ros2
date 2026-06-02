@@ -693,6 +693,72 @@ def compare_methods(
         typer.echo(f"Markdown written to {markdown_out}")
 
 
+@compare_app.command("evidence")
+def compare_evidence(
+    models: Annotated[
+        str,
+        typer.Option(
+            "--models",
+            "-m",
+            help="Comma-separated adapters to include in the evidence matrix.",
+        ),
+    ] = "dummy,scripted,random,openvla,pi0,smolvla,groot",
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON evidence matrix."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write Markdown evidence matrix."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable JSON."),
+    ] = False,
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Markdown report title."),
+    ] = "VLA Model Evidence Matrix",
+) -> None:
+    """Report which VLA runtime paths have checked-in evidence."""
+
+    from vla_zoo.compare.evidence import (
+        build_evidence_matrix,
+        evidence_matrix_payload,
+        format_evidence_matrix_markdown,
+    )
+
+    records = build_evidence_matrix(
+        _parse_name_list(models),
+        status_provider=_adapter_status,
+    )
+    payload = evidence_matrix_payload(records)
+    json_payload = json.dumps(payload, indent=2)
+    markdown = format_evidence_matrix_markdown(records, title=title)
+    if out is not None:
+        _write_text(out, f"{json_payload}\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, markdown)
+    if json_output:
+        typer.echo(json_payload)
+    else:
+        typer.echo(f"{'model':<11} {'contract':<10} {'gpu':<14} {'remote':<14} next step")
+        typer.echo(f"{'-' * 11} {'-' * 10} {'-' * 14} {'-' * 14} {'-' * 42}")
+        for record in records:
+            cells = record.evidence
+            typer.echo(
+                f"{record.model:<11} "
+                f"{cells['contract'].status:<10} "
+                f"{cells['gpu_inference'].status:<14} "
+                f"{cells['remote_server'].status:<14} "
+                f"{_shorten(record.next_step, 72)}"
+            )
+    if out is not None:
+        typer.echo(f"JSON written to {out}")
+    if markdown_out is not None:
+        typer.echo(f"Markdown written to {markdown_out}")
+
+
 @compare_app.command("cards")
 def compare_cards(
     models: Annotated[
