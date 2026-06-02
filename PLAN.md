@@ -1224,12 +1224,30 @@ math, scale, no-gripper, empty/<2-point guards, to_dict, animated-GIF render, re
 (306 → 314). Honest framing throughout: open-loop, action units (not metric), shows what the policy
 *commanded* — not a real-EEF or task-success claim.
 
+The trajectories now race side by side (DONE — "tuzukeru", continued on the visual track):
+
+```text
+add demo trajectory-race: overlay several action logs into one lock-step trajectory GIF (v0.6)  [DONE]
+```
+
+What landed: `render_trajectory_race_gif()` overlays several `Trajectory` objects in one animated
+GIF — all on a single shared world-to-pixel scale (computed over every point), each adapter a
+distinct `RACE_COLORS` colour with a legend chip, paths advancing in lock-step (shorter ones freeze
+at their last point), running to the longest trajectory's step count. CLI `demo trajectory-race
+--action-logs a,b --out ...`. The recorded `docs/assets/trajectory/trajectory_race.gif` overlays the
+OpenVLA + SmolVLA probe logs; because the scale is shared it surfaces a real finding — SmolVLA's
+commanded position deltas are much larger than OpenVLA's (abs-action-mean 0.43 vs 0.12), so SmolVLA
+sweeps the panel while OpenVLA stays compact. Surfaced below the per-adapter pair in the README and
+re-pointed the Pages trajectory tile at the race; 1 artifact-index entry (count 63 → 64). Tested: 2
+race tests (overlay runs to the longest series; no-usable-series guard) (314 → 316). Honest framing
+unchanged: open-loop, action units, what each policy commanded — not a real-EEF or task-success claim.
+
 This is a good point to **pause for direction**. Remaining high-leverage moves:
 
 1. **PyPI publish** so `pip install vla_zoo` actually works for non-clone users (not yet on PyPI);
    the metadata is now install-correct, so this is mostly packaging + a release workflow.
-2. More "fun"/visual extensions: a side-by-side trajectory race GIF, a 3D-ish isometric projection,
-   or overlaying the trajectory on the PyBullet scene render.
+2. More "fun"/visual extensions: a 3D-ish isometric trajectory projection, or overlaying a
+   trajectory on the PyBullet scene render.
 3. A genuinely new runtime capability (new adapter / new ROS2 surface).
 
 No auto-increment: confirm the direction with the user before starting.

@@ -9,6 +9,7 @@ from vla_zoo.demo.trajectory import (
     Trajectory,
     build_trajectory,
     render_trajectory_gif,
+    render_trajectory_race_gif,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -95,11 +96,36 @@ def test_render_trajectory_gif_needs_two_points(tmp_path: Path) -> None:
         render_trajectory_gif(traj, tmp_path / "x.gif")
 
 
+def test_render_trajectory_race_overlays_and_runs_to_longest(tmp_path: Path) -> None:
+    from PIL import Image
+
+    short = build_trajectory([_frame(0, (0.5, 0.1, 0.0, 0, 0, 0, 1.0))])  # 1 step
+    longer = build_trajectory(
+        [_frame(i, (0.2, -0.1, 0.3, 0, 0, 0, 0.0)) for i in range(4)]  # 4 steps
+    )
+    out = tmp_path / "race.gif"
+    render_trajectory_race_gif([short, longer], out, width=560)
+
+    assert out.is_file()
+    with Image.open(out) as img:
+        assert img.is_animated
+        assert img.n_frames == 4  # advances to the longest trajectory's step count
+        assert img.size[0] == 560
+
+
+def test_render_trajectory_race_rejects_no_usable_series(tmp_path: Path) -> None:
+    single = Trajectory(
+        model="x", action_space="eef_delta", points=((0.0, 0.0, 0.0),), gripper=(None,)
+    )
+    with pytest.raises(ValueError, match="at least one trajectory with two points"):
+        render_trajectory_race_gif([single], tmp_path / "x.gif")
+
+
 def test_recorded_trajectory_gifs_exist_and_animate() -> None:
     from PIL import Image
 
     base = REPO_ROOT / "docs" / "assets" / "trajectory"
-    for name in ("openvla_trajectory.gif", "smolvla_trajectory.gif"):
+    for name in ("openvla_trajectory.gif", "smolvla_trajectory.gif", "trajectory_race.gif"):
         gif = base / name
         assert gif.is_file()
         with Image.open(gif) as img:

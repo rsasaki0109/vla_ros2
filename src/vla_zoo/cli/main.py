@@ -3674,6 +3674,52 @@ def demo_trajectory_gif(
     typer.echo(f"GIF written to {out} ({trajectory.step_count} steps, model {trajectory.model})")
 
 
+@demo_app.command("trajectory-race")
+def demo_trajectory_race(
+    action_logs: Annotated[
+        str,
+        typer.Option("--action-logs", help="Comma-separated vla_actions.jsonl logs to overlay."),
+    ],
+    out: Annotated[
+        Path,
+        typer.Option("--out", help="Output GIF path."),
+    ],
+    scale: Annotated[
+        float,
+        typer.Option("--scale", help="Multiplier applied to integrated position deltas."),
+    ] = 1.0,
+    width: Annotated[
+        int,
+        typer.Option("--width", help="GIF width in pixels."),
+    ] = 760,
+) -> None:
+    """Overlay several recorded action logs into one animated trajectory-race GIF (PIL only).
+
+    Each adapter's eef_delta stream is integrated open-loop and the paths advance in
+    lock-step on a shared scale. Runtime-path visualization of what each policy commanded,
+    not a task-success or real-end-effector claim.
+    """
+
+    from vla_zoo.benchmark.replay import load_action_log
+    from vla_zoo.demo.trajectory import build_trajectory, render_trajectory_race_gif
+
+    trajectories = []
+    for raw in _parse_name_list(action_logs):
+        log_path = Path(raw)
+        if not log_path.is_file():
+            typer.echo(f"action log not found: {log_path}", err=True)
+            raise typer.Exit(1)
+        frames = load_action_log(log_path)
+        if not frames:
+            typer.echo(f"no action frames in {log_path}", err=True)
+            raise typer.Exit(1)
+        trajectories.append(build_trajectory(frames, scale=scale))
+
+    render_trajectory_race_gif(trajectories, out)
+    models = ", ".join(t.model for t in trajectories)
+    typer.echo(f"GIF written to {out} ({len(trajectories)} adapters: {models})")
+
+
 @demo_app.command("quickstart-gif")
 def demo_quickstart_gif(
     out: Annotated[

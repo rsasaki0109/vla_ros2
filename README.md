@@ -48,6 +48,11 @@ task-success claim.
 |---|---|
 | ![OpenVLA commanded EEF trajectory](docs/assets/trajectory/openvla_trajectory.gif) | ![SmolVLA commanded EEF trajectory](docs/assets/trajectory/smolvla_trajectory.gif) |
 
+Overlaid on a shared scale, the two adapters race side by side — which makes it obvious
+that SmolVLA commands much larger position deltas than OpenVLA-7b:
+
+![VLA trajectory race](docs/assets/trajectory/trajectory_race.gif)
+
 ## Why vla_zoo?
 
 Most VLA repositories focus on model code, training, checkpoints, or task demos.
