@@ -1,0 +1,14 @@
+{
+  "schema_version": "vla-zoo-benchmark/v1",
+  "model": "dummy",
+  "source": "ros2-action-replay",
+  "sample_count": 69,
+  "success_count": 0,
+  "success_rate": null,
+  "latency_ms_p50": 0.018399907276034355,
+  "latency_ms_p95": 0.027153873816132545,
+  "latency_ms_mean": 0.01978307314541029,
+  "action_rate_hz": 2.5000029977666114,
+  "exception_count": 0,
+  "note": "ROS bag replay stub: replays recorded vla_zoo JSONL action logs (vla_actions.jsonl) for latency/action-rate analysis. Native rosbag2 (.db3/.mcap) decoding is not yet implemented and is gated on the ROS2 stack. No task-success claim is made."
+}

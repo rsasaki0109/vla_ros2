@@ -427,6 +427,27 @@ Live artifacts:
 - Action trace: https://rsasaki0109.github.io/vla_zoo/assets/sample_action_trace.html
 - Action analysis: https://rsasaki0109.github.io/vla_zoo/assets/sample_action_analysis.md
 
+## Benchmark Results (Schema + Replay)
+
+Benchmarks emit a **versioned JSONL result schema** (`vla-zoo-benchmark/v1`) so
+latency and action-rate summaries are reproducible. Results are runtime-centric:
+`success` is `null` whenever no honest task-success claim can be made.
+
+```bash
+# smoke benchmark with schema output
+vla-zoo bench --model dummy --episodes 5 \
+  --jsonl-out out/smoke_results.jsonl --summary-md out/smoke_summary.md
+
+# ROS bag replay stub: replays recorded JSONL action logs (native rosbag2 is future work)
+vla-zoo bench-replay \
+  --action-log docs/assets/sample_ros2_remote_dummy/vla_actions.jsonl \
+  --summary-md docs/assets/sample_benchmark/ros2_replay_summary.md
+```
+
+See the [benchmark result schema + ROS bag replay](docs/benchmark_results.md) doc and
+the generated [ROS2 action replay summary](docs/assets/sample_benchmark/ros2_replay_summary.md)
+(latency plus a ~2.5 Hz action rate from the recorded `dummy` stream).
+
 ## Comparing VLA Runtime Paths
 
 Start by comparing adapter contracts without loading model weights:

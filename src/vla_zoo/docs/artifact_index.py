@@ -138,6 +138,15 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Smoke-scene runtime telemetry.",
     ),
     ArtifactEntry(
+        title="Benchmark result schema + ROS bag replay",
+        path="docs/benchmark_results.md",
+        category="simulation",
+        status="manual",
+        kind="manual",
+        source_command=None,
+        caveat="Versioned JSONL schema and replay stub; runtime-centric, no task-success claim.",
+    ),
+    ArtifactEntry(
         title="Runtime dashboard",
         path="docs/assets/sample_compare_suite/runtime_dashboard.html",
         category="runtime dashboard",
@@ -188,6 +197,18 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         kind="generated",
         source_command="vla-zoo ros action-trace --action-log .../vla_actions.jsonl",
         caveat="Typed action messages only; core never commands motors.",
+    ),
+    ArtifactEntry(
+        title="ROS2 action replay summary",
+        path="docs/assets/sample_benchmark/ros2_replay_summary.md",
+        category="ROS2",
+        status="generated",
+        kind="generated",
+        source_command=(
+            "vla-zoo bench-replay --action-log .../vla_actions.jsonl "
+            "--summary-md docs/assets/sample_benchmark/ros2_replay_summary.md"
+        ),
+        caveat="Latency/action-rate from a recorded action log; no task-success claim.",
     ),
     ArtifactEntry(
         title="SmolVLA remote serving plan",
