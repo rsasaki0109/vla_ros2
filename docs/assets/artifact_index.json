@@ -1,5 +1,5 @@
 {
-  "count": 25,
+  "count": 26,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -139,6 +139,16 @@
       "kind": "generated",
       "source_command": "vla-zoo bench-replay --action-log .../vla_actions.jsonl --summary-md docs/assets/sample_benchmark/ros2_replay_summary.md",
       "caveat": "Latency/action-rate from a recorded action log; no task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "Benchmark comparison report",
+      "path": "docs/assets/sample_benchmark/benchmark_report.html",
+      "category": "runtime dashboard",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo bench-report --summaries .../ros2_replay_summary.json --html-out docs/assets/sample_benchmark/benchmark_report.html",
+      "caveat": "Latency/action-rate comparison across summaries; no task-success claim.",
       "exists": true
     },
     {

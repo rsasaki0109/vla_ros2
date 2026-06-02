@@ -441,12 +441,19 @@ vla-zoo bench --model dummy --episodes 5 \
 # ROS bag replay stub: replays recorded JSONL action logs (native rosbag2 is future work)
 vla-zoo bench-replay \
   --action-log docs/assets/sample_ros2_remote_dummy/vla_actions.jsonl \
-  --summary-md docs/assets/sample_benchmark/ros2_replay_summary.md
+  --summary-md docs/assets/sample_benchmark/ros2_replay_summary.md \
+  --summary-out docs/assets/sample_benchmark/ros2_replay_summary.json
+
+# render summaries into a comparison report (HTML + Markdown)
+vla-zoo bench-report \
+  --summaries docs/assets/sample_benchmark/ros2_replay_summary.json \
+  --html-out docs/assets/sample_benchmark/benchmark_report.html
 ```
 
-See the [benchmark result schema + ROS bag replay](docs/benchmark_results.md) doc and
-the generated [ROS2 action replay summary](docs/assets/sample_benchmark/ros2_replay_summary.md)
-(latency plus a ~2.5 Hz action rate from the recorded `dummy` stream).
+See the [benchmark result schema + ROS bag replay](docs/benchmark_results.md) doc, the
+generated [ROS2 action replay summary](docs/assets/sample_benchmark/ros2_replay_summary.md)
+(latency plus a ~2.5 Hz action rate from the recorded `dummy` stream), and the
+[benchmark comparison report](docs/assets/sample_benchmark/benchmark_report.html).
 
 ## Comparing VLA Runtime Paths
 

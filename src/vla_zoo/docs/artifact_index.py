@@ -211,6 +211,18 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Latency/action-rate from a recorded action log; no task-success claim.",
     ),
     ArtifactEntry(
+        title="Benchmark comparison report",
+        path="docs/assets/sample_benchmark/benchmark_report.html",
+        category="runtime dashboard",
+        status="generated",
+        kind="generated",
+        source_command=(
+            "vla-zoo bench-report --summaries .../ros2_replay_summary.json "
+            "--html-out docs/assets/sample_benchmark/benchmark_report.html"
+        ),
+        caveat="Latency/action-rate comparison across summaries; no task-success claim.",
+    ),
+    ArtifactEntry(
         title="SmolVLA remote serving plan",
         path="docs/assets/smolvla_remote_smoke_plan.md",
         category="adapter docs",
