@@ -1124,6 +1124,85 @@ def ros_action_trace(
     typer.echo(f"Action trace written to {out}")
 
 
+@ros_app.command("remote-smoke-plan")
+def ros_remote_smoke_plan(
+    model: Annotated[
+        str,
+        typer.Option("--model", "-m", help="Remote model name requested by the ROS2 runtime."),
+    ] = "openvla",
+    remote_url: Annotated[
+        str,
+        typer.Option("--remote-url", help="Remote vla-zoo server endpoint."),
+    ] = "http://gpu-box:8001",
+    output_dir: Annotated[
+        Path,
+        typer.Option("--output-dir", "-o", help="Directory for ROS2 JSONL logs and reports."),
+    ] = Path("results/ros2_remote_smoke"),
+    duration_sec: Annotated[
+        float,
+        typer.Option("--duration-sec", help="Suggested recording duration."),
+    ] = 30.0,
+    dtype: Annotated[
+        str | None,
+        typer.Option("--dtype", help="Server-side dtype for adapters that expose dtype."),
+    ] = "bfloat16",
+    instruction: Annotated[
+        str,
+        typer.Option("--instruction", help="Instruction passed to the smoke input node."),
+    ] = "pick up the red block",
+    task_id: Annotated[
+        str,
+        typer.Option("--task-id", help="Typed instruction task_id for the smoke run."),
+    ] = "ros2_remote_smoke_pick_red_block",
+    publish_actions_in_dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--publish-actions-in-dry-run/--suppress-actions-in-dry-run",
+            help="Publish typed action messages while dry_run remains true.",
+        ),
+    ] = True,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON plan."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write Markdown plan."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print JSON instead of Markdown."),
+    ] = False,
+) -> None:
+    """Generate commands for ROS2 remote runtime smoke recording."""
+
+    from vla_zoo.runtime.ros_plan import (
+        build_ros_remote_smoke_plan,
+        format_ros_remote_smoke_plan_markdown,
+    )
+
+    plan = build_ros_remote_smoke_plan(
+        model_name=model,
+        remote_url=remote_url,
+        output_dir=str(output_dir),
+        duration_sec=duration_sec,
+        dtype=dtype,
+        instruction=instruction,
+        task_id=task_id,
+        publish_actions_in_dry_run=publish_actions_in_dry_run,
+    )
+    payload = plan.to_dict()
+    markdown = format_ros_remote_smoke_plan_markdown(plan)
+    if out is not None:
+        _write_text(out, json.dumps(payload, indent=2) + "\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, markdown)
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(markdown)
+
+
 @ros_app.command("smoke-report")
 def ros_smoke_report(
     output_dir: Annotated[
