@@ -86,6 +86,12 @@ vla-zoo compare pybullet \
 For separate model servers, use `--remote-map`:
 
 ```bash
+vla-zoo serve-plan \
+  --models openvla,pi0,smolvla,groot \
+  --public-host gpu-box \
+  --base-port 8001 \
+  --markdown-out results/vla_gpu_servers.md
+
 vla-zoo compare pybullet \
   --models openvla,pi0,smolvla,groot \
   --runtime remote \

@@ -388,18 +388,18 @@
     "model_name": "dummy",
     "runtime": "local",
     "ok": true,
-    "source": "",
+    "source": "docs/assets/sample_compare_suite/pybullet_results.json",
     "remote_url": null,
     "frames": 10,
     "adapter_queries": 1,
     "adapter_errors": 0,
-    "mean_latency_ms": 0.03684498369693756,
-    "max_latency_ms": 0.03684498369693756,
+    "mean_latency_ms": 0.018945196643471718,
+    "max_latency_ms": 0.018945196643471718,
     "mean_abs_action": 0.0,
     "task_success": true,
     "cube_lifted": true,
-    "cube_moved_distance": 0.4705651827536591,
-    "final_cube_distance_to_goal": 0.13626441457544405,
+    "cube_moved_distance": 0.37145423719073145,
+    "final_cube_distance_to_goal": 0.011535157920753714,
     "grasp_attached_frames": 4,
     "phase_completion": 1.0,
     "last_error": null
@@ -408,18 +408,18 @@
     "model_name": "scripted",
     "runtime": "local",
     "ok": true,
-    "source": "",
+    "source": "docs/assets/sample_compare_suite/pybullet_results.json",
     "remote_url": null,
     "frames": 10,
     "adapter_queries": 1,
     "adapter_errors": 0,
-    "mean_latency_ms": 0.17229607328772545,
-    "max_latency_ms": 0.17229607328772545,
+    "mean_latency_ms": 0.08898903615772724,
+    "max_latency_ms": 0.08898903615772724,
     "mean_abs_action": 0.375,
     "task_success": true,
     "cube_lifted": true,
-    "cube_moved_distance": 0.4705651827536591,
-    "final_cube_distance_to_goal": 0.13626441457544405,
+    "cube_moved_distance": 0.37145423719073145,
+    "final_cube_distance_to_goal": 0.011535157920753714,
     "grasp_attached_frames": 4,
     "phase_completion": 1.0,
     "last_error": null
@@ -428,18 +428,18 @@
     "model_name": "random",
     "runtime": "local",
     "ok": true,
-    "source": "",
+    "source": "docs/assets/sample_compare_suite/pybullet_results.json",
     "remote_url": null,
     "frames": 10,
     "adapter_queries": 1,
     "adapter_errors": 0,
-    "mean_latency_ms": 0.09255297482013702,
-    "max_latency_ms": 0.09255297482013702,
+    "mean_latency_ms": 0.07035606540739536,
+    "max_latency_ms": 0.07035606540739536,
     "mean_abs_action": 0.11660465598106384,
     "task_success": true,
     "cube_lifted": true,
-    "cube_moved_distance": 0.4705651827536591,
-    "final_cube_distance_to_goal": 0.13626441457544405,
+    "cube_moved_distance": 0.37145423719073145,
+    "final_cube_distance_to_goal": 0.011535157920753714,
     "grasp_attached_frames": 4,
     "phase_completion": 1.0,
     "last_error": null
@@ -527,8 +527,13 @@
       if (!record.ok && error.includes("local heavy")) {
         return "Run remotely, or use --allow-local-heavy only when downloads are intended.";
       }
-      if (!record.ok && error.includes("dedicated server")) {
-        return "Start a model-specific remote server and compare through runtime=remote.";
+      if (
+        !record.ok &&
+        (error.includes("dedicated server") ||
+          error.includes("enable_local") ||
+          error.includes("runtime='remote'"))
+      ) {
+        return "Start a GPU server, or enable local loading only in a pinned GPU env.";
       }
       if (!record.ok && error.includes("dependencies")) {
         return "Install adapter dependencies in the serving environment, not the base package.";

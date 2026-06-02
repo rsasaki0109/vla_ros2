@@ -164,7 +164,7 @@
   {
     "name": "smolvla",
     "source": "built-in",
-    "status": "missing optional deps: pip install \"vla_zoo[smolvla]\"",
+    "status": "available",
     "family": "LeRobot policy",
     "compare_role": "multi-camera/state/action-chunk compact VLA target",
     "input_requirements": [

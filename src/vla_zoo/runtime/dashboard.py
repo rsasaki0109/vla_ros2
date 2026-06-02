@@ -884,8 +884,13 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
       if (!record.ok && error.includes("local heavy")) {
         return "Run remotely, or use --allow-local-heavy only when downloads are intended.";
       }
-      if (!record.ok && error.includes("dedicated server")) {
-        return "Start a model-specific remote server and compare through runtime=remote.";
+      if (
+        !record.ok &&
+        (error.includes("dedicated server") ||
+          error.includes("enable_local") ||
+          error.includes("runtime='remote'"))
+      ) {
+        return "Start a GPU server, or enable local loading only in a pinned GPU env.";
       }
       if (!record.ok && error.includes("dependencies")) {
         return "Install adapter dependencies in the serving environment, not the base package.";

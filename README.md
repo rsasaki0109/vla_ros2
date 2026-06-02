@@ -75,6 +75,7 @@ Sample artifacts:
 
 - Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
 - External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
+- GPU server plan: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
 - OpenVLA prompt probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md
 - pi0 compatibility probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md
 - SmolVLA GPU probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md
@@ -163,6 +164,19 @@ vla-zoo serve --model openvla \
 # robot or ROS2 machine
 ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000
 ```
+
+For multi-model comparisons, generate one GPU-server command per adapter:
+
+```bash
+vla-zoo serve-plan \
+  --models openvla,pi0,smolvla,groot \
+  --public-host gpu-box \
+  --base-port 8001 \
+  --markdown-out results/vla_gpu_servers.md
+```
+
+Sample server plan:
+https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
 
 ## ROS2 Runtime
 
@@ -263,6 +277,9 @@ vla-zoo compare pybullet \
   --markdown-out results/vla_runtime_comparison.md \
   --html-out results/vla_runtime_comparison.html
 ```
+
+`vla-zoo serve-plan` emits the matching server commands and remote map for the
+GPU side.
 
 The output is runtime-centric: latency, action magnitude, action rate, adapter
 errors, task telemetry, and self-contained HTML/JSON artifacts. Treat PyBullet

@@ -345,7 +345,12 @@ vla-zoo serve --model openvla \
   --pretrained openvla/openvla-7b \
   --device cuda:0 \
   --dtype bfloat16 \
-  --unnorm-key bridge_orig</code></pre>
+  --unnorm-key bridge_orig
+
+vla-zoo serve-plan \
+  --models openvla,pi0,smolvla,groot \
+  --public-host gpu-box \
+  --base-port 8001</code></pre>
       </div>
     </section>
 
@@ -391,6 +396,11 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre
           <h3>Method profiles</h3>
           <p>Adapter input requirements, action shape, chunking, dependencies, and caveats.</p>
           <a href="assets/sample_compare_suite/method_profiles.md">Open profiles</a>
+        </div>
+        <div class="tile">
+          <h3>GPU server plan</h3>
+          <p>One remote inference server command per heavyweight VLA adapter.</p>
+          <a href="assets/sample_compare_suite/gpu_server_plan.md">Open plan</a>
         </div>
         <div class="tile">
           <h3>Result JSON</h3>
