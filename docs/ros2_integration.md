@@ -70,6 +70,30 @@ vla-zoo ros action-analyze \
   --markdown-out results/ros2_smoke/action_analysis.md
 ```
 
+## Action Replay
+
+Recorded `VLAAction` JSONL logs can be replayed through ROS2 without publishing
+to the live action topic:
+
+```bash
+ros2 launch vla_zoo action_replay.launch.py \
+  action_log_path:=results/ros2_smoke/vla_actions.jsonl
+```
+
+The replay node publishes to `/vla/action_replay` and `/vla/replay_status` by
+default. This makes it useful for dashboards, downstream bridge dry-runs, and
+issue reports while keeping `/vla/action` reserved for the active runtime.
+
+Useful replay arguments:
+
+- `use_recorded_timing`: preserve timing from the original action log
+- `replay_hz`: fixed-rate replay when recorded timing is disabled
+- `speed`: speed multiplier for recorded timing
+- `start_delay_sec`: wait before the first action so subscribers can connect
+- `loop`: repeat the log
+- `stamp_now`: publish with current ROS time instead of recorded stamps
+- `max_actions`: limit the number of replayed actions for smoke checks
+
 ## Topics
 
 Inputs:

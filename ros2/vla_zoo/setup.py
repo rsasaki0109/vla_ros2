@@ -22,6 +22,7 @@ setup(
     license="Apache-2.0",
     entry_points={
         "console_scripts": [
+            "vla_action_replay_node = vla_zoo_ros.action_replay:main",
             "vla_runtime_node = vla_zoo_ros.node:main",
             "vla_runtime_recorder = vla_zoo_ros.log_recorder:main",
             "vla_smoke_input_node = vla_zoo_ros.smoke_input:main",
