@@ -29,7 +29,7 @@ vla-zoo compare suite --out-dir docs/assets/sample_compare_suite --models dummy,
 | `pi0` | pi-family VLA | remote-first action-chunk VLA target | images per policy config<br>natural language instruction<br>robot state expected | eef_delta (7,) placeholder: policy-specific manipulation action | expected | not implemented in MVP | recommended | experimental |
 | `random` | stochastic baseline | action plumbing and visualization stress check | instruction optional<br>image optional<br>state optional | eef_delta (7,): seeded random 7-DoF end-effector delta | no | supported | supported | available |
 | `scripted` | rule-based baseline | upper-bound sanity check for the scripted smoke scene | phase metadata<br>instruction optional<br>image optional | eef_delta (7,): phase-aware 7-DoF end-effector delta | no | supported | supported | available |
-| `smolvla` | LeRobot policy | multi-camera/state/action-chunk adapter target | multi-camera images<br>natural language instruction<br>robot state | eef_delta (7,) placeholder: policy-specific action chunk | expected | not implemented in MVP | recommended | experimental |
+| `smolvla` | LeRobot policy | multi-camera/state/action-chunk compact VLA target | multi-camera images<br>natural language instruction<br>robot state | custom checkpoint-specific; lerobot/smolvla_base is (6,): policy-specific continuous action | internal queue; chunk output optional | supported with optional LeRobot dependencies | recommended | missing optional deps: pip install "vla_zoo[smolvla]" |
 
 These profiles describe runtime integration shape, not model quality. External model weights, datasets, and licenses are not redistributed by vla_zoo.
 

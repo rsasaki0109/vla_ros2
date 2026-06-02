@@ -10,7 +10,7 @@ def test_method_profiles_include_runtime_shape() -> None:
     assert by_name["dummy"].local_runtime == "supported"
     assert by_name["openvla"].action_space == "eef_delta"
     assert by_name["pi0"].remote_runtime == "recommended"
-    assert by_name["smolvla"].action_chunks == "expected"
+    assert by_name["smolvla"].action_chunks == "internal queue; chunk output optional"
     assert by_name["groot"].action_space == "custom"
 
 

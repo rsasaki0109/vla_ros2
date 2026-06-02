@@ -59,7 +59,7 @@ did and did not run.
 | `dummy`, `scripted`, `random` | Verified on 3 PyBullet runtime tasks | Baselines only, not VLA model quality |
 | `openvla` | Adapter scaffold exercised; local heavy runs are skipped by default | Weights/deps were present locally, but the CUDA prompt probe did not complete due to insufficient free GPU memory in this run |
 | `pi0` / `openpi` | Placeholder status recorded | Not verified as a real model in this repo yet |
-| `smolvla` | Placeholder status recorded | Not verified as a real model in this repo yet |
+| `smolvla` | Implemented local LeRobot adapter | GPU inference-path probe completed with `lerobot/smolvla_base`; this is not a task-success claim |
 | `groot` / `gr00t` | Experimental placeholder status recorded | Not verified as a real model in this repo yet |
 
 ```bash
@@ -76,6 +76,7 @@ Sample artifacts:
 - Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
 - External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
 - OpenVLA prompt probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md
+- SmolVLA GPU probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md
 
 ## Quickstart
 
@@ -100,6 +101,21 @@ print(action.spec.action_space)
 The `dummy` adapter always works and returns a neutral 7-DoF `eef_delta` action.
 It is the runtime smoke path for CI, docs, and ROS2 launch validation.
 
+## SmolVLA On GPU
+
+SmolVLA is a compact VLA from the LeRobot ecosystem. `vla_zoo` loads it lazily
+through LeRobot and exposes the same `predict()` runtime boundary.
+
+```bash
+pip install -e ".[smolvla]"
+python examples/python/load_smolvla.py --device cuda --local-files-only
+```
+
+The current local probe used `lerobot/smolvla_base` on an RTX 4070 Ti SUPER and
+returned a 6D `custom` action through `load_model("smolvla")`. This proves the
+adapter and GPU inference path, not robot task success. SmolVLA base still needs
+robot/task-specific fine-tuning and calibrated camera/state/action interfaces.
+
 ## OpenVLA On GPU
 
 OpenVLA is an external project. `vla_zoo` wraps it behind the runtime API and
@@ -119,7 +135,7 @@ python examples/python/load_openvla.py \
   --unnorm-key bridge_orig
 ```
 
-Example shape from a real OpenVLA GPU run:
+Expected adapter output shape when the OpenVLA model completes:
 
 ```text
 VLAAction(data=[..., 0.99607843], spec=ActionSpec(action_space='eef_delta', shape=(7,)))
@@ -246,7 +262,7 @@ smoke numbers as deployment-path checks, not robot skill claims.
 | `random` | implemented | 7-DoF `eef_delta` | Seeded baseline for report and metric plumbing |
 | `openvla` | implemented scaffold | 7-DoF `eef_delta` | Lazy CUDA/HF path; external weights required |
 | `pi0` / `openpi` | placeholder | model-specific | Remote-first target; no hard dependency |
-| `smolvla` | placeholder | action chunks | LeRobot/SmolVLA target; multi-camera/state expected |
+| `smolvla` | implemented local adapter | 6D `custom` for `lerobot/smolvla_base` | LeRobot policy path; multi-camera/state expected; optional chunk output |
 | `groot` / `gr00t` | experimental placeholder | model-specific | Humanoid/generalist target; no hard dependency |
 
 External projects can register adapters through the `vla_zoo.adapters` entry point.
@@ -312,6 +328,6 @@ assert action.spec.action_space in {"eef_delta", "eef_pose", "joint_position", "
 ## Roadmap
 
 - v0.1: Python API, dummy adapter, OpenVLA adapter, remote server/client, ROS2 node, action replay
-- v0.2: SmolVLA/openpi/GR00T adapter implementations, ROS bag replay benchmark
+- v0.2: openpi/GR00T adapter implementations, richer SmolVLA task probes, ROS bag replay benchmark
 - v0.3: LIBERO and SimplerEnv runners with reproducible result formats
 - v0.4: lifecycle node, watchdogs, action bridges, real robot deployment guides

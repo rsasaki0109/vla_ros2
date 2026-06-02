@@ -408,6 +408,11 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre
           <a href="assets/sample_task_verification/external_adapter_status.html">Open status</a>
         </div>
         <div class="tile">
+          <h3>SmolVLA GPU probe</h3>
+          <p>Real LeRobot SmolVLA local CUDA inference through the vla_zoo adapter boundary.</p>
+          <a href="assets/sample_task_verification/smolvla_gpu_probe.md">Open probe</a>
+        </div>
+        <div class="tile">
           <h3>Action trace</h3>
           <p>Replay recorded VLAAction vectors as timing and magnitude charts.</p>
           <a href="assets/sample_action_trace.html">Open trace</a>
@@ -449,10 +454,15 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre
           <tr>
             <td><code>openvla</code></td>
             <td><span class="badge ok">optional</span></td>
-            <td>Lazy Hugging Face OpenVLA integration with verified local CUDA path.</td>
+            <td>Lazy Hugging Face OpenVLA integration; local heavy probe is documented separately.</td>
           </tr>
           <tr>
-            <td><code>pi0</code>, <code>smolvla</code>, <code>groot</code></td>
+            <td><code>smolvla</code></td>
+            <td><span class="badge ok">optional</span></td>
+            <td>LeRobot SmolVLA adapter with local CUDA inference-path probe.</td>
+          </tr>
+          <tr>
+            <td><code>pi0</code>, <code>groot</code></td>
             <td><span class="badge planned">scaffold</span></td>
             <td>Remote-first adapter paths for external heavy VLA stacks.</td>
           </tr>

@@ -48,6 +48,11 @@ def _adapter_status(name: str) -> str:
         if missing:
             return 'missing optional deps: pip install "vla_zoo[openvla]"'
         return "available"
+    if name == "smolvla":
+        missing = [dep for dep in ("torch", "lerobot") if find_spec(dep) is None]
+        if missing:
+            return 'missing optional deps: pip install "vla_zoo[smolvla]"'
+        return "available"
     info = get_adapter_info(name)
     return "experimental" if info.experimental else "available"
 
