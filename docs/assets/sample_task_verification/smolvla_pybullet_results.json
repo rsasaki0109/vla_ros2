@@ -1,0 +1,23 @@
+[
+  {
+    "model_name": "smolvla",
+    "runtime": "local",
+    "ok": true,
+    "task_id": "pick_red_block",
+    "instruction": "pick up the red block",
+    "remote_url": null,
+    "frames": 10,
+    "adapter_queries": 3,
+    "adapter_errors": 0,
+    "mean_latency_ms": 1024.772969695429,
+    "max_latency_ms": 2038.9756991062313,
+    "mean_abs_action": 0.3600282669067383,
+    "task_success": true,
+    "cube_lifted": true,
+    "cube_moved_distance": 0.37145423719073145,
+    "final_cube_distance_to_goal": 0.011535157920753714,
+    "grasp_attached_frames": 4,
+    "phase_completion": 1.0,
+    "last_error": null
+  }
+]

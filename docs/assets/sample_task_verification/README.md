@@ -34,6 +34,7 @@ vla-zoo compare tasks \
 - `external_adapter_status.html`: self-contained HTML status report for external adapters
 - `openvla_prompt_probe.md`: sanitized OpenVLA local CUDA prompt probe result
 - `smolvla_gpu_probe.md`: LeRobot SmolVLA local CUDA inference-path probe
+- `smolvla_pybullet_report.html`: LeRobot SmolVLA local CUDA probe on rendered PyBullet observations
 
 ## Interpretation
 
@@ -51,4 +52,6 @@ memory during this run.
 SmolVLA is now represented separately by `smolvla_gpu_probe.md`, which records
 `load_model("smolvla")` running `lerobot/smolvla_base` on CUDA and returning a
 6D action. That probe is an inference-path check, not a task-success benchmark.
-openpi and GR00T remain placeholder/remote adapter targets in this repository.
+`smolvla_pybullet_report.html` extends this by querying SmolVLA on rendered
+PyBullet RGB images plus a 6D simulation state vector. openpi and GR00T remain
+placeholder/remote adapter targets in this repository.
