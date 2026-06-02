@@ -43,6 +43,15 @@ def test_cli_serve_help_exposes_gpu_options() -> None:
     assert "--unnorm-key" in result.output
 
 
+def test_cli_gpu_smoke_help() -> None:
+    result = CliRunner().invoke(app, ["gpu", "smoke", "--help"])
+
+    assert result.exit_code == 0
+    assert "--device" in result.output
+    assert "--matrix-size" in result.output
+    assert "--iterations" in result.output
+
+
 def test_cli_compare_adapters() -> None:
     result = CliRunner().invoke(app, ["compare", "adapters"])
     assert result.exit_code == 0
