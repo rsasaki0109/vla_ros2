@@ -17,6 +17,24 @@
 - `clip_actions` clamps actions using adapter-declared bounds or configured `action_low` / `action_high`.
 - `/diagnostics` exposes OK/WARN/ERROR status for orchestration and dashboards.
 
+## Pure Runtime Guards (`vla_zoo.runtime.guard`)
+
+The two safety-critical layers above are implemented as pure, framework-agnostic,
+unit-tested functions so the ROS2 node and the core share one definition (the node
+delegates to them):
+
+- `clip_action_report(action, action_low=, action_high=)` clamps an action to its declared
+  `low`/`high` (or a configured override) and reports how many elements were clamped.
+- `ActionClipGuard` accumulates `action_clip_rate` and `element_clip_rate` across a stream
+  for diagnostics/JSONL.
+- `evaluate_watchdog(image_age_sec=, instruction_age_sec=, config=)` flags stale inputs and
+  returns the same status text the runtime publishes (`waiting for image`,
+  `stale image: <age>s`, `stale instruction: <age>s`).
+
+These guards only shape and flag the action stream and report counters; they never actuate
+motors. A real hardware bridge must still add an e-stop, workspace/joint limits, and a
+high-rate deterministic controller.
+
 ## Required Real Robot Layers
 
 - stale action timeout
