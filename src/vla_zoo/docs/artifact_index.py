@@ -346,6 +346,40 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="SmolVLA real-scene action probe (PyBullet)",
+        path="docs/assets/sample_pybullet_smolvla/runtime_action_probe.md",
+        category="simulation",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo demo action-probe --model smolvla --allow-local-heavy "
+            "--pretrained lerobot/smolvla_base --local-files-only --return-action-chunk "
+            "--out docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl "
+            "--summary-md docs/assets/sample_pybullet_smolvla/runtime_action_probe.md"
+        ),
+        caveat=(
+            "Real SmolVLA driven on real PyBullet-rendered frames (21 queries, action dim 6); "
+            "exercises the real image preprocessing path. Runtime-path latency/magnitude only, "
+            "NOT task success or policy quality (policy_quality=not_verified)."
+        ),
+    ),
+    ArtifactEntry(
+        title="SmolVLA real-scene action log (PyBullet)",
+        path="docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl",
+        category="simulation",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo demo action-probe --model smolvla --allow-local-heavy "
+            "--pretrained lerobot/smolvla_base --local-files-only --return-action-chunk "
+            "--out docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl"
+        ),
+        caveat=(
+            "Canonical vla_actions.jsonl action stream from real renders; replayable via "
+            "vla-zoo bench-replay (success=None). Runtime path, not a task-success claim."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke plan",
         path="docs/assets/ros2_remote_smoke_plan.md",
         category="ROS2",

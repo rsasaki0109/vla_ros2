@@ -1,0 +1,25 @@
+{
+  "model": "smolvla",
+  "runtime": "local",
+  "instruction": "pick up the red block",
+  "task_id": "pick_red_block",
+  "image_source": "pybullet-render",
+  "record_count": 21,
+  "action_dim": 6,
+  "latency_ms_min": 347.8542191442102,
+  "latency_ms_p50": 381.9219139404595,
+  "latency_ms_max": 922.955587040633,
+  "latency_ms_mean": 436.773580410296,
+  "abs_action_mean": 0.42812404888016836,
+  "abs_action_max": 1.1269099712371826,
+  "sample_action": [
+    0.727551,
+    0.22532,
+    0.876512,
+    0.4632,
+    0.170637,
+    1.108171
+  ],
+  "policy_quality": "not_verified",
+  "note": "Runtime evidence: a real adapter driven on real PyBullet-rendered scene frames, recording latency and action magnitude. It exercises the real image preprocessing path that synthetic-frame probes skip. It is NOT a task-success or policy-quality claim (policy_quality=not_verified): the action stream is not evidence that the robot task was completed."
+}

@@ -95,6 +95,31 @@ peaks, worst-severity record) is at
 > real node, input, and recorder in one process to sidestep that, recording the identical
 > node → RemoteVLAClient → server path.
 
+## Real-scene action probe (verified runtime path)
+
+Every measurement above runs on a synthetic random frame. To exercise the *real* image
+preprocessing/encode path, `vla-zoo demo action-probe` drives SmolVLA through the PyBullet
+pick-and-place rollout and records the full action stream from genuinely rendered camera
+frames:
+
+```bash
+HF_HUB_OFFLINE=1 PYTHONPATH=src python -m vla_zoo.cli.main demo action-probe \
+  --model smolvla --runtime local --allow-local-heavy \
+  --pretrained lerobot/smolvla_base --device cuda --local-files-only --return-action-chunk \
+  --out docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl \
+  --summary-md docs/assets/sample_pybullet_smolvla/runtime_action_probe.md
+```
+
+The recorded run (21 adapter queries, action dim 6) is at
+[`runtime_action_probe.md`](assets/sample_pybullet_smolvla/runtime_action_probe.md); the
+canonical `vla_actions.jsonl` log
+([`smolvla_action_probe.jsonl`](assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl))
+replays through `vla-zoo bench-replay` (which records `success=None`). This upgrades only the
+**input** — from synthetic noise to a real scene render. It is still **not** a task-success
+or policy-quality claim (`policy_quality=not_verified`); the chunk-per-query latency (p50
+~382 ms) is higher than the cached-queue `select_action` steady state because each query
+forces a fresh encode.
+
 ## pi0 status
 
 The same script targets pi0 with `--model pi0`, but local pi0 loading currently fails on a
