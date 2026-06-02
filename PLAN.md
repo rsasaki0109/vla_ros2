@@ -565,7 +565,10 @@ Remaining/next useful tasks:
 ### v0.4 robot readiness
 
 - Lifecycle node design.
-- Diagnostics improvements.
+- Diagnostics improvements. (DONE — pure, versioned `RuntimeDiagnostics`
+  (`vla-zoo-diagnostics/v1`) in `runtime/diagnostics.py` merges the `ActionClipGuard`
+  counters, the `WatchdogStatus`, and latency into one schema with JSONL + Markdown +
+  `to_key_values()` surfaces; the ROS2 node's `/diagnostics` payload is built from it.)
 - Watchdog node/example. (DONE — pure `evaluate_watchdog` in `runtime/guard.py`; the ROS2
   node delegates to it.)
 - Action clipping. (DONE — pure `clip_action_report` + `ActionClipGuard` with clip-rate
@@ -678,27 +681,29 @@ Shell/tooling conventions in this environment:
 
 ## 13. Current Best Next Commit
 
-Section 7 (adapter hardening), the v0.3 benchmark-credibility track, and most of the v0.4
+Section 7 (adapter hardening), the v0.3 benchmark-credibility track, and the v0.4
 robot-readiness track are done: the pure clip + watchdog guards (`runtime/guard.py`), both
 hardware-bridge examples (`runtime/servo_bridge.py`, `runtime/control_bridge.py` + dry-run
-examples), and the Jetson + remote-GPU deployment guide (`docs/deployment.md`) are all in.
-The next best commit completes the v0.4 runtime-observability story:
+examples), the Jetson + remote-GPU deployment guide (`docs/deployment.md`), and the pure,
+versioned `RuntimeDiagnostics` schema (`runtime/diagnostics.py`, `vla-zoo-diagnostics/v1`)
+that the ROS2 node's `/diagnostics` payload is built from are all in. The next best commit
+surfaces that diagnostics schema through the CLI:
 
 ```text
-add a structured runtime diagnostics record schema (v0.4)
+add a vla-zoo diag-report CLI command for the runtime diagnostics schema (v0.4)
 ```
 
-Reason: the guards now produce clip-rate and watchdog status, but they are reported ad hoc.
-Add a pure, versioned diagnostics record (e.g. `vla-zoo-diagnostics/v1`) that merges the
-`ActionClipGuard` counters, the `WatchdogStatus`, and latency into one schema with a
-JSONL/Markdown surface (mirroring `benchmark/results.py`), and have the ROS2 node's
-`/diagnostics` payload build from it. Keep it pure and unit-tested, keep model downloads
-out of tests, and keep claims runtime-centric.
+Reason: `RuntimeDiagnostics` has JSONL read/write and a Markdown renderer, but nothing on
+the CLI exposes them. Mirror the existing `bench-report` command: add a `diag-report`
+command that reads a `vla-zoo-diagnostics/v1` JSONL log (the node can already emit one) and
+renders the Markdown snapshot to stdout or `--markdown-out`, plus an artifact-index entry
+for the generated report. Keep it pure and unit-tested (feed it a written JSONL fixture, no
+ROS2/model deps), keep model downloads out of tests, and keep claims runtime-centric.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_runtime_guard.py tests/test_control_bridge.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_runtime_diagnostics.py tests/test_cli.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
