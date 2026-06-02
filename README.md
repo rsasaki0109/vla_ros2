@@ -64,12 +64,18 @@ execute during inference and inpainting the rest.
 
 `vla-zoo rtc-sim` is a pure CPU simulation of that scheduling layer. On a synthetic chunk
 stream it cuts the mean chunk-boundary jump **~76%** vs naive async swapping
-([recorded run](docs/assets/rtc_sim/rtc_scheduler_sim.md)). It models the freeze-prefix +
-soft-mask blend, not the diffusion/flow gradient-guided sampler — a runtime scheduling
-property, not a policy-quality or task-success claim.
+([recorded run](docs/assets/rtc_sim/rtc_scheduler_sim.md)). Stacked, the two emitted
+control streams make it obvious — the naive panel snaps at every chunk boundary, the RTC
+panel stays continuous:
+
+![Real-Time Chunking scheduler simulation](docs/assets/rtc_sim/rtc_scheduler_sim.gif)
+
+It models the freeze-prefix + soft-mask blend, not the diffusion/flow gradient-guided
+sampler — a runtime scheduling property, not a policy-quality or task-success claim.
 
 ```bash
-vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4
+vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4   # numbers
+vla-zoo demo rtc-gif --out rtc.gif                               # the animation above
 ```
 
 ## Why vla_zoo?

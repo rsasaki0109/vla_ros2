@@ -3844,6 +3844,62 @@ def demo_quickstart_gif(
     typer.echo(f"GIF written to {out} ({len(frames)} frames)")
 
 
+@demo_app.command("rtc-gif")
+def demo_rtc_gif(
+    out: Annotated[
+        Path,
+        typer.Option("--out", help="Output GIF path."),
+    ] = Path("docs/assets/rtc_sim/rtc_scheduler_sim.gif"),
+    chunks: Annotated[
+        int,
+        typer.Option("--chunks", help="Number of synthetic chunks (re-plan cycles)."),
+    ] = 14,
+    horizon: Annotated[int, typer.Option("--horizon", help="Actions per inference (H).")] = 16,
+    execute: Annotated[int, typer.Option("--execute", help="Actions executed per cycle (s).")] = 8,
+    delay: Annotated[int, typer.Option("--delay", help="Inference delay in ticks (d).")] = 4,
+    dims: Annotated[int, typer.Option("--dims", help="Action dimensionality.")] = 3,
+    mode_strength: Annotated[
+        float,
+        typer.Option("--mode-strength", help="Per-chunk mode-offset magnitude (jump source)."),
+    ] = 0.6,
+    seed: Annotated[int, typer.Option("--seed", help="Seed for the synthetic stream.")] = 7,
+    width: Annotated[int, typer.Option("--width", help="GIF width in pixels.")] = 760,
+) -> None:
+    """Animate the RTC scheduler simulation (naive async vs freeze) into a comparison GIF.
+
+    Renders both emitted control streams stacked with chunk-boundary markers so the
+    naive panel's jumps and the RTC panel's continuity are visible. Pure simulation of
+    the scheduling layer; a runtime property, not a policy-quality claim.
+    """
+
+    from vla_zoo.demo.rtc_chunking_gif import render_rtc_chunking_gif
+    from vla_zoo.runtime.realtime_chunking import (
+        RealtimeChunkingConfig,
+        compare_strategies,
+        synthetic_chunk_stream,
+    )
+
+    try:
+        config = RealtimeChunkingConfig(
+            horizon=horizon, execute_horizon=execute, inference_delay_ticks=delay
+        )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    stream = synthetic_chunk_stream(
+        config, chunk_count=chunks, action_dim=dims, mode_strength=mode_strength, seed=seed
+    )
+    report = compare_strategies(
+        stream, config, source=f"synthetic(seed={seed}, mode_strength={mode_strength:g})"
+    )
+    render_rtc_chunking_gif(report, out, width=width)
+    typer.echo(
+        f"GIF written to {out} "
+        f"(boundary-jump reduction {report.boundary_jump_reduction * 100:.1f}%)"
+    )
+
+
 @demo_app.command("action-playground")
 def demo_action_playground(
     manifest: Annotated[

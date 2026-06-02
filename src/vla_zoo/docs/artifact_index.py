@@ -172,6 +172,22 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="Real-Time Chunking scheduler simulation (animated GIF)",
+        path="docs/assets/rtc_sim/rtc_scheduler_sim.gif",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo demo rtc-gif --out docs/assets/rtc_sim/rtc_scheduler_sim.gif "
+            "--chunks 14 --horizon 16 --execute 8 --delay 4 --dims 3 --mode-strength 0.6 --seed 7"
+        ),
+        caveat=(
+            "Stacks the naive-async and RTC-freeze emitted control streams so the boundary "
+            "jumps (naive) vs continuity (freeze) are visible. Scheduling property, not a "
+            "policy-quality claim."
+        ),
+    ),
+    ArtifactEntry(
         title="OpenVLA commanded EEF trajectory (animated GIF)",
         path="docs/assets/trajectory/openvla_trajectory.gif",
         category="simulation",
