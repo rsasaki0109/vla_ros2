@@ -35,6 +35,25 @@ These guards only shape and flag the action stream and report counters; they nev
 motors. A real hardware bridge must still add an e-stop, workspace/joint limits, and a
 high-rate deterministic controller.
 
+## Structured Diagnostics Record (`vla_zoo.runtime.diagnostics`)
+
+The clip-rate counters and the watchdog status used to be reported ad hoc. They are now
+merged with latency into one pure, versioned record so the `/diagnostics` payload, a JSONL
+diagnostics log, and a Markdown report all share one definition:
+
+- `RuntimeDiagnostics` (schema `vla-zoo-diagnostics/v1`) carries the latency, dropped-frame,
+  and `pending_inference` fields, the full `ActionClipGuard` counters (`action_clip_rate`,
+  `element_clip_rate`, …), and the `WatchdogStatus` (`watchdog_ok`, `watchdog_reason`, input
+  ages).
+- `RuntimeDiagnostics.from_parts(clip_guard=, watchdog=, …)` builds the record by merging an
+  `ActionClipGuard` and a `WatchdogStatus`; the ROS2 node's `/diagnostics` `KeyValue` payload
+  is generated from `to_key_values()`.
+- `write_diagnostics_jsonl` / `read_diagnostics_jsonl` persist a versioned log;
+  `format_diagnostics_markdown` renders a snapshot.
+
+Like the rest of the runtime surface, this record is runtime-centric: it reports latency,
+clip rate, and input staleness — never a model task-success claim.
+
 ## Required Real Robot Layers
 
 - stale action timeout

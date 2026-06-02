@@ -18,7 +18,13 @@ from vla_zoo_msgs.msg import VLAStatus as VLAStatusMsg
 
 from vla_zoo import load_model
 from vla_zoo.core.types import VLAAction, VLAActionChunk, VLAObservation
-from vla_zoo.runtime.guard import WatchdogConfig, clip_action_report, evaluate_watchdog
+from vla_zoo.runtime.diagnostics import RuntimeDiagnostics
+from vla_zoo.runtime.guard import (
+    ActionClipGuard,
+    WatchdogConfig,
+    WatchdogStatus,
+    evaluate_watchdog,
+)
 from vla_zoo_ros.converters import action_to_msg, chunk_to_msg, ros_image_to_numpy, status_to_msg
 from vla_zoo_ros.params import RuntimeNodeParams
 from vla_zoo_ros.qos import action_qos, image_qos, instruction_qos, status_qos
@@ -41,8 +47,11 @@ class VLARuntimeNode(Node):
         self._executor = ThreadPoolExecutor(max_workers=1)
         self._latencies_ms: list[float] = []
         self._dropped_frames = 0
-        self._clipped_actions = 0
         self._status_text = "starting"
+        self._clip_guard = ActionClipGuard(
+            action_low=self.params.action_low or None,
+            action_high=self.params.action_high or None,
+        )
 
         model_kwargs: dict[str, Any] = {
             "device": self.params.device,
@@ -255,10 +264,10 @@ class VLARuntimeNode(Node):
             return None
         return max(0.0, perf_counter() - received_at)
 
-    def _stale_reason(self) -> str | None:
+    def _watchdog_status(self) -> WatchdogStatus:
         # Delegate to the pure, unit-tested staleness watchdog so the published status
         # text stays consistent with the core guard.
-        status = evaluate_watchdog(
+        return evaluate_watchdog(
             image_age_sec=self._age_sec(self._latest_image_received_at),
             instruction_age_sec=self._age_sec(self._latest_instruction_received_at),
             config=WatchdogConfig(
@@ -267,7 +276,9 @@ class VLARuntimeNode(Node):
                 stale_instruction_timeout_sec=self.params.stale_instruction_timeout_sec,
             ),
         )
-        return status.reason
+
+    def _stale_reason(self) -> str | None:
+        return self._watchdog_status().reason
 
     def _tick(self) -> None:
         if self._pending is not None:
@@ -378,23 +389,10 @@ class VLARuntimeNode(Node):
     ) -> VLAAction | VLAActionChunk:
         if not self.params.clip_actions:
             return prediction
-        if isinstance(prediction, VLAActionChunk):
-            actions = [self._clip_action(action) for action in prediction.actions]
-            metadata = {**prediction.metadata, "clip_actions": True}
-            return VLAActionChunk(actions=actions, metadata=metadata)
-        return self._clip_action(prediction)
-
-    def _clip_action(self, action: VLAAction) -> VLAAction:
         # Delegate the safety-critical clamp to the pure, unit-tested guard so the node
-        # and the core share one implementation and one clip-rate definition.
-        report = clip_action_report(
-            action,
-            action_low=self.params.action_low,
-            action_high=self.params.action_high,
-        )
-        if report.clipped:
-            self._clipped_actions += 1
-        return report.action
+        # and the core share one implementation, one clip-rate definition, and one set of
+        # diagnostics counters.
+        return self._clip_guard.clip(prediction)
 
     def _publish_status(self) -> None:
         stamp = self.get_clock().now().to_msg()
@@ -427,7 +425,7 @@ class VLARuntimeNode(Node):
                     "stale_image_timeout_sec": self.params.stale_image_timeout_sec,
                     "stale_instruction_timeout_sec": self.params.stale_instruction_timeout_sec,
                     "clip_actions": self.params.clip_actions,
-                    "clipped_actions": self._clipped_actions,
+                    "clipped_actions": self._clip_guard.clipped_actions,
                     "image_age_sec": self._age_sec(self._latest_image_received_at),
                     "instruction_age_sec": self._age_sec(self._latest_instruction_received_at),
                     "pending_inference": self._pending is not None,
@@ -435,30 +433,50 @@ class VLARuntimeNode(Node):
             )
         )
 
-    def _diagnostic_level(self) -> int:
+    def _diagnostic_level(self) -> str:
         if self._status_text.startswith("inference error"):
-            return DiagnosticStatus.ERROR
+            return "error"
         if self._status_text.startswith(("waiting", "stale")):
-            return DiagnosticStatus.WARN
-        return DiagnosticStatus.OK
+            return "warn"
+        return "ok"
+
+    def _build_diagnostics(self) -> RuntimeDiagnostics:
+        # Merge the clip-rate counters, the staleness watchdog, and latency into one
+        # pure, versioned record (the single source of truth for the /diagnostics payload).
+        last_latency = self._latencies_ms[-1] if self._latencies_ms else None
+        avg_latency = (
+            sum(self._latencies_ms) / len(self._latencies_ms) if self._latencies_ms else None
+        )
+        return RuntimeDiagnostics.from_parts(
+            model=self.params.model_name,
+            status_text=self._status_text,
+            level=self._diagnostic_level(),
+            clip_guard=self._clip_guard,
+            watchdog=self._watchdog_status(),
+            last_latency_ms=last_latency,
+            avg_latency_ms=avg_latency,
+            action_rate_hz=self.params.control_hz,
+            dropped_frames=self._dropped_frames,
+            pending_inference=self._pending is not None,
+        )
+
+    _LEVELS = {
+        "ok": DiagnosticStatus.OK,
+        "warn": DiagnosticStatus.WARN,
+        "error": DiagnosticStatus.ERROR,
+    }
 
     def _publish_diagnostics(self) -> None:
         if not self.params.publish_diagnostics:
             return
         stamp = self.get_clock().now().to_msg()
-        last_latency = self._latencies_ms[-1] if self._latencies_ms else 0.0
-        avg_latency = (
-            sum(self._latencies_ms) / len(self._latencies_ms) if self._latencies_ms else 0.0
-        )
-        image_age = self._age_sec(self._latest_image_received_at)
-        instruction_age = self._age_sec(self._latest_instruction_received_at)
+        record = self._build_diagnostics()
         status = DiagnosticStatus()
         status.name = "vla_zoo/vla_runtime_node"
         status.hardware_id = self.params.model_name
-        status.level = self._diagnostic_level()
-        status.message = self._status_text
-        status.values = [
-            KeyValue(key="model_name", value=self.params.model_name),
+        status.level = self._LEVELS.get(record.level, DiagnosticStatus.OK)
+        status.message = record.status_text
+        values = [
             KeyValue(key="runtime", value=self.params.runtime),
             KeyValue(
                 key="remote_url",
@@ -472,20 +490,9 @@ class VLARuntimeNode(Node):
                 key="publish_actions_in_dry_run",
                 value=str(self.params.publish_actions_in_dry_run),
             ),
-            KeyValue(key="pending_inference", value=str(self._pending is not None)),
-            KeyValue(key="last_latency_ms", value=f"{last_latency:.3f}"),
-            KeyValue(key="avg_latency_ms", value=f"{avg_latency:.3f}"),
-            KeyValue(key="dropped_frames", value=str(self._dropped_frames)),
-            KeyValue(key="clipped_actions", value=str(self._clipped_actions)),
-            KeyValue(
-                key="image_age_sec",
-                value="" if image_age is None else f"{image_age:.3f}",
-            ),
-            KeyValue(
-                key="instruction_age_sec",
-                value="" if instruction_age is None else f"{instruction_age:.3f}",
-            ),
         ]
+        values.extend(KeyValue(key=key, value=value) for key, value in record.to_key_values())
+        status.values = values
         msg = DiagnosticArray()
         msg.header.stamp = stamp
         msg.status = [status]
