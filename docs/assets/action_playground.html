@@ -13,6 +13,26 @@
     .layout { display: grid; grid-template-columns: minmax(280px, 42vw) 1fr; gap: 18px; }
     .panel { background: #fff; border: 1px solid #dbe3ef; border-radius: 8px; padding: 14px; }
     .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .comparison { margin-bottom: 18px; }
+    .section-title { display: flex; align-items: baseline; justify-content: space-between;
+      gap: 12px; margin-bottom: 10px; }
+    .section-title h2 { margin: 0; font-size: 20px; }
+    .section-title span { color: #64748b; font-size: 13px; }
+    .compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px; margin-bottom: 12px; }
+    .compare-card { border: 1px solid #dbe3ef; border-radius: 8px; padding: 9px;
+      background: #f8fafc; cursor: pointer; }
+    .compare-card.selected { border-color: #0891b2; box-shadow: inset 0 0 0 2px #0891b2; }
+    .compare-card img { border-radius: 6px; margin-bottom: 8px; }
+    .compare-head { display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; margin-bottom: 7px; }
+    .compare-head strong { font-size: 15px; }
+    .status { border-radius: 999px; padding: 3px 7px; font-size: 12px; font-weight: 700; }
+    .status.ok { background: #dcfce7; color: #14532d; }
+    .status.miss { background: #fee2e2; color: #991b1b; }
+    .compare-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px; font-size: 12px; color: #475569; }
+    .compare-meta b { display: block; color: #111827; font-size: 13px; }
     label { display: grid; gap: 4px; color: #475569; font-size: 13px; }
     select, input[type="range"] { accent-color: #0891b2; }
     select { min-width: 180px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
@@ -51,6 +71,14 @@
         <input id="scrubber" type="range" min="0" max="0" value="0">
       </label>
       <div class="metric"><span>Selected</span><strong id="selected">-</strong></div>
+    </section>
+    <section class="panel comparison">
+      <div class="section-title">
+        <h2>Task Comparison</h2>
+        <span id="task-summary">-</span>
+      </div>
+      <div id="comparison-grid" class="compare-grid"></div>
+      <canvas id="comparison-chart" width="960" height="260"></canvas>
     </section>
     <section class="layout">
       <div class="panel">
@@ -122,6 +150,101 @@
     function fmt(value, digits = 3) {
       return Number.isFinite(value) ? Number(value).toFixed(digits) : "-";
     }
+    function metric(summary, key, digits = 3) {
+      const value = summary && summary[key];
+      return Number.isFinite(value) ? fmt(value, digits) : "-";
+    }
+    function drawComparisonChart(taskRecords, selectedName) {
+      const canvas = document.getElementById("comparison-chart");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const pad = 34;
+      const colors = ["#0891b2", "#9333ea", "#16a34a", "#f97316", "#dc2626"];
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.beginPath();
+      ctx.moveTo(pad, canvas.height - pad);
+      ctx.lineTo(canvas.width - pad, canvas.height - pad);
+      ctx.moveTo(pad, pad);
+      ctx.lineTo(pad, canvas.height - pad);
+      ctx.stroke();
+      const maxMag = Math.max(
+        0.1,
+        ...taskRecords.flatMap(
+          (record) => (record.frames || []).map((frame) => frame.action_magnitude || 0),
+        ),
+      );
+      taskRecords.forEach((record, recordIndex) => {
+        const frames = record.frames || [];
+        ctx.strokeStyle = colors[recordIndex % colors.length];
+        ctx.lineWidth = record.model_name === selectedName ? 4 : 2;
+        ctx.beginPath();
+        frames.forEach((frame, index) => {
+          const x = pad + index / Math.max(1, frames.length - 1) * (canvas.width - pad * 2);
+          const y = canvas.height - pad - (frame.action_magnitude || 0) / maxMag
+            * (canvas.height - pad * 2);
+          if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.fillStyle = colors[recordIndex % colors.length];
+        ctx.fillText(record.model_name, pad + recordIndex * 92, 18);
+      });
+    }
+    function renderComparison(selectedRecord) {
+      const taskRecords = currentRecords();
+      const grid = document.getElementById("comparison-grid");
+      const okCount = taskRecords.filter((record) => record.ok).length;
+      document.getElementById("task-summary").textContent =
+        `${okCount}/${taskRecords.length} records ok`;
+      grid.innerHTML = "";
+      for (const record of taskRecords) {
+        const summary = record.summary || {};
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "compare-card";
+        if (record.model_name === selectedRecord.model_name) {
+          card.classList.add("selected");
+        }
+        card.addEventListener("click", () => {
+          modelSelect.value = record.model_name;
+          scrubber.value = 0;
+          render();
+        });
+        const image = document.createElement("img");
+        image.src = record.gif_path;
+        image.alt = `${record.model_name} PyBullet GIF`;
+        const head = document.createElement("div");
+        head.className = "compare-head";
+        const name = document.createElement("strong");
+        name.textContent = record.model_name;
+        const status = document.createElement("span");
+        status.className = record.ok ? "status ok" : "status miss";
+        status.textContent = record.ok ? "ok" : "check";
+        head.append(name, status);
+        const meta = document.createElement("div");
+        meta.className = "compare-meta";
+        const items = [
+          ["task", summary.task_success ? "success" : "miss"],
+          ["goal m", metric(summary, "final_cube_distance_to_goal")],
+          ["queries", summary.adapter_queries ?? "-"],
+          ["mean |a|", metric(summary, "mean_abs_action")],
+          ["latency", `${metric(summary, "mean_latency_ms", 2)} ms`],
+          ["errors", summary.adapter_errors ?? "-"],
+        ];
+        for (const [label, value] of items) {
+          const item = document.createElement("span");
+          const bold = document.createElement("b");
+          bold.textContent = value;
+          item.textContent = label;
+          item.prepend(bold);
+          meta.appendChild(item);
+        }
+        card.append(image, head, meta);
+        grid.appendChild(card);
+      }
+      drawComparisonChart(taskRecords, selectedRecord.model_name);
+    }
     function drawChart(record, selectedIndex) {
       const canvas = document.getElementById("chart");
       const ctx = canvas.getContext("2d");
@@ -185,6 +308,7 @@
       const index = Math.min(Number(scrubber.value), Math.max(0, frames.length - 1));
       const frame = frames[index] || {};
       scrubber.max = Math.max(0, frames.length - 1);
+      renderComparison(record);
       document.getElementById("gif").src = record.gif_path;
       document.getElementById("selected").textContent =
         `${record.task_id} / ${record.model_name}`;
