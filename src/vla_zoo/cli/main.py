@@ -1277,6 +1277,52 @@ def report_bundle(
     typer.echo(f"Report bundle written to {out}")
 
 
+@report_app.command("link-check")
+def report_link_check(
+    paths: Annotated[
+        str,
+        typer.Option(
+            "--paths",
+            help="Comma-separated Markdown/HTML files to scan for local links.",
+        ),
+    ],
+    root: Annotated[
+        Path,
+        typer.Option("--root", help="Repository root for resolving /-rooted links."),
+    ] = Path("."),
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write machine-readable JSON report."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print JSON instead of the status table."),
+    ] = False,
+    strict: Annotated[
+        bool,
+        typer.Option("--strict", help="Exit non-zero if any local link is broken."),
+    ] = False,
+) -> None:
+    """Verify that local links in README/Pages artifacts resolve to existing files."""
+
+    from vla_zoo.docs.links import check_paths, format_link_report_table, link_report_payload
+
+    report = check_paths(_parse_paths(paths), root=root)
+    payload = json.dumps(link_report_payload(report), indent=2)
+    if out is not None:
+        _write_text(out, f"{payload}\n")
+    if json_output:
+        typer.echo(payload)
+    else:
+        typer.echo(format_link_report_table(report))
+        for broken in report.broken:
+            typer.echo(f"broken: {broken.source} -> {broken.link}", err=True)
+    if out is not None:
+        typer.echo(f"JSON written to {out}")
+    if strict and report.broken:
+        raise typer.Exit(1)
+
+
 @ros_app.command("action-analyze")
 def ros_action_analyze(
     action_log: Annotated[

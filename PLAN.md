@@ -318,12 +318,15 @@ rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main ros remote-smoke-check 
 
 Recommended next sequence for Claude.
 
-### 7.1 Add a Docs/Pages Link Verifier
+### 7.1 Add a Docs/Pages Link Verifier (DONE)
 
-Reason: README and Pages now depend on many visible report links. The repo will look
-unprofessional if any static link breaks.
+Status: implemented in `src/vla_zoo/docs/links.py` + CLI `vla-zoo report link-check`.
+Parses Markdown/HTML links, skips external/anchors, resolves repo-relative and
+`/`-rooted paths, emits a human table plus `--out` JSON, and supports `--strict`.
+Verified over README/Pages: 79 local links OK, 0 broken. Tests in
+`tests/test_docs_links.py` and a CLI help test in `tests/test_cli.py`.
 
-Implement:
+Original spec for reference:
 
 - New module, likely `src/vla_zoo/docs/links.py` or `src/vla_zoo/runtime/links.py`.
 - CLI command, for example:
@@ -619,22 +622,22 @@ Shell/tooling conventions in this environment:
 
 ## 13. Current Best Next Commit
 
-If Claude continues immediately, the best next commit is:
+The docs link checker (7.1) is now committed. The next best commit is:
 
 ```text
-add docs artifact link checker
+add README/Pages artifact index (7.2)
 ```
 
 Files likely touched:
 
 ```text
-src/vla_zoo/docs/__init__.py
-src/vla_zoo/docs/links.py
+src/vla_zoo/docs/index.py        # or extend src/vla_zoo/docs/
 src/vla_zoo/cli/main.py
-tests/test_docs_links.py
+docs/assets/artifact_index.json
+docs/assets/artifact_index.html
+tests/test_docs_index.py
 tests/test_cli.py
 PLAN.md
-README.md           # only if adding usage snippet
 ```
 
 Acceptance:

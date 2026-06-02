@@ -92,6 +92,14 @@ def test_cli_demo_action_playground_remote_smoke_help() -> None:
     assert "--startup-timeout-sec" in result.output
 
 
+def test_cli_report_link_check_help() -> None:
+    result = CliRunner().invoke(app, ["report", "link-check", "--help"])
+    assert result.exit_code == 0
+    assert "--paths" in result.output
+    assert "--root" in result.output
+    assert "--strict" in result.output
+
+
 def test_cli_doctor_json() -> None:
     result = CliRunner().invoke(app, ["doctor", "--json", "--no-ros"])
     assert result.exit_code == 0
