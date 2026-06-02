@@ -1038,20 +1038,38 @@ entry (status `blocked`, count 47 → 48) was added and the matrix + artifact-in
 regenerated. All links pass `report link-check --strict`; existing `test_groot.py` still covers the
 refuse-don't-fabricate contract. No fabricated inference; `policy_quality` `not_verified`.
 
-Every adapter's matrix status is now backed by either recorded runtime evidence (dummy/scripted/
-random/openvla/smolvla) or a reproducible block probe (pi0 license gate, GR00T no-stack). The
-remaining gap is discoverability symmetry: the front-page `docs/index.html` GR00T tile points at the
-status page but not the new reproducible probe, and the pi0 tile was just refreshed while GR00T was
-not. The next best commit closes that:
+The blocked-adapter evidence is now symmetric and discoverable from the front page (DONE):
 
 ```text
-surface the GR00T block probe on the Pages index and align the blocked-adapter tiles (v0.4)
+surface the GR00T block probe on the Pages index and align the blocked-adapter tiles (v0.4)  [DONE]
 ```
 
-Reason: the established pattern is recorded evidence → one click from the index. The GR00T "blocked"
-tile in *What Works Now* should link/mention the reproducible block probe the same way the pi0
-compatibility tile does, so both blocked adapters present their evidence symmetrically. Docs-only,
-link-checked, runtime-centric; no code or schema touched.
+What landed: `docs/index.html` got a "GR00T block probe" tile in *Visible Reports* (next to the pi0
+compatibility tile, pointing at `groot_block_probe.md`), and the *What Works Now* "GR00T (blocked)"
+tile now mentions the reproducible probe (adapter refuses; no GR00T package on PyPI). Both blocked
+adapters — pi0 (license gate) and GR00T (no-stack) — now present their reproducible evidence
+symmetrically, one click from the index. Links pass `report link-check --strict` (41/41). Docs-only;
+no code or schema touched.
+
+This closes the multi-commit honesty arc: every evidence-matrix cell across all seven adapters is now
+backed by recorded runtime evidence or a reproducible block probe, the two 16 GB-fit knobs are
+documented and (for SmolVLA) recorded served-in-bf16, the pi0 silent-weight hazard is guarded and
+scoped, and all of it is discoverable from the Pages index and link-checked. There is no single
+obvious "next best commit" of the same character left in the v0.4 honesty track. The next session
+should either (a) start a genuinely new capability rather than more honesty-polishing, or (b) if
+continuing incrementally, refresh the top-level `README.md` so its model/status table matches the
+now-complete evidence matrix (it predates several of these commits). Recommended next pointer:
+
+```text
+reconcile README.md's model-status table with the completed evidence matrix (v0.4)
+```
+
+Reason: `README.md` is the first thing a visitor reads, and its status table likely predates the
+pi0 version-matched/preflight, dtype-serve, and GR00T-probe work. A pass that aligns the README's
+claims with the evidence matrix (and links the matrix/artifact index) keeps the entry point honest.
+Verify every README claim against a checked-in artifact before writing it; keep `policy_quality`
+`not_verified` and all claims runtime-centric. If instead starting new work, pick a capability that
+extends the runtime/benchmark surface rather than re-documenting it.
 
 Acceptance:
 
