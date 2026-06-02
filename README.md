@@ -33,7 +33,7 @@ This GIF is rendered from a PyBullet simulation: Franka Panda URDF, cube, gravit
 
 ![vla_zoo pick-and-place simulation GIF](docs/assets/simulation_pick_place.gif)
 
-The PyBullet controller keeps the scene deterministic, while the selected VLA adapter is queried on rendered observations and its action output is overlaid. That makes the same smoke scene usable for `dummy`, local OpenVLA, or remote pi0/SmolVLA/GR00T-style servers.
+The PyBullet controller keeps the scene deterministic, while the selected VLA adapter is queried on rendered observations and its action output is overlaid. That makes the same smoke scene usable for `dummy`, `scripted`, `random`, local OpenVLA, or remote pi0/SmolVLA/GR00T-style servers.
 
 Regenerate it locally with:
 
@@ -68,13 +68,13 @@ Compare adapter availability without loading heavy model weights:
 vla-zoo compare adapters
 ```
 
-Run the same deterministic PyBullet smoke scene across adapters:
+Run the same deterministic PyBullet smoke scene across baseline methods and adapters:
 
 ```bash
-vla-zoo compare pybullet --models dummy,openvla,pi0,smolvla,groot
+vla-zoo compare pybullet --models dummy,scripted,random,openvla,pi0,smolvla,groot
 ```
 
-By default, the local PyBullet comparison skips heavy local OpenVLA loading so it does not accidentally download weights. Use a remote GPU server for real cross-model runtime checks:
+By default, the local PyBullet comparison skips heavy local OpenVLA loading so it does not accidentally download weights. The `dummy`, `scripted`, and `random` adapters are no-GPU baselines for validating the runtime, visualization, and metrics pipeline before comparing heavyweight VLA policies. Use a remote GPU server for real cross-model runtime checks:
 
 ```bash
 vla-zoo compare pybullet \
@@ -291,6 +291,8 @@ flowchart LR
 | Adapter | Status | Notes |
 |---|---|---|
 | `dummy` | available | Always returns neutral 7-DoF actions for tests, docs, and dry runs |
+| `scripted`, `heuristic`, `rule-based` | available | Rule-based baseline for no-GPU method comparisons |
+| `random`, `random-baseline` | available | Seeded random-action baseline for sanity checks |
 | `openvla` | optional | Hugging Face OpenVLA adapter, installed with `vla_zoo[openvla]` |
 | `pi0`, `openpi`, `pi0-fast`, `pi05` | experimental | Remote-first scaffold for openpi/pi0 integration |
 | `smolvla`, `lerobot-smolvla` | experimental | Placeholder for LeRobot SmolVLA action-chunk policies |

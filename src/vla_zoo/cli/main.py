@@ -536,7 +536,7 @@ def compare_pybullet(
             "-m",
             help="Comma-separated adapters to compare in the same PyBullet smoke scene.",
         ),
-    ] = "dummy,openvla,pi0,smolvla,groot",
+    ] = "dummy,scripted,random,openvla,pi0,smolvla,groot",
     manifest: Annotated[
         Path | None,
         typer.Option(

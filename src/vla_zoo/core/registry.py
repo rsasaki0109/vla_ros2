@@ -37,6 +37,20 @@ _BUILTINS: dict[str, AdapterInfo] = {
         target="vla_zoo.adapters.dummy:DummyAdapter",
         description="Always-available zero-action adapter for tests and dry runs.",
     ),
+    "random": AdapterInfo(
+        name="random",
+        target="vla_zoo.adapters.baselines:RandomAdapter",
+        aliases=("random-baseline",),
+        description="Always-available seeded random-action baseline.",
+        metadata={"baseline": True},
+    ),
+    "scripted": AdapterInfo(
+        name="scripted",
+        target="vla_zoo.adapters.baselines:ScriptedAdapter",
+        aliases=("heuristic", "rule-based"),
+        description="Always-available phase-aware scripted baseline.",
+        metadata={"baseline": True},
+    ),
     "openvla": AdapterInfo(
         name="openvla",
         target="vla_zoo.adapters.openvla:OpenVLAAdapter",
