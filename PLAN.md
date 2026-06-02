@@ -570,7 +570,9 @@ Remaining/next useful tasks:
   node delegates to it.)
 - Action clipping. (DONE — pure `clip_action_report` + `ActionClipGuard` with clip-rate
   reporting in `runtime/guard.py`; the ROS2 node delegates to it.)
-- MoveIt Servo bridge example.
+- MoveIt Servo bridge example. (DONE — pure mapping in `runtime/servo_bridge.py`
+  (`eef_delta`->TwistStamped, joint->JointJog) + dry-run-safe example
+  `examples/ros2/moveit_servo_bridge.py` that runs the clip+watchdog guards.)
 - ros2_control bridge example.
 - Jetson + remote GPU deployment guide.
 
@@ -673,30 +675,31 @@ Shell/tooling conventions in this environment:
 ## 13. Current Best Next Commit
 
 Section 7 (adapter hardening) and the v0.3 benchmark-credibility track are done, and the
-v0.4 robot-readiness track has started: the pure, unit-tested action-clipping guard
-(`clip_action_report` / `ActionClipGuard` with clip-rate reporting) and staleness watchdog
-(`evaluate_watchdog`) now live in `runtime/guard.py`, and the ROS2 node delegates to them.
-The next best commit continues v0.4 with the first concrete hardware-bridge example:
+v0.4 robot-readiness track is progressing: the pure clip + watchdog guards
+(`runtime/guard.py`) and the dry-run-safe MoveIt Servo bridge (pure mapping in
+`runtime/servo_bridge.py` + `examples/ros2/moveit_servo_bridge.py`) are now in, and the
+ROS2 node delegates to the guards. The next best commit continues v0.4 with the second
+hardware-bridge example:
 
 ```text
-add a MoveIt Servo action-bridge example (v0.4)
+add a ros2_control action-bridge example (v0.4)
 ```
 
-Reason: the guards shape and flag the action stream, but nothing yet shows how a robot
-consumes it. Add a documented, dry-run-safe MoveIt Servo bridge example that maps an
-`eef_delta` action onto a `TwistStamped`/`JointJog` Servo input, runs the clip + watchdog
-guards before forwarding, and stays an example (not core) so the core remains action-only.
-Keep model downloads out of tests; gate any rclpy/MoveIt imports so the example documents
-the contract without requiring the full stack in CI.
+Reason: Servo is the Cartesian/teleop path; many arms are driven through ros2_control
+controllers instead. Add a pure mapping (`runtime/control_bridge.py`) from joint-space
+actions onto a `trajectory_msgs/JointTrajectory` (forward position/velocity controller
+input) plus a dry-run-safe `examples/ros2/ros2_control_bridge.py` that runs the
+clip+watchdog guards before forwarding. Keep it an example (core stays action-only), gate
+rclpy imports, and keep model downloads out of tests.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_runtime_guard.py tests/test_benchmark_results.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_servo_bridge.py tests/test_runtime_guard.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/safety.md,docs/index.html,docs/ros2_integration.md \
+  --paths docs/ros2_integration.md,docs/index.html,docs/safety.md \
   --strict
 ```
 

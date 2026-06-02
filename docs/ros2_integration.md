@@ -247,3 +247,32 @@ The MVP does not command hardware. Downstream bridge packages may translate:
 - `VLAAction` to `geometry_msgs/Twist`
 - `VLAAction` to MoveIt Servo commands
 - `VLAAction` to ros2_control controller commands
+
+## MoveIt Servo Bridge Example (dry-run safe)
+
+`examples/ros2/moveit_servo_bridge.py` shows the recommended consumption path: subscribe
+to `/vla/action`, run the clip + staleness guards, map the action onto a MoveIt Servo
+command, and forward it. The mapping itself is pure and unit-tested in
+`vla_zoo.runtime.servo_bridge`:
+
+- `eef_delta` `[x, y, z, roll, pitch, yaw, gripper]` -> `geometry_msgs/TwistStamped`
+  (`linear`/`angular`, with optional gripper passthrough and per-axis scaling).
+- `joint_velocity` / `joint_position` -> `control_msgs/JointJog`.
+
+It is **dry-run safe**: without `--engage` it only logs the command it would send, so it
+is harmless against a live Servo node. rclpy / MoveIt imports are lazy, so the pure mapping
+is testable without ROS2.
+
+```bash
+# dry-run: print the mapped Servo command for each action
+python examples/ros2/moveit_servo_bridge.py
+
+# engage publishing on a configured, safe robot only
+python examples/ros2/moveit_servo_bridge.py --engage \
+  --twist-topic /servo_node/delta_twist_cmds --frame-id base_link \
+  --linear-scale 0.5 --angular-scale 0.2
+```
+
+The bridge is an example, not core: the core publishes actions only and never actuates. A
+real deployment must still add an e-stop, workspace/joint-limit validation, and a high-rate
+deterministic controller below Servo.
