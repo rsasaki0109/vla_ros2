@@ -15,7 +15,7 @@ code{font-size:0.8rem;word-break:break-all;}
 </head>
 <body>
 <h1>vla_zoo Artifact Index</h1>
-<p>29 artifacts, all present. Statuses and caveats reflect runtime evidence only.</p>
+<p>31 artifacts, all present. Statuses and caveats reflect runtime evidence only.</p>
 <table>
 <thead><tr><th>Artifact</th><th>Status</th><th>Kind</th><th>Source command</th><th>Caveat</th></tr></thead>
 <tbody>
@@ -25,6 +25,8 @@ code{font-size:0.8rem;word-break:break-all;}
 <tr><td><a href="vla_model_evidence_matrix.json">VLA model evidence matrix (JSON)</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare evidence --out docs/assets/vla_model_evidence_matrix.json</code></td><td>Machine-readable evidence matrix.</td></tr>
 <tr><td><a href="../openvla_local_runtime.md">OpenVLA local runtime evidence</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>PYTHONPATH=src python3 scripts/measure_openvla_runtime.py --out docs/assets/openvla_local_runtime.json</code></td><td>Measured load/VRAM/latency for OpenVLA-7b (4-bit) on a synthetic frame; a runtime-path claim, not task success.</td></tr>
 <tr><td><a href="openvla_local_runtime.json">OpenVLA local runtime measurements (JSON)</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>PYTHONPATH=src python3 scripts/measure_openvla_runtime.py --out docs/assets/openvla_local_runtime.json</code></td><td>Machine-readable measured runtime profile (GPU, 4-bit).</td></tr>
+<tr><td><a href="../smolvla_local_runtime.md">SmolVLA local runtime evidence</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>PYTHONPATH=src python3 scripts/measure_lerobot_runtime.py --model smolvla --out docs/assets/smolvla_local_runtime.json</code></td><td>Measured load/VRAM/latency for lerobot/smolvla_base on a synthetic frame; a runtime-path claim, not task success.</td></tr>
+<tr><td><a href="smolvla_local_runtime.json">SmolVLA local runtime measurements (JSON)</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>PYTHONPATH=src python3 scripts/measure_lerobot_runtime.py --model smolvla --out docs/assets/smolvla_local_runtime.json</code></td><td>Machine-readable measured runtime profile (GPU, ~0.97 GB).</td></tr>
 <tr class="category"><th colspan="5">simulation</th></tr>
 <tr><td><a href="gif_suite/index.html">PyBullet GIF gallery</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo demo gif-report --manifest docs/assets/gif_suite/gif_manifest.json</code></td><td>Deterministic runtime artifact; baselines, not robot skill.</td></tr>
 <tr><td><a href="sample_task_verification/baseline_tasks.html">PyBullet baseline task verification</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>vla-zoo compare tasks --models dummy,scripted,random --tasks all</code></td><td>Deterministic baselines, not VLA model-quality measurements.</td></tr>

@@ -423,7 +423,18 @@ Remaining/next useful tasks:
 
 Do not require a ROS2 installation in standard CI yet.
 
-### 7.4 Strengthen SmolVLA Remote Path (plan + isolation docs DONE)
+### 7.4 Strengthen SmolVLA Remote Path (plan + isolation docs DONE; local GPU run VERIFIED)
+
+Local-runtime update (verified): `lerobot/smolvla_base` loads and predicts a 6-DoF action
+through the public adapter on a local GPU. Measured: ~0.97 GB peak VRAM,
+~60-133 ms steady latency (real-time capable; ~800 ms first-run warmup), ~23 s warm-cache
+load. LeRobot deps are isolated in a `--system-site-packages` venv (`/tmp/lerobot_venv`).
+Reproducible via `scripts/measure_lerobot_runtime.py --model smolvla` (artifact
+`docs/assets/smolvla_local_runtime.json`, page `docs/smolvla_local_runtime.md`); the
+`local_runtime`/`gpu_inference` cells carry measured numbers. Runtime-path claim on a
+synthetic frame, not task success; `policy_quality` stays `not_verified`.
+
+
 
 Status: `vla-zoo smolvla-remote-plan` generates a reproducible isolated-env bring-up
 plan (`src/vla_zoo/runtime/smolvla_plan.py`): venv create, `pip install -e ".[cli,server,smolvla]"`,
@@ -495,9 +506,18 @@ docs and server plan. Tests in `tests/test_pi0_remote.py`.
 
 Reason: pi0/openpi should not be forced into base env. Treat it as remote-first.
 
+Local-load status (re-confirmed 2026-06-03 with LeRobot 0.5.1): `load_model("pi0",
+enable_local=True, pretrained="lerobot/pi0")` fails on a concrete config-schema mismatch —
+the cached checkpoint config carries `PI0Config` fields (`resize_imgs_with_padding`,
+`adapt_to_pi_aloha`, `num_steps`, `use_cache`, `attention_implementation`, ...) that
+LeRobot 0.5.1's `PI0Config` rejects (`draccus.DecodingError`). The `local_runtime` cell now
+states this specific reason instead of a vague "compatibility varies". A version-matched
+checkpoint or serving environment is the unblock path. (SmolVLA, which shares the adapter
+base, loads cleanly — so this is checkpoint/config-specific, not an adapter bug.)
+
 Remaining/next useful tasks:
 
-- If a version-matched pi0 server becomes available, record a real remote action probe.
+- If a version-matched pi0 server/checkpoint becomes available, record a real action probe.
 - Promote the `remote_server` cell off `planned` only then.
 
 ### 7.7 GR00T Path (DONE)

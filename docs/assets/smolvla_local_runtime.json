@@ -1,0 +1,28 @@
+{
+  "model": "smolvla",
+  "pretrained": "lerobot/smolvla_base",
+  "instruction": "pick up the cube",
+  "image_source": "synthetic-random-rgb-256",
+  "runs": 6,
+  "load_sec": 23.31,
+  "vram_after_load_gb": 0.926,
+  "vram_peak_gb": 0.971,
+  "latency_ms_first": 802.1,
+  "latency_ms_steady_min": 60.1,
+  "latency_ms_steady_p50": 120.7,
+  "latency_ms_steady_max": 133.5,
+  "action_dim": 6,
+  "sample_action": [
+    -0.27649,
+    -0.01371,
+    0.09391,
+    -0.09706,
+    0.23214,
+    -0.33252
+  ],
+  "platform": "Linux-6.14.0-36-generic-x86_64-with-glibc2.39",
+  "device_name": "NVIDIA GeForce GPU",
+  "torch_version": "2.10.0+cu128",
+  "cuda_version": "12.8",
+  "note": "Runtime evidence on a synthetic frame. Measures load/VRAM/latency only; it is not a task-success or policy-quality claim."
+}
