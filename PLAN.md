@@ -991,19 +991,37 @@ verified that although `SmolVLAConfig` has no declared `dtype` field, the modeli
 attribute set by the override, so the params do load in bf16. `policy_quality` stays `not_verified`
 (a served typed action is not a task-success claim).
 
-With the OpenVLA/SmolVLA/pi0/dtype/serve evidence fully recorded, the remaining visible gap is
-discoverability: the front-page `docs/index.html` surfaces the real-scene probes and comparisons but
-not the new 16 GB-fit deployment story (the `deployment.md` knobs section + the bf16 dtype-serve
-probe). The next best commit closes that:
+The 16 GB-fit story is now discoverable from the front page (DONE):
 
 ```text
-surface the 16 GB-fit deployment knobs and the bf16 dtype-serve probe on the GitHub Pages index (v0.4)
+surface the 16 GB-fit deployment knobs and the bf16 dtype-serve probe on the GitHub Pages index (v0.4)  [DONE]
 ```
 
-Reason: the established pattern is that recorded evidence is made discoverable from the front page
-(as the real-scene probes were). A tile pointing at the `deployment.md` "Fitting heavy checkpoints
-on a 16 GB GPU" section and/or the `smolvla_dtype_serve_probe.md` keeps the new, honest evidence one
-click from the index. Docs-only, link-checked, runtime-centric; no code or schema touched.
+What landed: `docs/index.html` got a new "SmolVLA bf16 serve probe" tile in *Visible Reports*
+(pointing at `smolvla_dtype_serve_probe.md`), the *What Works Now* "Jetson + remote GPU deployment"
+tile now names the measured 16 GB-fit knobs (OpenVLA 4-bit, SmolVLA/pi0 `--dtype bfloat16`), and the
+stale "pi0 compatibility" tile text was refreshed to the version-matrix finding (pi0_base is
+version-matched, bf16 fits 16 GB, local inference gated on the PaliGemma tokenizer). All links pass
+`report link-check --strict` (40/40). Docs-only; no code or schema touched.
+
+The OpenVLA/SmolVLA/pi0 → dtype/4-bit → serve → record → surface track is now fully closed and
+discoverable. The remaining honesty question with real headroom is whether the **pi0 silent
+random-weight hazard** generalizes: the preflight is pi0-specific, but `SmolVLAAdapter` (its shared
+base) loads any LeRobot policy and could hit the same "weights silently absent" path for a
+not-yet-cached checkpoint. The next best commit investigates and, if confirmed, generalizes:
+
+```text
+investigate whether the silent random-weight hazard affects the SmolVLA base, and generalize the preflight if so (v0.4)
+```
+
+Reason: the pi0 preflight closed one instance of "an adapter that silently serves un-trained
+weights," but SmolVLA/any LeRobot policy loaded through the same base may share it. Time-box a check
+of whether `SmolVLAPolicy.from_pretrained` raises or silently returns random weights when
+`model.safetensors` is unavailable; if it silently degrades, lift the weights-presence half of the
+pi0 preflight into `SmolVLAAdapter` (keeping the pi0 tokenizer-gate check pi0-specific). If SmolVLA
+already raises cleanly, record that finding and leave the guard pi0-only — either way it is an
+honest, unit-testable correctness deliverable. Keep model downloads out of tests and
+`policy_quality` `not_verified`.
 
 Acceptance:
 
