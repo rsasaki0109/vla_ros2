@@ -785,20 +785,39 @@ reports the startup `warn`. Real summaries are checked in at
 artifact-index entries (SmolVLA p50 882 / max 5194 ms; OpenVLA p50 3563 / max 6273 ms).
 Unit-tested with written fixtures; runtime-path claims only.
 
-The next best commit surfaces the diagnostics summary in the HTML runtime dashboard:
+The diagnostics summary band in the HTML runtime dashboard is also done (DONE):
 
 ```text
-show the diagnostics time-series summary in the runtime dashboard (v0.4)
+show the diagnostics time-series summary in the runtime dashboard (v0.4)  [DONE]
 ```
 
-Reason: `compare dashboard` already ingests ROS2 `/diagnostics` logs but renders per-record
-rows; the new `summarize_diagnostics` reduction (latency spread + worst-level transient) is a
-better at-a-glance runtime health view and is not shown anywhere visual yet. Add a summary
-band/section to the dashboard HTML built from `summarize_diagnostics` when a diagnostics log
-is present, keeping it pure and unit-tested (written JSONL fixture, no ROS2/model deps),
-model downloads out of tests, claims runtime-centric. Alternatives still open: pi0 unblock
-(version-matched checkpoint — rabbit-hole risk) and a task-level probe on real PyBullet scene
-frames (no policy-quality claims).
+What landed: `compare dashboard` / `report bundle` now render a server-side diagnostics
+summary band above the toolbar. `load_diagnostics_summaries` reconstructs native
+`vla-zoo-diagnostics/v1` records from a `--diagnostics-log` (handling both the flat native
+JSONL and ROS2 DiagnosticArray KeyValue payloads), groups by model, and reduces each with
+`summarize_diagnostics`; `_render_diagnostics_summary_band` emits one `scope-card` per model
+whose severity follows the worst level (`ok-scope`/`warn`/`error`), surfacing the transient
+the per-record rows bury. The band is omitted when no diagnostics log is present. A real
+SmolVLA dashboard (106 records, worst level `warn`) is checked in at
+`docs/assets/sample_ros2_remote_smolvla/dashboard.html` with an artifact-index entry.
+Unit-tested with written fixtures; runtime-path claims only.
+
+The next best commit closes the diagnostics-surface loop by giving the recorder a native
+emit path:
+
+```text
+have the ROS2 log recorder also write a native vla-zoo-diagnostics/v1 JSONL (v0.4)
+```
+
+Reason: the recorder writes the ROS2 DiagnosticArray message dump; the native schema log
+(what `diag-report --log` and the dashboard band consume directly) is currently produced
+only by re-deriving from the ROS dump via `diag-report --from-ros-log`. Add an optional
+native-JSONL sink to `RuntimeLogRecorder` (built with `diagnostics_from_key_values` from the
+same `/diagnostics` callback) so a single recording emits both, removing the reconstruction
+step. Keep the pure schema/transform unit-tested (no live ROS2 in CI — gate behind the
+existing rclpy-import guard), model downloads out of tests, claims runtime-centric.
+Alternatives still open: pi0 unblock (version-matched checkpoint — rabbit-hole risk) and a
+task-level probe on real PyBullet scene frames (no policy-quality claims).
 
 Acceptance:
 
