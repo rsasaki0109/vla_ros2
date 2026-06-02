@@ -318,13 +318,19 @@ def _groot_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
     return {
         "contract": _cell(
             "partial",
-            "Experimental adapter target is declared, but real GR00T inference is not implemented.",
-            (_link("adapter card", "../adapters/groot.md"),),
+            "Runtime contract is declared, but GR00T is blocked until the NVIDIA Isaac GR00T "
+            "stack is wired in; no inference is implemented.",
+            (
+                _link("adapter card", "../adapters/groot.md"),
+                _link("blocked status", "../groot_remote.md"),
+            ),
         ),
         "local_runtime": _cell(
             "blocked",
-            "Isaac GR00T dependencies are not installed or verified in this repository.",
+            "Blocked until the NVIDIA Isaac GR00T stack is wired in; no GR00T inference ships "
+            "and the adapter raises instead of fabricating actions.",
             (
+                _link("blocked status", "../groot_remote.md"),
                 _link(
                     "external adapter status",
                     "sample_task_verification/external_adapter_status.md",
@@ -332,13 +338,19 @@ def _groot_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
             ),
         ),
         "gpu_inference": _cell(
-            "planned",
-            "Requires a dedicated NVIDIA GR00T stack and a recorded action probe.",
+            "blocked",
+            "Requires the dedicated NVIDIA Isaac GR00T stack and a recorded action probe; "
+            "blocked until a real serving adapter exists.",
+            (_link("blocked status", "../groot_remote.md"),),
         ),
         "remote_server": _cell(
-            "planned",
-            "Expected to run through a remote serving environment once adapter support lands.",
-            (_link("GPU server plan", "sample_compare_suite/gpu_server_plan.md"),),
+            "blocked",
+            "Expected to run through a remote serving environment once a real GR00T serving "
+            "adapter lands; blocked until then.",
+            (
+                _link("blocked status", "../groot_remote.md"),
+                _link("GPU server plan", "sample_compare_suite/gpu_server_plan.md"),
+            ),
         ),
         "ros2_remote": _cell(
             "planned",

@@ -472,18 +472,26 @@
       "evidence": {
         "contract": {
           "status": "partial",
-          "summary": "Experimental adapter target is declared, but real GR00T inference is not implemented.",
+          "summary": "Runtime contract is declared, but GR00T is blocked until the NVIDIA Isaac GR00T stack is wired in; no inference is implemented.",
           "links": [
             {
               "label": "adapter card",
               "href": "../adapters/groot.md"
+            },
+            {
+              "label": "blocked status",
+              "href": "../groot_remote.md"
             }
           ]
         },
         "local_runtime": {
           "status": "blocked",
-          "summary": "Isaac GR00T dependencies are not installed or verified in this repository.",
+          "summary": "Blocked until the NVIDIA Isaac GR00T stack is wired in; no GR00T inference ships and the adapter raises instead of fabricating actions.",
           "links": [
+            {
+              "label": "blocked status",
+              "href": "../groot_remote.md"
+            },
             {
               "label": "external adapter status",
               "href": "sample_task_verification/external_adapter_status.md"
@@ -491,14 +499,23 @@
           ]
         },
         "gpu_inference": {
-          "status": "planned",
-          "summary": "Requires a dedicated NVIDIA GR00T stack and a recorded action probe.",
-          "links": []
+          "status": "blocked",
+          "summary": "Requires the dedicated NVIDIA Isaac GR00T stack and a recorded action probe; blocked until a real serving adapter exists.",
+          "links": [
+            {
+              "label": "blocked status",
+              "href": "../groot_remote.md"
+            }
+          ]
         },
         "remote_server": {
-          "status": "planned",
-          "summary": "Expected to run through a remote serving environment once adapter support lands.",
+          "status": "blocked",
+          "summary": "Expected to run through a remote serving environment once a real GR00T serving adapter lands; blocked until then.",
           "links": [
+            {
+              "label": "blocked status",
+              "href": "../groot_remote.md"
+            },
             {
               "label": "GPU server plan",
               "href": "sample_compare_suite/gpu_server_plan.md"
@@ -527,7 +544,7 @@
         }
       },
       "next_step": "Replace the placeholder with a real GR00T serving adapter before claiming inference.",
-      "caveat": "Experimental placeholder only; real GR00T inference is not verified in this repository yet."
+      "caveat": "Experimental placeholder only; blocked until the NVIDIA Isaac GR00T stack is wired in. No GR00T inference is implemented or verified in this repository."
     }
   ],
   "scope": "Runtime evidence matrix. This does not claim robot task success unless a cell explicitly points to a task-success benchmark."

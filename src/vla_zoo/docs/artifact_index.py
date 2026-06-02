@@ -240,6 +240,17 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Command plan, not a recorded /v1/predict run.",
     ),
     ArtifactEntry(
+        title="GR00T blocked-status path",
+        path="docs/groot_remote.md",
+        category="adapter docs",
+        status="manual",
+        kind="manual",
+        source_command=None,
+        caveat=(
+            "Blocked until the NVIDIA Isaac GR00T stack; no inference and no task-success claim."
+        ),
+    ),
+    ArtifactEntry(
         title="Adapter cards index",
         path="docs/adapters/README.md",
         category="adapter docs",

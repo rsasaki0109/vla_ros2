@@ -1,5 +1,5 @@
 {
-  "count": 22,
+  "count": 23,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -169,6 +169,16 @@
       "kind": "generated",
       "source_command": "vla-zoo serve-plan --models pi0 --markdown-out docs/assets/pi0_server_plan.md",
       "caveat": "Command plan, not a recorded /v1/predict run.",
+      "exists": true
+    },
+    {
+      "title": "GR00T blocked-status path",
+      "path": "docs/groot_remote.md",
+      "category": "adapter docs",
+      "status": "manual",
+      "kind": "manual",
+      "source_command": null,
+      "caveat": "Blocked until the NVIDIA Isaac GR00T stack; no inference and no task-success claim.",
       "exists": true
     },
     {

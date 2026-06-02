@@ -485,16 +485,31 @@ Remaining/next useful tasks:
 - If a version-matched pi0 server becomes available, record a real remote action probe.
 - Promote the `remote_server` cell off `planned` only then.
 
-### 7.7 GR00T Path
+### 7.7 GR00T Path (DONE)
 
 Reason: GR00T should stay experimental until a real serving adapter exists.
 
-Work items:
+Status: DONE. GR00T is now explicitly blocked until the NVIDIA Isaac GR00T stack is
+wired in, with one shared `GROOT_BLOCKED_NOTE` reused by the adapter, the registry
+verification text, and the evidence matrix. The adapter raises (no fabricated
+inference), the expected observation/action contract is documented in the adapter
+docstring and `docs/groot_remote.md`, and the GR00T runtime evidence cells
+(`local_runtime`/`gpu_inference`/`remote_server`) are `blocked` while `contract`
+stays `partial`. Acceptance passed: 173 tests, ruff/mypy clean, link-check 230 ok / 0
+broken, git diff --check clean.
 
-- Keep `experimental=True`.
-- Add a proper "blocked until NVIDIA stack" note.
-- Do not write fake local inference.
+Work items (all done):
+
+- Keep `experimental=True`. (done)
+- Add a proper "blocked until NVIDIA stack" note. (done — `GROOT_BLOCKED_NOTE`)
+- Do not write fake local inference. (done — raises instead)
 - Add an adapter card section for expected observation/action contract once known.
+  (done — adapter docstring + `docs/groot_remote.md`)
+
+Remaining/next useful tasks:
+
+- When a real GR00T serving adapter and a recorded action probe exist, move the
+  `remote_server`/`gpu_inference` cells off `blocked`.
 
 ## 8. Medium-Term Roadmap
 
@@ -634,25 +649,27 @@ Shell/tooling conventions in this environment:
 
 The docs link checker (7.1), artifact index (7.2), ROS2 metadata tests (7.3), the SmolVLA
 remote serving plan + isolation docs (7.4), the OpenVLA health-first remote probe (7.5),
-and the pi0/openpi remote-first docs + plan (7.6) are now done. The next best commit is:
+the pi0/openpi remote-first docs + plan (7.6), and the GR00T blocked-until-NVIDIA-stack
+path (7.7) are now done. All of section 7 (adapter hardening) is complete. The next best
+commit moves into the v0.3 benchmark-credibility track:
 
 ```text
-make GR00T blocked-until-NVIDIA-stack explicit (7.7)
+add a JSONL benchmark result schema + ROS bag replay loader stub (v0.3 start)
 ```
 
-Reason: GR00T should stay experimental until a real serving adapter exists. Keep
-`experimental=True`, add a clear "blocked until NVIDIA Isaac GR00T stack" note, do not
-write fake local inference, and document the expected observation/action contract in the
-adapter card once known. Keep model downloads out of tests.
+Reason: with adapters honest and remote-first, the next quality jump is turning the
+benchmark stubs into a real, schema-backed result format that latency/action-rate summary
+reports can consume. Start with a versioned JSONL result schema and a ROS bag replay
+loader stub, keeping all claims runtime-centric and model downloads out of tests.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_pi0_remote.py tests/test_evidence.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_groot.py tests/test_evidence.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/pi0_remote.md,docs/index.html,docs/assets/vla_model_evidence_matrix.html \
+  --paths docs/groot_remote.md,docs/index.html,docs/assets/vla_model_evidence_matrix.html \
   --strict
 ```
 

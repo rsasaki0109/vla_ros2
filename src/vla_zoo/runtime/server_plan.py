@@ -90,7 +90,10 @@ def _notes(model: str) -> str:
     if model == "smolvla":
         return "Uses LeRobot policy loading with multi-camera/state observations."
     if model == "groot":
-        return "Experimental placeholder until an external GR00T runtime is wired in."
+        return (
+            "Blocked until the NVIDIA Isaac GR00T stack is wired in; this plan is a placeholder "
+            "and ships no inference."
+        )
     return "Lightweight runtime server."
 
 
