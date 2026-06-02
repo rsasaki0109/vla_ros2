@@ -302,6 +302,11 @@
           <a href="assets/gif_suite/">Open GIF gallery</a>
         </div>
         <div class="tile">
+          <h3>Real-scene action probes</h3>
+          <p>SmolVLA and OpenVLA-7b driven on real PyBullet renders; latency + action stream recorded. Runtime path, not task success.</p>
+          <a href="assets/sample_pybullet_compare/runtime_probe_comparison.html">Open comparison</a>
+        </div>
+        <div class="tile">
           <h3>Remote GPU VLA path</h3>
           <p>OpenVLA remote server plus a health-first probe; heavyweight limits reported explicitly.</p>
           <a href="openvla_remote.md">OpenVLA remote</a>
@@ -520,6 +525,21 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre
           <h3>SmolVLA PyBullet probe</h3>
           <p>Local CUDA SmolVLA queried on rendered PyBullet images and 6D simulation state.</p>
           <a href="assets/sample_task_verification/smolvla_pybullet_report.html">Open report</a>
+        </div>
+        <div class="tile">
+          <h3>Real-scene probe comparison</h3>
+          <p>SmolVLA p50 ~382 ms vs OpenVLA-7b 4-bit p50 ~2.0 s on real renders. Blank success rate: no task-success claim.</p>
+          <a href="assets/sample_pybullet_compare/runtime_probe_comparison.html">Open comparison</a>
+        </div>
+        <div class="tile">
+          <h3>SmolVLA real-scene probe</h3>
+          <p>Full 6D action stream recorded on real PyBullet frames (21 queries). Runtime path, policy quality not verified.</p>
+          <a href="assets/sample_pybullet_smolvla/runtime_action_probe.md">Open probe</a>
+        </div>
+        <div class="tile">
+          <h3>OpenVLA real-scene probe</h3>
+          <p>OpenVLA-7b (4-bit) 7D action stream on real PyBullet frames (21 queries). Runtime path, not task success.</p>
+          <a href="assets/sample_pybullet_openvla/runtime_action_probe.md">Open probe</a>
         </div>
         <div class="tile">
           <h3>Action trace</h3>
