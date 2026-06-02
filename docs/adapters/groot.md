@@ -37,7 +37,7 @@
 
 ## Verification Status
 
-Experimental placeholder only; real GR00T inference is not verified in this repository yet.
+Experimental placeholder only; blocked until the NVIDIA Isaac GR00T stack is wired in. No GR00T inference is implemented or verified in this repository.
 
 ## Operational Caveats
 

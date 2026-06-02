@@ -82,7 +82,7 @@ PyBullet traces, and policy-quality claims for each model family.
 | `openvla` | Adapter scaffold exercised; local heavy runs are skipped by default | Weights/deps were present locally, but the CUDA prompt probe did not complete due to insufficient free GPU memory in this run |
 | `pi0` / `openpi` | Remote-first adapter with opt-in LeRobot local loading | Local real-model action probe not completed; use remote runtime for robot-side deployment |
 | `smolvla` | Implemented local LeRobot adapter | GPU inference-path probe completed with `lerobot/smolvla_base`; this is not a task-success claim |
-| `groot` / `gr00t` | Experimental placeholder status recorded | Not verified as a real model in this repo yet |
+| `groot` / `gr00t` | Experimental and blocked until the NVIDIA Isaac GR00T stack is wired in | No inference ships; the adapter raises instead of fabricating actions |
 
 ```bash
 vla-zoo compare tasks \
@@ -245,6 +245,22 @@ See [pi0 / openpi remote-first path](docs/pi0_remote.md) and the generated
 [pi0 server plan](docs/assets/pi0_server_plan.md). The pi0 `remote_server`
 evidence cell stays `planned` until a real recorded pi0 response from a
 version-matched server is checked in.
+
+## GR00T (Blocked)
+
+GR00T is experimental and **blocked until the NVIDIA Isaac GR00T stack is wired
+in**. The adapter declares a runtime contract but ships no inference and makes no
+task-success claim; `predict_observation` raises rather than fabricating actions.
+
+```bash
+vla-zoo info groot          # contract + blocked status
+vla-zoo serve-plan --models groot
+```
+
+See the [GR00T blocked-status path](docs/groot_remote.md) for the expected
+observation/action contract and what would unblock it. Every GR00T runtime cell in
+the [evidence matrix](docs/assets/vla_model_evidence_matrix.html) stays `blocked`
+or `partial` until a real serving adapter and a recorded action probe exist.
 
 ## ROS2 Runtime
 

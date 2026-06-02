@@ -251,9 +251,13 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "remote_runtime": "recommended",
             "dependency_profile": "Isaac GR00T stack in serving environment",
             "license_caveat": "external NVIDIA project and model license apply",
+            "blocked_reason": (
+                "Blocked until the NVIDIA Isaac GR00T stack is wired in; no inference ships and "
+                "no task-success claim is made."
+            ),
             "verification": (
-                "Experimental placeholder only; real GR00T inference is not verified in this "
-                "repository yet."
+                "Experimental placeholder only; blocked until the NVIDIA Isaac GR00T stack is "
+                "wired in. No GR00T inference is implemented or verified in this repository."
             ),
         },
     ),
