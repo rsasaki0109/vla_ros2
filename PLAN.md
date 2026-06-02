@@ -1117,39 +1117,46 @@ entry (count 50 → 51) and the Pages-index tile re-pointed at the HTML (richer 
 unit test covers the ranked table, the roll-up section, and the runtime-centric disclaimer.
 `success_rate` stays honest; ranking is latency/throughput, not skill.
 
-The `bench-aggregate` surface (rank + roll-up, Markdown/JSON/HTML, recorded example, Pages tile) is
-now complete and symmetric with `bench-report`. This is a good point to **pause for direction**
-rather than auto-pick another increment: the v0.4 honesty arc and the v0.5 benchmark-aggregate
-capability are both closed and consistent. Reasonable next directions, for the user to choose:
+`bench-aggregate` now also replays raw action logs directly (DONE):
 
-1. `bench-aggregate` reads only pre-computed summary JSONs; a `--from-log` mode that replays raw
-   `vla_actions.jsonl` action logs into summaries first would let it rank recorded logs directly
-   (extends runtime/benchmark surface).
+```text
+add a bench-aggregate --from-log mode that replays vla_actions.jsonl logs into ranked summaries (v0.5)  [DONE]
+```
+
+What landed: `bench-aggregate` gained a `--from-log` option taking comma-separated
+`vla_actions.jsonl` action logs; each is replayed into a `vla-zoo-benchmark/v1` summary on the fly
+and ranked alongside any `--summaries` JSONs (the two sources are combined). The replay reuses a new
+pure helper `summarize_action_log` in `benchmark/replay.py` (the `load_action_log` →
+`frames_to_records` → `summarize_records` chain that `bench-replay` ran inline), so `success_rate`
+stays `None` for replayed logs. `--summaries` is now optional; the command errors if neither input
+is given. A recorded example built straight from the two real-scene probe logs is checked in at
+`docs/assets/sample_pybullet_compare/replayed_log_aggregate.{json,md,html}` (SmolVLA #1 ~382 ms,
+OpenVLA #2 ~1997 ms) with three artifact-index entries (count 51 → 54). Tested: two replay-helper
+unit tests + four CLI tests (rank-by-log, combined summaries+logs, no-input error, missing-file
+error); 274 → 281 tests. `success_rate` stays honest; ranking is latency/throughput, not skill.
+
+The `bench-aggregate` surface (rank + roll-up, Markdown/JSON/HTML, pre-computed summaries **and**
+raw-log replay, recorded examples, Pages tile) is now complete and symmetric with `bench-report`.
+This is again a good point to **pause for direction** rather than auto-pick another increment: the
+v0.4 honesty arc and the v0.5 benchmark-aggregate capability are both closed and consistent.
+Reasonable next directions, for the user to choose:
+
+1. Surface the replayed-log aggregate on the Pages index (`docs/index.html` tile) so the one-step
+   `--from-log` story is visible where the rest of the evidence is read (small, presentation-only).
 2. A genuinely new runtime capability (e.g. a new adapter, a new ROS2 surface) rather than more
    benchmark plumbing.
 3. Stop here — the repo is in a strong, internally consistent state.
 
-Recommended pointer if continuing incrementally:
-
-```text
-add a bench-aggregate --from-log mode that replays vla_actions.jsonl logs into ranked summaries (v0.5)
-```
-
-Reason: it removes the manual `bench-replay`→`bench-aggregate` two-step for the common case, turning
-recorded action logs directly into a ranked table, and reuses the existing `load_action_log` /
-`frames_to_records` / `summarize_records` path. Keep it pure where possible, keep `success_rate`
-`None` for replayed logs, and add a recorded example. Confirm the direction with the user before
-starting, since the obvious-increment streak has ended.
+No recommended auto-increment: the obvious-increment streak has ended; confirm the direction with
+the user before starting.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_evidence.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_benchmark_replay.py tests/test_cli.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/index.html,docs/smolvla_local_runtime.md \
-  --strict
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report index --json
 ```
 
 ## 14. One-Screen Claude Brief

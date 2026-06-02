@@ -507,6 +507,60 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="Replayed action-log aggregate (HTML)",
+        path="docs/assets/sample_pybullet_compare/replayed_log_aggregate.html",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo bench-aggregate --from-log "
+            "docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,"
+            "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl "
+            "--metric latency_ms_p50 "
+            "--html-out docs/assets/sample_pybullet_compare/replayed_log_aggregate.html"
+        ),
+        caveat=(
+            "Built directly from the two recorded vla_actions.jsonl logs via --from-log "
+            "(no manual bench-replay step); runtime path only, no task-success claim."
+        ),
+    ),
+    ArtifactEntry(
+        title="Replayed action-log aggregate (Markdown)",
+        path="docs/assets/sample_pybullet_compare/replayed_log_aggregate.md",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo bench-aggregate --from-log "
+            "docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,"
+            "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl "
+            "--metric latency_ms_p50 "
+            "--markdown-out docs/assets/sample_pybullet_compare/replayed_log_aggregate.md"
+        ),
+        caveat=(
+            "Two recorded action logs replayed and ranked in one step (SmolVLA #1, "
+            "OpenVLA #2); replayed logs keep a blank success rate."
+        ),
+    ),
+    ArtifactEntry(
+        title="Replayed action-log aggregate (JSON)",
+        path="docs/assets/sample_pybullet_compare/replayed_log_aggregate.json",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo bench-aggregate --from-log "
+            "docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,"
+            "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl "
+            "--metric latency_ms_p50 "
+            "--out docs/assets/sample_pybullet_compare/replayed_log_aggregate.json"
+        ),
+        caveat=(
+            "Machine-readable vla-zoo-benchmark-aggregate/v1 artifact built via --from-log; "
+            "runtime path only, no task-success claim."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke plan",
         path="docs/assets/ros2_remote_smoke_plan.md",
         category="ROS2",
