@@ -12,30 +12,50 @@ ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action model
 > `vla_zoo` connects camera + instruction + robot state to typed actions through
 > Python, ROS2, local GPU inference, and remote GPU servers.
 
-Live demo page: https://rsasaki0109.github.io/vla_zoo/
+Live demo and reports: https://rsasaki0109.github.io/vla_zoo/
 
 ![vla_zoo social preview](docs/assets/social_preview.png)
 
-## What Works Now
+## Why vla_zoo?
 
-| Area | Status |
+Most VLA repositories focus on model code, training, checkpoints, or task demos.
+Real robot deployments need a different layer:
+
+```text
+camera + language + robot state + timestamp
+  -> adapter/runtime boundary
+  -> typed action or action chunk
+  -> ROS2 topic, server response, benchmark step, or report artifact
+```
+
+`vla_zoo` is that boundary. It does not train models, redistribute weights, or
+command hardware directly. It runs adapters behind a stable interface and makes
+the resulting actions observable, replayable, and comparable.
+
+## Current State
+
+| Area | What is implemented |
 |---|---|
-| Python API | `load_model("dummy")`, typed `VLAAction`, adapter registry |
-| OpenVLA | GPU inference path verified with `openvla/openvla-7b` |
-| ROS2 | `vla_runtime_node`, launch files, typed action/status messages |
-| Remote runtime | FastAPI server/client with the same `predict()` interface |
-| Simulation | PyBullet smoke scene and generated GIF/report artifacts |
-| Benchmarks | Smoke benchmark plus LIBERO/Simpler/Genesis/Isaac scaffolds |
+| Python API | `load_model()`, typed `VLAObservation`, `VLAAction`, `VLAActionChunk` |
+| Adapter registry | Built-ins plus Python entry point support for third-party adapters |
+| OpenVLA | Lazy Hugging Face adapter path for `openvla/openvla-7b` on CUDA |
+| ROS2 | Runtime node, typed messages, launch files, diagnostics, watchdogs |
+| Remote inference | FastAPI server and remote client with the same `predict()` API |
+| Reports | ROS2 smoke reports, action traces, action analysis, dashboard bundles |
+| Simulation | PyBullet smoke scene and deterministic baseline comparison artifacts |
+| Benchmarks | Smoke runner plus LIBERO, SimplerEnv, Genesis, and Isaac scaffolds |
 
-`vla_zoo` does not train models, ship weights, or directly command robot hardware.
-It publishes typed actions and leaves hardware execution to explicit downstream bridges.
+The implemented CPU baselines are for infrastructure validation. Model quality
+claims require real adapters, robot-specific calibration, and benchmark runs.
 
 ## Quickstart
 
 ```bash
-pip install -e ".[dev,cli,server,sim]"
+git clone https://github.com/rsasaki0109/vla_zoo.git
+cd vla_zoo
+pip install -e ".[cli,server,sim]"
 vla-zoo doctor --no-ros
-vla-zoo predict --model dummy --instruction "hello"
+vla-zoo predict --model dummy --instruction "pick up the red block"
 ```
 
 ```python
@@ -43,21 +63,26 @@ from vla_zoo import load_model
 
 model = load_model("dummy")
 action = model.predict(image=None, instruction="pick up the red block")
-print(action)
+
+print(action.data)
+print(action.spec.action_space)
 ```
 
-The dummy adapter is the lightweight CI/demo path. It validates the runtime without
-downloading model weights.
+The `dummy` adapter always works and returns a neutral 7-DoF `eef_delta` action.
+It is the runtime smoke path for CI, docs, and ROS2 launch validation.
 
 ## OpenVLA On GPU
 
-OpenVLA is an external project. `vla_zoo` wraps it behind the stable runtime API;
-it does not redistribute OpenVLA weights.
+OpenVLA is an external project. `vla_zoo` wraps it behind the runtime API and
+does not redistribute OpenVLA code, checkpoints, or weights.
 
 ```bash
 pip install -e ".[cli,server,sim,gpu,openvla]"
 vla-zoo doctor --no-ros
 vla-zoo gpu smoke --device cuda:0 --dtype float16
+```
+
+```bash
 python examples/python/load_openvla.py \
   --pretrained openvla/openvla-7b \
   --device cuda:0 \
@@ -65,13 +90,14 @@ python examples/python/load_openvla.py \
   --unnorm-key bridge_orig
 ```
 
-Example result from a real OpenVLA GPU run:
+Example shape from a real OpenVLA GPU run:
 
 ```text
 VLAAction(data=[..., 0.99607843], spec=ActionSpec(action_space='eef_delta', shape=(7,)))
 ```
 
-For robots that cannot host a large VLA locally, run inference on a GPU workstation:
+For robots that cannot host a large VLA locally, run the model on a GPU
+workstation and keep the robot-side process light:
 
 ```bash
 # GPU workstation
@@ -83,11 +109,11 @@ vla-zoo serve --model openvla \
   --dtype bfloat16 \
   --unnorm-key bridge_orig
 
-# robot / ROS2 machine
+# robot or ROS2 machine
 ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000
 ```
 
-## ROS2
+## ROS2 Runtime
 
 ```bash
 pip install -e .
@@ -96,68 +122,59 @@ source install/setup.bash
 ros2 launch vla_zoo dummy.launch.py
 ```
 
-The ROS2 runtime subscribes to camera, instruction, and optional joint state topics,
-then publishes typed actions, status, and diagnostics.
+The ROS2 runtime subscribes to camera, instruction, and optional joint state
+topics, then publishes typed actions, status, and diagnostics. Launch files
+default to `dry_run:=true`.
 
-For a self-contained ROS2 smoke demo with synthetic camera input and typed instruction:
+```text
+/camera/image_raw      sensor_msgs/msg/Image
+/vla/instruction       std_msgs/msg/String or vla_zoo_msgs/msg/VLAInstruction
+/joint_states          sensor_msgs/msg/JointState optional
+
+/vla/action            vla_zoo_msgs/msg/VLAAction
+/vla/action_chunk      vla_zoo_msgs/msg/VLAActionChunk
+/vla/status            vla_zoo_msgs/msg/VLAStatus
+/diagnostics           diagnostic_msgs/msg/DiagnosticArray
+```
+
+Self-contained ROS2 smoke run with synthetic camera input:
 
 ```bash
 ros2 launch vla_zoo smoke.launch.py
 ```
 
-To record runtime logs for a static dashboard:
+Record status, diagnostics, and actions for reports:
 
 ```bash
 vla-zoo ros smoke-report --output-dir results/ros2_smoke
 ```
 
-This writes status, diagnostics, and action JSONL logs, then generates
-`dashboard.html`, `action_trace.html`, `action_analysis.md`, and `report_bundle.zip`.
-
-Recorded actions can be replayed on a separate safe topic for visualization,
-debugging, and downstream bridge dry-runs:
+Replay recorded actions on a separate safe topic:
 
 ```bash
 ros2 launch vla_zoo action_replay.launch.py \
   action_log_path:=results/ros2_smoke/vla_actions.jsonl
 ```
 
-| Topic | Type | Direction |
+`action_replay.launch.py` publishes to `/vla/action_replay`, not `/vla/action`,
+so it can be used for visualization, bridge dry-runs, and issue reproduction
+without pretending to be the live controller path.
+
+## PyBullet Smoke Comparisons
+
+The bundled PyBullet scene validates runtime plumbing, reports, and action
+shape handling. It is not a VLA skill benchmark.
+
+| Dummy | Scripted | Random |
 |---|---|---|
-| `/camera/image_raw` | `sensor_msgs/msg/Image` | input |
-| `/vla/instruction` | `std_msgs/msg/String` or `vla_zoo_msgs/msg/VLAInstruction` | input |
-| `/joint_states` | `sensor_msgs/msg/JointState` | optional input |
-| `/vla/action` | `vla_zoo_msgs/msg/VLAAction` | output |
-| `/vla/action_chunk` | `vla_zoo_msgs/msg/VLAActionChunk` | output |
-| `/vla/status` | `vla_zoo_msgs/msg/VLAStatus` | output |
-| `/diagnostics` | `diagnostic_msgs/msg/DiagnosticArray` | output |
-
-Dry-run is on by default. To publish dummy actions for demos/logging:
+| ![dummy PyBullet smoke run](docs/assets/simulation_dummy.gif) | ![scripted PyBullet smoke run](docs/assets/simulation_scripted.gif) | ![random PyBullet smoke run](docs/assets/simulation_random.gif) |
 
 ```bash
-ros2 launch vla_zoo dummy.launch.py publish_actions_in_dry_run:=true
-```
-
-Typed instructions preserve `task_id` and metadata for ROS bag replay and benchmarks:
-
-```bash
-ros2 launch vla_zoo dummy.launch.py instruction_msg_type:=vla_instruction
-python3 examples/ros2/publish_instruction.py --typed --task-id pick_red_block_001
-```
-
-## Demo And Reports
-
-The bundled PyBullet demo is a deterministic runtime smoke scene, not a model
-quality benchmark.
-
-![vla_zoo pick-and-place simulation GIF](docs/assets/simulation_pick_place.gif)
-
-```bash
-vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
+vla-zoo demo pybullet --model dummy --out docs/assets/simulation_dummy.gif
 vla-zoo compare suite --out-dir results/vla_compare_suite
 ```
 
-Live samples:
+Live artifacts:
 
 - PyBullet report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html
 - Runtime dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/runtime_dashboard.html
@@ -165,19 +182,46 @@ Live samples:
 - Action trace: https://rsasaki0109.github.io/vla_zoo/assets/sample_action_trace.html
 - Action analysis: https://rsasaki0109.github.io/vla_zoo/assets/sample_action_analysis.md
 
-## Adapters
+## Comparing VLA Runtime Paths
 
-| Adapter | Status | Notes |
-|---|---|---|
-| `dummy` | implemented | Neutral 7-DoF action for tests, docs, and ROS2 dry-runs |
-| `scripted` | implemented | Rule-based baseline for the bundled smoke scene |
-| `random` | implemented | Seeded random-action baseline |
-| `openvla` | implemented scaffold | Local CUDA and remote runtime path; external weights required |
-| `pi0` / `openpi` | placeholder | Remote-first adapter target |
-| `smolvla` | placeholder | LeRobot/SmolVLA adapter target |
-| `groot` / `gr00t` | experimental | Humanoid/generalist adapter target |
+Start by comparing adapter contracts without loading model weights:
+
+```bash
+vla-zoo compare adapters
+vla-zoo compare methods --markdown-out results/vla_method_profiles.md
+```
+
+For real model-to-model checks, run heavyweight policies behind GPU servers and
+compare them from the robot-side runtime:
+
+```bash
+vla-zoo compare pybullet \
+  --models openvla,pi0,smolvla,groot \
+  --runtime remote \
+  --remote-map "openvla=http://gpu-box:8001,pi0=http://gpu-box:8002,smolvla=http://gpu-box:8003,groot=http://gpu-box:8004" \
+  --markdown-out results/vla_runtime_comparison.md \
+  --html-out results/vla_runtime_comparison.html
+```
+
+The output is runtime-centric: latency, action magnitude, action rate, adapter
+errors, task telemetry, and self-contained HTML/JSON artifacts. Treat PyBullet
+smoke numbers as deployment-path checks, not robot skill claims.
+
+## Adapter Matrix
+
+| Adapter | Runtime status | Action contract | Notes |
+|---|---|---|---|
+| `dummy` | implemented | 7-DoF `eef_delta` | Neutral action for CI, docs, ROS2 dry-runs |
+| `scripted` | implemented | 7-DoF `eef_delta` | Rule-based PyBullet smoke baseline |
+| `random` | implemented | 7-DoF `eef_delta` | Seeded baseline for report and metric plumbing |
+| `openvla` | implemented scaffold | 7-DoF `eef_delta` | Lazy CUDA/HF path; external weights required |
+| `pi0` / `openpi` | placeholder | model-specific | Remote-first target; no hard dependency |
+| `smolvla` | placeholder | action chunks | LeRobot/SmolVLA target; multi-camera/state expected |
+| `groot` / `gr00t` | experimental placeholder | model-specific | Humanoid/generalist target; no hard dependency |
 
 External projects can register adapters through the `vla_zoo.adapters` entry point.
+Every serious adapter should declare input requirements, action spec, control
+rate, chunking behavior, dependency status, and license caveats.
 
 ## Architecture
 
@@ -188,19 +232,32 @@ flowchart LR
   State[/Robot state optional/] --> Runtime
   Runtime --> Local[Local adapter]
   Runtime --> Remote[Remote GPU server]
-  Local --> Action[VLAAction]
+  Local --> Action[VLAAction / VLAActionChunk]
   Remote --> Action
   Action --> ROS[/ROS2 action topics/]
-  Action --> Bench[/Benchmarks and reports/]
+  Action --> Reports[/Traces and dashboards/]
+  Action --> Bench[/Benchmark runners/]
 ```
 
-## Safety
+Core contract:
 
-- No direct hardware actuation in the core package.
+```python
+from vla_zoo import load_model
+
+model = load_model("openvla", runtime="remote", remote_url="http://gpu-box:8000")
+action = model.predict(image=image, instruction="pick up the red block")
+
+assert action.spec.action_space in {"eef_delta", "eef_pose", "joint_position", "custom"}
+```
+
+## Safety Model
+
+- The core package publishes typed actions; it does not directly actuate hardware.
 - ROS2 launch files default to `dry_run:=true`.
+- Runtime watchdogs track stale images and stale instructions.
 - Actions are typed and can be clipped before publication.
-- Stale image/instruction watchdogs are part of the runtime node.
-- Real robots should use a low-rate VLA outer loop plus deterministic high-rate controllers.
+- Real robots should use a low-rate VLA outer loop and deterministic high-rate controllers.
+- Hardware bridges should live outside the core package and require explicit opt-in.
 
 ## Known Limitations
 
@@ -208,6 +265,7 @@ flowchart LR
 - `vla_zoo` does not guarantee zero-shot success on your robot.
 - Real hardware deployment requires robot-specific action bridges and safety checks.
 - Model adapters may require large GPU memory and external model licenses.
+- Action representations differ across VLA families and must be normalized carefully.
 - The base package intentionally avoids heavy ML dependencies.
 
 ## Docs
@@ -223,7 +281,7 @@ flowchart LR
 
 ## Roadmap
 
-- v0.1: Python API, dummy adapter, OpenVLA adapter, remote server/client, ROS2 node
-- v0.2: SmolVLA/openpi/GR00T adapters, ROS bag replay benchmark
+- v0.1: Python API, dummy adapter, OpenVLA adapter, remote server/client, ROS2 node, action replay
+- v0.2: SmolVLA/openpi/GR00T adapter implementations, ROS bag replay benchmark
 - v0.3: LIBERO and SimplerEnv runners with reproducible result formats
-- v0.4: lifecycle node, watchdogs, action bridge examples, real robot deployment guides
+- v0.4: lifecycle node, watchdogs, action bridges, real robot deployment guides
