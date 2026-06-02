@@ -843,14 +843,28 @@ def bench_replay(
         Path | None,
         typer.Option("--summary-md", help="Write the latency/action-rate summary as Markdown."),
     ] = None,
+    source: Annotated[
+        str | None,
+        typer.Option(
+            "--source",
+            help="Override the summary source label (default: the ROS action-replay stub).",
+        ),
+    ] = None,
+    note: Annotated[
+        str | None,
+        typer.Option("--note", help="Override the summary note (default: the replay-stub note)."),
+    ] = None,
 ) -> None:
     """Replay a recorded JSONL action log into the versioned benchmark result schema.
 
     This is a ROS bag replay stub: it consumes vla_zoo's own JSONL action logs (native
-    rosbag2 .db3/.mcap decoding is future work) and makes no task-success claim.
+    rosbag2 .db3/.mcap decoding is future work) and makes no task-success claim. Use
+    ``--source`` / ``--note`` when replaying logs from another recorder (e.g. a PyBullet
+    action probe) so the summary is labeled honestly.
     """
 
     from vla_zoo.benchmark.replay import (
+        REPLAY_SOURCE,
         ROSBAG_REPLAY_NOTE,
         frames_to_records,
         load_action_log,
@@ -867,11 +881,11 @@ def bench_replay(
         raise typer.Exit(1)
 
     frames = load_action_log(action_log)
-    records = frames_to_records(frames)
+    records = frames_to_records(frames, source=source or REPLAY_SOURCE)
     summary = summarize_records(
         records,
         action_rate_hz=replay_action_rate_hz(frames),
-        note=ROSBAG_REPLAY_NOTE,
+        note=note or ROSBAG_REPLAY_NOTE,
     )
     if jsonl_out is not None:
         write_episode_jsonl(jsonl_out, records)

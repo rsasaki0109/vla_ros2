@@ -114,13 +114,14 @@ def frames_to_records(
     frames: Sequence[ReplayFrame],
     *,
     task_id: str = "",
+    source: str = REPLAY_SOURCE,
 ) -> list[EpisodeRecord]:
     """Map replay frames to schema episode records (success is always ``None``)."""
 
     return [
         EpisodeRecord(
             model=frame.model_name,
-            source=REPLAY_SOURCE,
+            source=source,
             index=frame.index,
             task_id=task_id,
             success=None,  # a recorded action stream is not a task-success claim

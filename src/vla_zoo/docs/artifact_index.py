@@ -416,6 +416,43 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="Real-scene action probe runtime comparison (SmolVLA vs OpenVLA)",
+        path="docs/assets/sample_pybullet_compare/runtime_probe_comparison.html",
+        category="simulation",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo bench-replay --action-log .../{model}_action_probe.jsonl "
+            "--source pybullet-action-probe --summary-out .../{model}_probe_summary.json && "
+            "vla-zoo bench-report --summaries "
+            "docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,"
+            "docs/assets/sample_pybullet_compare/openvla_probe_summary.json "
+            "--html-out docs/assets/sample_pybullet_compare/runtime_probe_comparison.html"
+        ),
+        caveat=(
+            "Side-by-side latency/action-rate of the two real-scene probes (SmolVLA p50 "
+            "~382 ms vs OpenVLA-7b 4-bit p50 ~2.0 s). Blank success rate: no task-success or "
+            "policy-quality claim."
+        ),
+    ),
+    ArtifactEntry(
+        title="Real-scene action probe runtime comparison (Markdown)",
+        path="docs/assets/sample_pybullet_compare/runtime_probe_comparison.md",
+        category="simulation",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo bench-report --summaries "
+            "docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,"
+            "docs/assets/sample_pybullet_compare/openvla_probe_summary.json "
+            "--markdown-out docs/assets/sample_pybullet_compare/runtime_probe_comparison.md"
+        ),
+        caveat=(
+            "Markdown twin of the real-scene probe comparison; runtime path only, no "
+            "task-success claim."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke plan",
         path="docs/assets/ros2_remote_smoke_plan.md",
         category="ROS2",

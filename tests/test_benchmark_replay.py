@@ -51,6 +51,21 @@ def test_frames_to_records_make_no_success_claim() -> None:
     assert all(r.schema_version == RESULT_SCHEMA_VERSION for r in records)
 
 
+def test_frames_to_records_honors_source_override() -> None:
+    frames = load_action_log(SAMPLE_LOG)
+    records = frames_to_records(frames, source="pybullet-action-probe")
+
+    assert all(r.source == "pybullet-action-probe" for r in records)
+    # the override does not invent a task-success claim
+    assert all(r.success is None for r in records)
+
+
+def test_realscene_probe_comparison_artifact_exists() -> None:
+    base = REPO_ROOT / "docs" / "assets" / "sample_pybullet_compare"
+    assert (base / "runtime_probe_comparison.md").is_file()
+    assert (base / "runtime_probe_comparison.html").is_file()
+
+
 def test_replay_sample_summary_artifact_exists() -> None:
     assert (REPO_ROOT / "docs" / "assets" / "sample_benchmark" / "ros2_replay_summary.md").is_file()
     assert (REPO_ROOT / "docs" / "benchmark_results.md").is_file()
