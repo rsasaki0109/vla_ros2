@@ -52,6 +52,11 @@ For remote GPU inference, generate the matching GPU-server command, robot-side
 launch command, and report commands:
 
 ```bash
+vla-zoo ros remote-smoke-report \
+  --model openvla \
+  --remote-url http://gpu-box:8001 \
+  --output-dir results/ros2_remote_openvla \
+  --duration-sec 30
 vla-zoo ros remote-smoke-plan \
   --model openvla \
   --remote-url http://gpu-box:8001 \

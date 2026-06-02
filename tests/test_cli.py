@@ -249,6 +249,16 @@ def test_cli_ros_smoke_report_help() -> None:
     assert "--action-log-name" in result.output
 
 
+def test_cli_ros_remote_smoke_report_help() -> None:
+    result = CliRunner().invoke(app, ["ros", "remote-smoke-report", "--help"])
+
+    assert result.exit_code == 0
+    assert "--model" in result.output
+    assert "--remote-url" in result.output
+    assert "--skip-launch" in result.output
+    assert "Publish typed action" in result.output
+
+
 def test_cli_ros_action_trace(tmp_path: Path) -> None:
     action_log = tmp_path / "actions.jsonl"
     out = tmp_path / "trace.html"
@@ -396,6 +406,69 @@ def test_cli_ros_smoke_report_skip_launch(tmp_path: Path) -> None:
         assert "action_analysis.md" in names
         assert "inputs/actions/00_vla_actions.jsonl" in names
     assert "ROS2 smoke report written" in result.output
+
+
+def test_cli_ros_remote_smoke_report_skip_launch(tmp_path: Path) -> None:
+    status_log = tmp_path / "vla_status.jsonl"
+    diagnostics_log = tmp_path / "vla_diagnostics.jsonl"
+    status_log.write_text(
+        json.dumps(
+            {
+                "model_name": "openvla",
+                "adapter_name": "RemoteVLAClient",
+                "ready": True,
+                "dry_run": True,
+                "last_latency_ms": 42.0,
+                "status_text": "dry_run: action suppressed",
+                "metadata": {
+                    "runtime": "remote",
+                    "remote_url": "http://gpu-box:8001",
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    diagnostics_log.write_text(
+        json.dumps(
+            {
+                "status": [
+                    {
+                        "name": "vla_zoo/vla_runtime_node",
+                        "hardware_id": "openvla",
+                        "level": 0,
+                        "message": "ready",
+                        "values": [
+                            {"key": "runtime", "value": "remote"},
+                            {"key": "remote_url", "value": "http://gpu-box:8001"},
+                        ],
+                    }
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ros",
+            "remote-smoke-report",
+            "--skip-launch",
+            "--model",
+            "openvla",
+            "--remote-url",
+            "http://gpu-box:8001",
+            "--output-dir",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert (tmp_path / "dashboard.html").exists()
+    assert (tmp_path / "report_bundle.zip").exists()
+    assert "ROS2 remote smoke report written" in result.output
 
 
 def test_cli_compare_pybullet_help() -> None:

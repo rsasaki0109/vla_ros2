@@ -1124,6 +1124,70 @@ def ros_action_trace(
     typer.echo(f"Action trace written to {out}")
 
 
+def _finalize_ros_report(
+    *,
+    output_dir: Path,
+    action_log: Path,
+    status_log: Path,
+    diagnostics_log: Path,
+    dashboard_out: Path,
+    bundle_out: Path,
+    action_trace_out: Path,
+    action_analysis_out: Path,
+    action_analysis_markdown_out: Path,
+    launch_log: Path,
+    title: str,
+    label: str,
+) -> None:
+    diagnostics_arg = str(diagnostics_log) if diagnostics_log.exists() else None
+    if not _path_has_content(status_log):
+        typer.echo(
+            f"No status records were written to {status_log}. "
+            "Run longer, check ROS2 discovery, or inspect the launch log.",
+            err=True,
+        )
+        if launch_log.exists():
+            typer.echo(f"Launch log: {launch_log}", err=True)
+        raise typer.Exit(1)
+    if diagnostics_log.exists() and not _path_has_content(diagnostics_log):
+        typer.echo(f"Warning: diagnostics log is empty: {diagnostics_log}", err=True)
+
+    compare_dashboard(
+        results=None,
+        status_logs=str(status_log),
+        diagnostics_logs=diagnostics_arg,
+        out=dashboard_out,
+        title=title,
+    )
+    report_bundle(
+        results=None,
+        status_logs=str(status_log),
+        diagnostics_logs=diagnostics_arg,
+        out=bundle_out,
+        title=title,
+    )
+    if _path_has_content(action_log):
+        ros_action_trace(action_log=action_log, out=action_trace_out, title=f"{title}: Actions")
+        ros_action_analyze(
+            action_log=action_log,
+            out=action_analysis_out,
+            markdown_out=action_analysis_markdown_out,
+            json_output=False,
+            max_gap_warn_sec=1.0,
+            min_rate_warn_hz=1.0,
+            title=f"{title}: Action Analysis",
+        )
+        if bundle_out.exists():
+            with ZipFile(bundle_out, "a", compression=ZIP_DEFLATED) as bundle:
+                bundle.write(action_log, "inputs/actions/00_vla_actions.jsonl")
+                bundle.write(action_trace_out, "action_trace.html")
+                bundle.write(action_analysis_out, "action_analysis.json")
+                bundle.write(action_analysis_markdown_out, "action_analysis.md")
+    else:
+        typer.echo(f"Warning: action log is empty or missing: {action_log}", err=True)
+    typer.echo(f"{label} written to {output_dir}")
+
+
 @ros_app.command("remote-smoke-plan")
 def ros_remote_smoke_plan(
     model: Annotated[
@@ -1201,6 +1265,198 @@ def ros_remote_smoke_plan(
         typer.echo(json.dumps(payload, indent=2))
     else:
         typer.echo(markdown)
+
+
+@ros_app.command("remote-smoke-report")
+def ros_remote_smoke_report(
+    model: Annotated[
+        str,
+        typer.Option("--model", "-m", help="Remote model name requested by the ROS2 runtime."),
+    ] = "openvla",
+    remote_url: Annotated[
+        str,
+        typer.Option("--remote-url", help="Remote vla-zoo server endpoint."),
+    ] = "http://gpu-box:8001",
+    output_dir: Annotated[
+        Path,
+        typer.Option("--output-dir", "-o", help="Directory for JSONL logs and report artifacts."),
+    ] = Path("results/ros2_remote_smoke"),
+    duration_sec: Annotated[
+        float,
+        typer.Option(
+            "--duration-sec",
+            help="How long to run remote_smoke_record.launch.py before reports.",
+        ),
+    ] = 30.0,
+    skip_launch: Annotated[
+        bool,
+        typer.Option(
+            "--skip-launch",
+            help="Do not run ROS2; generate reports from existing JSONL logs in output-dir.",
+        ),
+    ] = False,
+    overwrite: Annotated[
+        bool,
+        typer.Option("--overwrite/--append", help="Remove previous logs before running ROS2."),
+    ] = True,
+    fastdds_udp: Annotated[
+        bool,
+        typer.Option(
+            "--fastdds-udp/--no-fastdds-udp",
+            help="Set FASTDDS_BUILTIN_TRANSPORTS=UDPv4 for the ROS2 launch subprocess.",
+        ),
+    ] = True,
+    instruction: Annotated[
+        str,
+        typer.Option("--instruction", help="Instruction passed to the smoke input node."),
+    ] = "pick up the red block",
+    task_id: Annotated[
+        str,
+        typer.Option("--task-id", help="Typed instruction task_id for the smoke run."),
+    ] = "ros2_remote_smoke_pick_red_block",
+    publish_actions_in_dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--publish-actions-in-dry-run/--suppress-actions-in-dry-run",
+            help="Publish typed action messages while dry_run remains true.",
+        ),
+    ] = True,
+    action_log_name: Annotated[
+        str,
+        typer.Option("--action-log-name", help="Action JSONL filename inside output-dir."),
+    ] = "vla_actions.jsonl",
+    status_log_name: Annotated[
+        str,
+        typer.Option("--status-log-name", help="Status JSONL filename inside output-dir."),
+    ] = "vla_status.jsonl",
+    diagnostics_log_name: Annotated[
+        str,
+        typer.Option(
+            "--diagnostics-log-name",
+            help="Diagnostics JSONL filename inside output-dir.",
+        ),
+    ] = "vla_diagnostics.jsonl",
+    dashboard_name: Annotated[
+        str,
+        typer.Option("--dashboard-name", help="Dashboard HTML filename inside output-dir."),
+    ] = "dashboard.html",
+    bundle_name: Annotated[
+        str,
+        typer.Option("--bundle-name", help="Zip report bundle filename inside output-dir."),
+    ] = "report_bundle.zip",
+    action_trace_name: Annotated[
+        str,
+        typer.Option("--action-trace-name", help="Action trace HTML filename inside output-dir."),
+    ] = "action_trace.html",
+    action_analysis_name: Annotated[
+        str,
+        typer.Option(
+            "--action-analysis-name",
+            help="Action analysis JSON filename inside output-dir.",
+        ),
+    ] = "action_analysis.json",
+    action_analysis_markdown_name: Annotated[
+        str,
+        typer.Option(
+            "--action-analysis-markdown-name",
+            help="Action analysis Markdown filename inside output-dir.",
+        ),
+    ] = "action_analysis.md",
+    launch_log_name: Annotated[
+        str,
+        typer.Option("--launch-log-name", help="ROS2 launch log filename inside output-dir."),
+    ] = "launch.log",
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Dashboard/report title."),
+    ] = "vla_zoo ROS2 Remote Smoke Report",
+) -> None:
+    """Run ROS2 remote smoke recording and build dashboard/report artifacts."""
+
+    if duration_sec <= 0 and not skip_launch:
+        raise typer.BadParameter("--duration-sec must be positive unless --skip-launch is used.")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    action_log = output_dir / action_log_name
+    status_log = output_dir / status_log_name
+    diagnostics_log = output_dir / diagnostics_log_name
+    dashboard_out = output_dir / dashboard_name
+    bundle_out = output_dir / bundle_name
+    action_trace_out = output_dir / action_trace_name
+    action_analysis_out = output_dir / action_analysis_name
+    action_analysis_markdown_out = output_dir / action_analysis_markdown_name
+    launch_log = output_dir / launch_log_name
+
+    if not skip_launch:
+        ros2_path = shutil.which("ros2")
+        if ros2_path is None:
+            typer.echo(
+                "ros2 was not found on PATH. Build/source the ROS2 workspace, "
+                "or use --skip-launch.",
+                err=True,
+            )
+            raise typer.Exit(1)
+        if overwrite:
+            for path in (
+                action_log,
+                status_log,
+                diagnostics_log,
+                dashboard_out,
+                bundle_out,
+                action_trace_out,
+                action_analysis_out,
+                action_analysis_markdown_out,
+                launch_log,
+            ):
+                _unlink_if_exists(path)
+
+        env = os.environ.copy()
+        if fastdds_udp:
+            env["FASTDDS_BUILTIN_TRANSPORTS"] = "UDPv4"
+        command = [
+            ros2_path,
+            "launch",
+            "vla_zoo",
+            "remote_smoke_record.launch.py",
+            f"model_name:={model}",
+            f"remote_url:={remote_url}",
+            f"output_dir:={output_dir}",
+            f"action_log_name:={action_log_name}",
+            f"status_log_name:={status_log_name}",
+            f"diagnostics_log_name:={diagnostics_log_name}",
+            f"instruction:={instruction}",
+            f"task_id:={task_id}",
+            "dry_run:=true",
+            f"publish_actions_in_dry_run:={str(publish_actions_in_dry_run).lower()}",
+        ]
+        typer.echo(f"Running: {' '.join(quote(part) for part in command)}")
+        returncode, completed_early = _run_process_for_duration(
+            command,
+            duration_sec=duration_sec,
+            log_path=launch_log,
+            env=env,
+        )
+        if completed_early and returncode != 0:
+            typer.echo(
+                f"ROS2 launch exited early with code {returncode}. See {launch_log}",
+                err=True,
+            )
+            raise typer.Exit(returncode)
+
+    _finalize_ros_report(
+        output_dir=output_dir,
+        action_log=action_log,
+        status_log=status_log,
+        diagnostics_log=diagnostics_log,
+        dashboard_out=dashboard_out,
+        bundle_out=bundle_out,
+        action_trace_out=action_trace_out,
+        action_analysis_out=action_analysis_out,
+        action_analysis_markdown_out=action_analysis_markdown_out,
+        launch_log=launch_log,
+        title=title,
+        label="ROS2 remote smoke report",
+    )
 
 
 @ros_app.command("smoke-report")
@@ -1360,53 +1616,20 @@ def ros_smoke_report(
             )
             raise typer.Exit(returncode)
 
-    diagnostics_arg = str(diagnostics_log) if diagnostics_log.exists() else None
-    if not _path_has_content(status_log):
-        typer.echo(
-            f"No status records were written to {status_log}. "
-            "Run longer, check ROS2 discovery, or inspect the launch log.",
-            err=True,
-        )
-        if launch_log.exists():
-            typer.echo(f"Launch log: {launch_log}", err=True)
-        raise typer.Exit(1)
-    if diagnostics_log.exists() and not _path_has_content(diagnostics_log):
-        typer.echo(f"Warning: diagnostics log is empty: {diagnostics_log}", err=True)
-
-    compare_dashboard(
-        results=None,
-        status_logs=str(status_log),
-        diagnostics_logs=diagnostics_arg,
-        out=dashboard_out,
+    _finalize_ros_report(
+        output_dir=output_dir,
+        action_log=action_log,
+        status_log=status_log,
+        diagnostics_log=diagnostics_log,
+        dashboard_out=dashboard_out,
+        bundle_out=bundle_out,
+        action_trace_out=action_trace_out,
+        action_analysis_out=action_analysis_out,
+        action_analysis_markdown_out=action_analysis_markdown_out,
+        launch_log=launch_log,
         title=title,
+        label="ROS2 smoke report",
     )
-    report_bundle(
-        results=None,
-        status_logs=str(status_log),
-        diagnostics_logs=diagnostics_arg,
-        out=bundle_out,
-        title=title,
-    )
-    if _path_has_content(action_log):
-        ros_action_trace(action_log=action_log, out=action_trace_out, title=f"{title}: Actions")
-        ros_action_analyze(
-            action_log=action_log,
-            out=action_analysis_out,
-            markdown_out=action_analysis_markdown_out,
-            json_output=False,
-            max_gap_warn_sec=1.0,
-            min_rate_warn_hz=1.0,
-            title=f"{title}: Action Analysis",
-        )
-        if bundle_out.exists():
-            with ZipFile(bundle_out, "a", compression=ZIP_DEFLATED) as bundle:
-                bundle.write(action_log, "inputs/actions/00_vla_actions.jsonl")
-                bundle.write(action_trace_out, "action_trace.html")
-                bundle.write(action_analysis_out, "action_analysis.json")
-                bundle.write(action_analysis_markdown_out, "action_analysis.md")
-    else:
-        typer.echo(f"Warning: action log is empty or missing: {action_log}", err=True)
-    typer.echo(f"ROS2 smoke report written to {output_dir}")
 
 
 @compare_app.command("pybullet")

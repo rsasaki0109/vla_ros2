@@ -18,6 +18,7 @@ def test_ros_remote_smoke_plan_uses_remote_launch_and_reports() -> None:
     assert "remote_smoke_record.launch.py" in plan.launch_command
     assert "model_name:=pi0" in plan.launch_command
     assert "remote_url:=http://gpu-box:8002" in plan.launch_command
+    assert "remote-smoke-report" in plan.smoke_report_command
     assert "vla-zoo" in plan.server_command
     assert "serve" in plan.server_command
     assert "pi0" in plan.server_command
@@ -32,6 +33,7 @@ def test_ros_remote_smoke_plan_markdown_is_dry_run_oriented() -> None:
 
     assert "--dtype bfloat16" in markdown
     assert "dry-run" in markdown
+    assert "One-Shot Command" in markdown
     assert "GPU Server" in markdown
     assert "ROS2 Runtime Recording" in markdown
     assert "vla-zoo report bundle" in markdown

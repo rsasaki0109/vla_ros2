@@ -219,14 +219,15 @@ Remote GPU smoke recording uses the same synthetic camera path but calls a GPU
 server from the robot-side ROS2 node:
 
 ```bash
+vla-zoo ros remote-smoke-report \
+  --model openvla \
+  --remote-url http://gpu-box:8001 \
+  --output-dir results/ros2_remote_openvla \
+  --duration-sec 30
 vla-zoo ros remote-smoke-plan \
   --model openvla \
   --remote-url http://gpu-box:8001 \
   --markdown-out results/ros2_remote_smoke_plan.md
-timeout 30s ros2 launch vla_zoo remote_smoke_record.launch.py \
-  model_name:=openvla \
-  remote_url:=http://gpu-box:8001 \
-  output_dir:=results/ros2_remote_openvla
 ```
 
 Sample ROS2 remote smoke plan:
