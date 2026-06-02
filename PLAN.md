@@ -1,0 +1,666 @@
+# vla_zoo Plan and Claude Handoff
+
+Updated: 2026-06-02 JST
+
+This file is the handoff document for continuing `vla_zoo` development with another
+agent. Read this before making changes.
+
+## 0. Current Position
+
+`vla_zoo` is a ROS2-native runtime, benchmark, and adapter hub for
+Vision-Language-Action models. The project is intentionally runtime-first:
+
+```text
+camera + instruction + robot state + timestamp
+  -> stable VLA adapter/runtime boundary
+  -> typed VLAAction or VLAActionChunk
+  -> Python API, ROS2 topic, HTTP response, benchmark step, or report artifact
+```
+
+The repository is no longer just an MVP skeleton. It now has:
+
+- Stable Python API: `load_model()`, `list_models()`.
+- Typed core runtime objects: `VLAObservation`, `VLAAction`, `VLAActionChunk`,
+  `ActionSpec`.
+- Built-in adapters: `dummy`, `scripted`, `random`, `openvla`, `pi0`,
+  `smolvla`, `groot`.
+- Local runtime and remote HTTP server/client.
+- ROS2 packages, launch files, messages, runtime node, smoke/evidence tooling.
+- PyBullet simulation demos and deterministic baseline comparison artifacts.
+- Static report artifacts for README, GitHub Pages, action playground, GIF gallery,
+  runtime dashboard, ROS2 remote smoke, and VLA evidence matrix.
+
+Latest pushed development before this handoff file:
+
+```text
+af1d8ad improve runtime dashboard evidence view
+40cb955 add gif gallery comparison matrix
+cf1ce17 surface vla evidence links
+434099c add html vla evidence matrix
+bfdc016 add vla evidence matrix
+bcc01b3 add ros2 remote smoke evidence
+0789940 add remote action playground smoke
+1b72d6f add action playground verification report
+99c2a70 add action playground recorder
+296e107 add action playground trace merge
+d004701 enhance action playground comparison
+0fbc05e add action playground demo
+```
+
+## 1. Product North Star
+
+The project should feel closer to Nav2 / Autoware / robot_localization
+infrastructure than to a notebook repo.
+
+The target positioning:
+
+> The missing ROS2-native runtime boundary for the post-OpenVLA VLA ecosystem.
+
+What to optimize for:
+
+- Boring stable runtime interface.
+- Adapter contract clarity.
+- ROS2-first deployment shape.
+- Remote GPU inference path.
+- Honest evidence and reproducible artifacts.
+- Simulation and benchmark scaffolding without overclaiming model quality.
+
+What not to optimize for yet:
+
+- Training.
+- RL.
+- New manipulation algorithms.
+- Direct robot actuation.
+- Huge model downloads in CI.
+- Claims that every VLA works on every robot.
+
+## 2. Non-Negotiable Safety and Messaging Rules
+
+Do not claim:
+
+- "OpenVLA/pi0/SmolVLA/GR00T are all benchmarked successfully."
+- "vla_zoo proves real robot task success."
+- "zero-shot deployment is safe."
+- "the VLA output should directly drive hardware."
+
+Always say:
+
+- The checked-in artifacts are runtime evidence unless explicitly marked otherwise.
+- Dummy/scripted/random are baselines, not VLA model-quality measurements.
+- OpenVLA has a lazy adapter and prompt path; the local CUDA prompt probe was blocked
+  by free VRAM in the checked run.
+- SmolVLA has a checked GPU inference-path probe with `lerobot/smolvla_base`, but this
+  is not a robot task-success claim.
+- pi0/openpi is remote-first and still needs a recorded real action probe.
+- GR00T is experimental placeholder status unless a real serving adapter is added.
+- ROS2 launch must remain dry-run safe by default.
+
+For hardware:
+
+- Publish typed action messages.
+- Do not directly command motors in core.
+- Hardware bridges belong outside core or behind explicit opt-in.
+- Use watchdogs, stale action timeout, clipping, emergency stop integration, and a
+  low-rate VLA outer loop plus high-rate deterministic controller.
+
+## 3. Repository Map
+
+Key source modules:
+
+```text
+src/vla_zoo/core/
+  types.py              Typed observation/action/action spec dataclasses.
+  model.py              BaseVLA predict wrapper.
+  registry.py           Adapter registry, aliases, metadata, entry points.
+
+src/vla_zoo/adapters/
+  dummy.py              Always-working neutral baseline.
+  baselines.py          scripted/random simulation baselines.
+  openvla.py            Lazy Hugging Face OpenVLA adapter.
+  pi0.py                Remote-first openpi/pi0 placeholder/scaffold.
+  smolvla.py            Lazy LeRobot SmolVLA adapter.
+  groot.py              Experimental GR00T placeholder.
+
+src/vla_zoo/runtime/
+  server.py             FastAPI serving app.
+  remote.py             Remote client with BaseVLA-compatible predict().
+  schemas.py            Request/response schema helpers.
+  dashboard.py          Static runtime dashboard renderer.
+  ros_smoke.py          ROS2 remote smoke evidence validation.
+  ros_plan.py           ROS2 remote smoke plan generation.
+  server_plan.py        Heavy VLA server plan generation.
+
+src/vla_zoo/demo/
+  pybullet.py           PyBullet simulation renderer/comparison.
+  gif_suite.py          GIF suite generation, QA, gallery renderer.
+  action_playground.py  Action trace/playground static artifacts.
+
+src/vla_zoo/compare/
+  evidence.py           VLA evidence matrix JSON/Markdown/HTML renderer.
+  profiles.py           Adapter method profile comparison.
+  cards.py              Adapter card generation.
+  compatibility.py      Robot profile compatibility report.
+  suite.py              Compare-suite artifact README.
+
+src/vla_zoo/benchmark/
+  base.py               BenchmarkEnv and BenchmarkRunner contracts.
+
+ros2/
+  vla_zoo/              ROS2 node, launch files, config.
+  vla_zoo_msgs/         ROS2 message definitions.
+
+tests/
+  pytest suite for registry, adapters, CLI, schemas, demos, dashboard, ROS smoke.
+```
+
+Important generated/static artifact areas:
+
+```text
+docs/assets/vla_model_evidence_matrix.html
+docs/assets/gif_suite/index.html
+docs/assets/sample_compare_suite/runtime_dashboard.html
+docs/assets/sample_compare_suite/pybullet_report.html
+docs/assets/sample_ros2_remote_dummy/remote_smoke_check.md
+docs/assets/sample_ros2_remote_dummy/dashboard.html
+docs/assets/action_playground.html
+docs/assets/action_playground_with_remote.html
+docs/reports/model_comparison.md
+docs/reports/remote_runtime_smoke.md
+docs/adapters/*.md
+```
+
+## 4. Current Public Story
+
+README front page currently emphasizes:
+
+- Open First links:
+  - VLA evidence matrix.
+  - PyBullet GIF gallery.
+  - PyBullet report.
+  - ROS2 remote dummy evidence.
+- Representative checked-in PyBullet GIFs.
+- Runtime-centric verification status.
+- Quickstart with dummy.
+- SmolVLA GPU path.
+- OpenVLA GPU/server path.
+- ROS2 runtime and remote smoke path.
+- Comparing VLA runtime paths.
+- Known limitations and safety.
+
+GitHub Pages currently has:
+
+- Hero with evidence matrix and GIF gallery buttons.
+- What Works Now section.
+- Run commands.
+- GPU VLA path.
+- ROS2/remote deployment.
+- Visible reports list.
+- Links to evidence matrix, GIF gallery, dashboard, adapter cards, robot compatibility,
+  ROS2 evidence, and PyBullet results.
+
+## 5. Verified Artifact Status
+
+Treat this as the current truth table.
+
+| Area | Status | Main artifacts |
+|---|---|---|
+| Dummy Python API | verified | tests, CLI predict |
+| Dummy remote HTTP | verified | `docs/reports/remote_runtime_smoke.md` |
+| ROS2 local dummy | implemented | ROS2 launch/config/node/messages |
+| ROS2 remote dummy | verified | `docs/assets/sample_ros2_remote_dummy/remote_smoke_check.md` |
+| PyBullet baseline tasks | verified | `docs/assets/gif_suite/`, `sample_task_verification/baseline_tasks.*` |
+| Runtime dashboard | verified as static report | `sample_compare_suite/runtime_dashboard.html` |
+| VLA evidence matrix | generated and linked | `docs/assets/vla_model_evidence_matrix.html` |
+| OpenVLA adapter | scaffolded/lazy | `docs/adapters/openvla.md`, prompt probe artifact |
+| OpenVLA 7B local run | blocked | insufficient free VRAM in checked probe |
+| pi0/openpi | remote-first placeholder | compatibility note, adapter card |
+| SmolVLA | GPU inference-path verified | `smolvla_gpu_probe.md/json` |
+| GR00T | experimental placeholder | adapter card / evidence matrix |
+
+## 6. Commands That Should Keep Working
+
+Use `rtk proxy` when running shell commands in this environment.
+
+Install:
+
+```bash
+rtk proxy pip install -e ".[dev,cli,server,sim]"
+```
+
+Core checks:
+
+```bash
+rtk proxy env PYTHONPATH=src pytest -q
+rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests ros2/vla_zoo/vla_zoo_ros
+rtk proxy env PYTHONPATH=src mypy src/vla_zoo
+rtk proxy git diff --check
+```
+
+CLI smoke:
+
+```bash
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main list
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main predict --model dummy --instruction "hello"
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main doctor --no-ros
+```
+
+Regenerate VLA evidence matrix:
+
+```bash
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare evidence \
+  --models dummy,scripted,random,openvla,pi0,smolvla,groot \
+  --out docs/assets/vla_model_evidence_matrix.json \
+  --markdown-out docs/assets/vla_model_evidence_matrix.md \
+  --html-out docs/assets/vla_model_evidence_matrix.html
+```
+
+Regenerate GIF gallery from existing GIF manifest:
+
+```bash
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main demo gif-report \
+  --manifest docs/assets/gif_suite/gif_manifest.json \
+  --html-out docs/assets/gif_suite/index.html \
+  --check-json-out docs/assets/gif_suite/gif_check.json
+```
+
+Validate GIF suite:
+
+```bash
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main demo gif-check \
+  docs/assets/gif_suite \
+  --link-files README.md,docs/index.html,docs/assets/gif_suite/README.md \
+  --strict
+```
+
+Regenerate runtime dashboard:
+
+```bash
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare dashboard \
+  --results docs/assets/sample_compare_suite/pybullet_results.json \
+  --out docs/assets/sample_compare_suite/runtime_dashboard.html \
+  --title "vla_zoo Comparison Suite"
+```
+
+Run compare suite:
+
+```bash
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare suite \
+  --out-dir results/vla_compare_suite
+```
+
+Run PyBullet task verification:
+
+```bash
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare tasks \
+  --models dummy,scripted,random \
+  --tasks all \
+  --out results/vla_task_verification/baseline_tasks.json \
+  --markdown-out results/vla_task_verification/baseline_tasks.md \
+  --html-out results/vla_task_verification/baseline_tasks.html
+```
+
+Remote dummy smoke:
+
+```bash
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main demo action-playground-remote-smoke
+```
+
+ROS2 remote smoke evidence check:
+
+```bash
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main ros remote-smoke-check \
+  --status-log docs/assets/sample_ros2_remote_dummy/vla_status.jsonl \
+  --diagnostics-log docs/assets/sample_ros2_remote_dummy/vla_diagnostics.jsonl \
+  --action-log docs/assets/sample_ros2_remote_dummy/vla_actions.jsonl
+```
+
+## 7. Immediate Next Work
+
+Recommended next sequence for Claude.
+
+### 7.1 Add a Docs/Pages Link Verifier
+
+Reason: README and Pages now depend on many visible report links. The repo will look
+unprofessional if any static link breaks.
+
+Implement:
+
+- New module, likely `src/vla_zoo/docs/links.py` or `src/vla_zoo/runtime/links.py`.
+- CLI command, for example:
+
+```bash
+vla-zoo docs link-check README.md docs/index.html docs/assets/gif_suite/index.html
+```
+
+or, if avoiding a new Typer app:
+
+```bash
+vla-zoo report link-check --paths README.md,docs/index.html
+```
+
+Requirements:
+
+- Parse Markdown links and HTML `href/src`.
+- Ignore external `http(s)` by default.
+- Resolve repo-relative local paths.
+- Verify `.html`, `.md`, `.json`, `.gif`, `.png`, `.zip`, `.jsonl` links exist.
+- Produce human table plus optional JSON output.
+- Add tests with temporary markdown/html files.
+- Use it in future before every README/Pages edit.
+
+Acceptance:
+
+```bash
+rtk proxy env PYTHONPATH=src pytest -q tests/test_docs_links.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
+  --paths README.md,docs/index.html \
+  --strict
+```
+
+### 7.2 Add a README/Pages Artifact Index
+
+Reason: many reports exist but are spread across sections. A machine-readable artifact
+index makes it easier to check, render, and hand off.
+
+Implement:
+
+- `docs/assets/artifact_index.json`
+- `docs/assets/artifact_index.html`
+- CLI:
+
+```bash
+vla-zoo report index --out docs/assets/artifact_index.json --html-out docs/assets/artifact_index.html
+```
+
+Include:
+
+- title
+- path
+- category
+- status
+- source command
+- whether generated/checked/manual
+- evidence caveat
+
+Categories:
+
+- "model evidence"
+- "simulation"
+- "runtime dashboard"
+- "ROS2"
+- "adapter docs"
+- "GPU probes"
+
+### 7.3 Make ROS2 Integration More Credible
+
+Reason: user has repeatedly emphasized ROS2 integration. Current ROS2 code is useful,
+but CI does not build it.
+
+Next useful tasks:
+
+- Add a non-ROS syntax/lint test for launch files and package metadata.
+- Add `tests/test_ros2_package_metadata.py`.
+- Parse/check:
+  - `ros2/vla_zoo/package.xml`
+  - `ros2/vla_zoo/setup.py`
+  - `ros2/vla_zoo/launch/*.launch.py`
+  - `ros2/vla_zoo_msgs/msg/*.msg`
+- Assert expected topics and launch args are present.
+- Optionally add a GitHub Actions placeholder job that is commented/documented, not enabled.
+
+Do not require a ROS2 installation in standard CI yet.
+
+### 7.4 Strengthen SmolVLA Remote Path
+
+Reason: SmolVLA is the most feasible real model path already checked locally. The next
+credible step is remote serving and robot-side client evidence.
+
+Target:
+
+```bash
+vla-zoo serve --model smolvla --host 0.0.0.0 --port 8000
+vla-zoo demo action-playground-record --models smolvla --runtime remote
+```
+
+Work items:
+
+- Add a SmolVLA remote smoke plan.
+- Add adapter-specific server config examples.
+- Add docs for `vla_zoo[smolvla]` environment isolation.
+- Add evidence matrix cells for "remote server" once recorded.
+
+Do not claim policy-quality success.
+
+### 7.5 OpenVLA 7B Path
+
+Reason: OpenVLA is important for credibility, but local 7B inference was blocked by
+free VRAM. The correct next path is a remote GPU server with enough memory.
+
+Target:
+
+```bash
+vla-zoo serve --model openvla \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --device cuda:0 \
+  --pretrained openvla/openvla-7b \
+  --unnorm-key bridge_orig
+```
+
+Then robot/client side:
+
+```bash
+vla-zoo predict --model openvla --runtime remote --remote-url http://GPU_BOX:8000 \
+  --instruction "pick up the red block"
+```
+
+Work items:
+
+- Add a remote OpenVLA probe script that checks server health first.
+- Record `/v1/predict` response artifact if the server actually runs.
+- Update evidence matrix from `planned` to `verified` only after real recorded response.
+- Keep model download out of tests.
+
+### 7.6 pi0/openpi Path
+
+Reason: pi0/openpi should not be forced into base env. Treat it as remote-first.
+
+Work items:
+
+- Add `examples/python/load_pi0_remote.py`.
+- Add a `pi0` server plan artifact.
+- Add compatibility docs for LeRobot/openpi versioning.
+- If real server becomes available, record a remote action probe and update evidence.
+
+### 7.7 GR00T Path
+
+Reason: GR00T should stay experimental until a real serving adapter exists.
+
+Work items:
+
+- Keep `experimental=True`.
+- Add a proper "blocked until NVIDIA stack" note.
+- Do not write fake local inference.
+- Add an adapter card section for expected observation/action contract once known.
+
+## 8. Medium-Term Roadmap
+
+### v0.1 release polish
+
+- Ensure root README is concise but persuasive.
+- Add `PLAN.md`.
+- Add artifact index.
+- Add link checker.
+- Add release checklist.
+- Add "Known limitations" stays visible.
+- Make sure all report links on Pages work.
+
+### v0.2 adapter expansion
+
+- SmolVLA remote server evidence.
+- pi0 remote adapter smoke.
+- OpenVLA remote GPU smoke.
+- More action chunk support in scheduler.
+- Better adapter metadata schema.
+
+### v0.3 benchmark credibility
+
+- ROS bag replay benchmark stub -> working loader.
+- LIBERO smoke runner when deps are installed.
+- SimplerEnv runner.
+- JSONL benchmark result schema.
+- Latency and action-rate summary reports.
+
+### v0.4 robot readiness
+
+- Lifecycle node design.
+- Diagnostics improvements.
+- Watchdog node/example.
+- Action clipping.
+- MoveIt Servo bridge example.
+- ros2_control bridge example.
+- Jetson + remote GPU deployment guide.
+
+### v0.5 ecosystem hub
+
+- External adapter plugin docs.
+- Adapter registry page.
+- Model cards.
+- Third-party adapter CI template.
+- Community benchmark contribution guide.
+
+## 9. Suggested Issues to Create
+
+Good first issues:
+
+- Add docs link checker.
+- Add artifact index page.
+- Add ROS2 package metadata tests.
+- Add MoveIt Servo action bridge example.
+- Add ros2_control bridge example.
+- Add Jetson remote GPU deployment guide.
+- Add SO-101 / ALOHA launch example.
+- Add ROS bag replay loader stub.
+- Add LIBERO smoke benchmark stub.
+- Add SimplerEnv smoke benchmark stub.
+
+Adapter issues:
+
+- Record SmolVLA remote server smoke.
+- Record OpenVLA remote server smoke.
+- Add pi0/openpi remote example.
+- Add GR00T serving adapter design doc.
+
+Report/UI issues:
+
+- Add artifact index.
+- Add dashboard screenshot preview.
+- Add Pages status badges from generated JSON.
+- Add action trace bundle viewer.
+
+## 10. GitHub / Publishing Notes
+
+Current repo remote:
+
+```text
+git@github.com:rsasaki0109/vla_zoo.git
+```
+
+The current workflow has been direct pushes to `main`. If continuing that style:
+
+```bash
+rtk proxy git status -sb
+rtk proxy git add <explicit files>
+rtk proxy git commit -m "<short message>"
+rtk proxy git push origin main
+```
+
+Do not stage unrelated user changes. Always inspect `git status -sb` first.
+
+If using PR workflow later:
+
+- Branch: `codex/<description>`
+- PR title: `[codex] <description>`
+- Include validation commands in PR body.
+
+## 11. Implementation Style Rules
+
+Follow the existing project style:
+
+- Keep base dependencies light.
+- Heavy model deps go behind extras.
+- Lazy import optional dependencies.
+- Raise helpful missing-dependency errors.
+- Do not download model weights in tests.
+- Prefer structured dataclasses/schema helpers.
+- Public API returns `VLAAction` or `VLAActionChunk`, not raw arrays.
+- Report renderers should be deterministic and testable.
+- Generated docs/assets should be reproducible from CLI commands.
+- Tests should run on CPU.
+
+Shell/tooling conventions in this environment:
+
+- Prefix shell commands with `rtk proxy`.
+- Use `rg` for search.
+- Use `apply_patch` for file edits.
+- Do not run destructive git commands.
+
+## 12. Known Risks
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| README overclaims model performance | Expert criticism | Keep evidence matrix and limitations explicit |
+| Static links break | Bad first impression | Add link checker next |
+| GIFs look like policy claims | Misleading | Keep "runtime artifact, not robot skill" text |
+| OpenVLA local run blocked | Credibility issue | Move to remote GPU evidence path |
+| ROS2 not in CI | Integration risk | Add metadata/syntax tests first, full ROS CI later |
+| Heavy deps conflict with ROS2 env | Deployment pain | Keep remote server path and separate env guidance |
+| Direct actuation temptation | Safety risk | Core publishes actions only |
+
+## 13. Current Best Next Commit
+
+If Claude continues immediately, the best next commit is:
+
+```text
+add docs artifact link checker
+```
+
+Files likely touched:
+
+```text
+src/vla_zoo/docs/__init__.py
+src/vla_zoo/docs/links.py
+src/vla_zoo/cli/main.py
+tests/test_docs_links.py
+tests/test_cli.py
+PLAN.md
+README.md           # only if adding usage snippet
+```
+
+Acceptance:
+
+```bash
+rtk proxy env PYTHONPATH=src pytest -q tests/test_docs_links.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
+rtk proxy env PYTHONPATH=src mypy src/vla_zoo tests/test_docs_links.py
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
+  --paths README.md,docs/index.html,docs/assets/gif_suite/index.html \
+  --strict
+```
+
+## 14. One-Screen Claude Brief
+
+Start here:
+
+1. Run `rtk proxy git status -sb`.
+2. Read `README.md`, `docs/index.html`, and this `PLAN.md`.
+3. Do not redo finished evidence work.
+4. Implement `docs/report link-check` next.
+5. Keep all claims runtime-centric.
+6. Run `pytest`, `ruff`, `mypy`, and `git diff --check`.
+7. Commit only the files you changed.
+8. Push to `origin main` only if the user asks to continue the direct-push style.
+
+The repo is in a strong presentation state. The next quality jump is making the
+visible report links and generated artifacts mechanically checked, then using that
+foundation for more real-model remote evidence.
