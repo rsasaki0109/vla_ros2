@@ -83,13 +83,13 @@ It is not a model-quality leaderboard. `verified` means the repository contains 
 ### pi0
 
 - Upstream: openpi / LeRobot
-- Next step: Stand up a dedicated pi0/openpi server and record /v1/predict plus ROS2 remote logs.
+- Next step: The version-matched checkpoint (lerobot/pi0_base) and bf16-fits-16GB question are settled; the live block is the gated google/paligemma-3b-pt-224 tokenizer. Either accept its license and supply an HF token to record a local real-scene action probe like the other two adapters, or stand up a dedicated pi0/openpi server and record /v1/predict plus ROS2 remote logs.
 - Caveat: Remote-first adapter path is implemented. Local real-model action probe has not completed in this repository; use a dedicated GPU serving environment.
 
 | Cell | Status | Evidence |
 |---|---|---|
 | Contract | verified | Built-in adapter metadata declares inputs, action shape, runtime mode, and caveats.<br>[adapter card](../adapters/pi0.md) |
-| Local runtime | blocked | Local load fails on a concrete config-schema mismatch: the cached lerobot/pi0 checkpoint carries PI0Config fields (resize_imgs_with_padding, adapt_to_pi_aloha, num_steps, ...) that LeRobot 0.5.1 rejects. Needs a version-matched checkpoint.<br>[pi0 compatibility note](sample_task_verification/pi0_compatibility_probe.md) |
+| Local runtime | blocked | Version-matched checkpoint resolved (lerobot/pi0_base decodes cleanly under LeRobot 0.5.1 as a 32D PI0Config, and the bf16 model fits a 16 GB GPU at ~8.9 GB), but local inference stays blocked on a license gate: the pi0 processor requires the gated google/paligemma-3b-pt-224 tokenizer (GatedRepoError 401, manual license acceptance + token). The older lerobot/pi0 config schema is permanently rejected by LeRobot 0.5.1. See the compatibility probe for the full version matrix.<br>[pi0 compatibility note](sample_task_verification/pi0_compatibility_probe.md) |
 | GPU inference | planned | Needs a dedicated openpi or LeRobot serving environment and a recorded action probe.<br>[adapter card](../adapters/pi0.md) |
 | Remote server | planned | Remote-first deployment path with a reproducible pi0 server plan and LeRobot/openpi version-compatibility docs; a recorded pi0 /v1/predict run from a version-matched server is still needed.<br>[pi0 remote path](../pi0_remote.md), [pi0 server plan](pi0_server_plan.md) |
 | ROS2 remote | planned | ROS2 remote launch can target a pi0 server; checked-in action logs are still needed.<br>[ROS2 remote plan](ros2_remote_smoke_plan.md) |

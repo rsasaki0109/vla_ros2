@@ -124,11 +124,14 @@ action rate, no task-success claim) at
 
 ## pi0 status
 
-The same script targets pi0 with `--model pi0`, but local pi0 loading currently fails on a
-concrete config-schema mismatch: the cached `lerobot/pi0` checkpoint carries `PI0Config`
-fields (`resize_imgs_with_padding`, `adapt_to_pi_aloha`, `num_steps`, …) that LeRobot 0.5.1
-rejects. A version-matched checkpoint or serving environment is needed. See the
-[pi0 compatibility probe](assets/sample_task_verification/pi0_compatibility_probe.md).
+The same script targets pi0 with `--model pi0`. The version-matched checkpoint is now
+settled: the old `lerobot/pi0` config schema is rejected by LeRobot 0.5.1, but
+`lerobot/pi0_base` decodes cleanly (`PI0Config`, 32D) and its bf16 model fits a 16 GB GPU
+(~8.9 GB) via the adapter's new `dtype` override. Local inference stays blocked only on the
+gated `google/paligemma-3b-pt-224` tokenizer the pi0 processor requires
+(`GatedRepoError 401` — manual license acceptance + token). See the
+[pi0 compatibility probe](assets/sample_task_verification/pi0_compatibility_probe.md) for the
+full version matrix and the reproduce command.
 
 ## Scope and limitations
 

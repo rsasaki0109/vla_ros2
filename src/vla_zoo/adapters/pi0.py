@@ -7,14 +7,16 @@ from vla_zoo.core.errors import MissingDependencyError
 from vla_zoo.core.model import VLAAdapter
 from vla_zoo.core.types import ActionSpec, VLAAction, VLAActionChunk, VLAObservation
 
-DEFAULT_PI0_PRETRAINED = "lerobot/pi0"
+DEFAULT_PI0_PRETRAINED = "lerobot/pi0_base"
 
 PI0_ACTION_SPEC = ActionSpec(
     action_space="custom",
-    shape=(6,),
+    shape=(32,),
     description=(
         "LeRobot/OpenPI pi0 continuous action. Shape and semantics are checkpoint-specific; "
-        "lerobot/pi0 exposes a 6D action, while lerobot/pi0_base exposes a 32D action."
+        "the version-matched lerobot/pi0_base exposes a 32D action, while the older "
+        "lerobot/pi0 config schema is rejected by LeRobot 0.5.1. The runtime action spec is "
+        "derived from the loaded checkpoint config."
     ),
 )
 
