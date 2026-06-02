@@ -1,0 +1,63 @@
+# Remote VLA Probe: smolvla
+
+Health-first remote runtime probe. This records a single `/v1/predict`
+response over HTTP. It is not a robot task-success benchmark.
+
+- model: `smolvla`
+- remote_url: `http://127.0.0.1:8021`
+- instruction: `pick up the red block`
+- status: `ok`
+
+## Health
+
+```json
+{
+  "ready": true,
+  "model": "smolvla",
+  "runtime": "server",
+  "status": "ok"
+}
+```
+
+## Recorded Action
+
+```json
+{
+  "action_space": "custom",
+  "data": [
+    -0.24703599512577057,
+    0.2279478907585144,
+    0.0938214361667633,
+    0.23416118323802948,
+    0.2118370234966278,
+    -0.16901513934135437
+  ],
+  "shape": [
+    6
+  ],
+  "names": [],
+  "frame_id": null,
+  "control_hz": null,
+  "normalized": false,
+  "dt": null,
+  "confidence": null,
+  "chunk_index": null,
+  "metadata": {
+    "model": "lerobot/smolvla_base",
+    "adapter": "SmolVLAAdapter",
+    "image_keys": [
+      "observation.images.camera1",
+      "observation.images.camera2",
+      "observation.images.camera3"
+    ],
+    "state_key": "observation.state",
+    "filled_images": [
+      "observation.images.camera1<=primary",
+      "observation.images.camera2<=primary",
+      "observation.images.camera3<=primary"
+    ],
+    "state_filled_or_resized": true,
+    "latency_ms": 2247.4333979189396
+  }
+}
+```

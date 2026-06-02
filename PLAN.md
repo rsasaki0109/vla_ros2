@@ -974,22 +974,36 @@ prose to show `vla-zoo serve --model pi0 --pretrained lerobot/pi0_base --dtype b
 strengthens `test_model_load_kwargs_threads_quantization_flags` to lock the `dtype` threading. No
 new feature; an honest correction backed by a test.
 
-With the dtype-serve path confirmed in code, the remaining honesty gap is evidence: the path is
-asserted by a unit test and code-reading, but there is no recorded artifact of a LeRobot adapter
-actually **served in bf16**. The next best commit closes that with a real run on the one LeRobot
-adapter that loads locally (SmolVLA; pi0 stays gated):
+The dtype-serve path now has a recorded artifact, not just a unit test (DONE):
 
 ```text
-record a remote probe against vla-zoo serve --model smolvla --dtype bfloat16 (dtype-serve evidence) (v0.4)
+record a remote probe against vla-zoo serve --model smolvla --dtype bfloat16 (dtype-serve evidence) (v0.4)  [DONE]
 ```
 
-Reason: the repo's discipline is that runtime claims are backed by recorded artifacts, not just
-code. SmolVLA loads locally and is small (~1 GB), so `vla-zoo serve --model smolvla --dtype bfloat16`
-+ a health-first `remote-probe` produces a real, checked-in record that the `--dtype` serving path
-returns a typed action end-to-end — upgrading the dtype-serve claim from "unit-tested wiring" to
-"recorded runtime path." Run the server in `.venv-smolvla`, record under
-`docs/assets/sample_task_verification/`, add an artifact-index entry, and keep `policy_quality`
-`not_verified` (a served typed action is not a task-success claim).
+What landed: a real `vla-zoo serve --model smolvla --pretrained lerobot/smolvla_base --device cuda
+--dtype bfloat16` server (run in `.venv-smolvla`; SmolVLA params confirmed `torch.bfloat16` in a
+local load of the same config) passed a health-first `remote-probe --strict` and returned a typed
+6-DoF action over HTTP. The recorded result is checked in at
+`docs/assets/sample_task_verification/smolvla_dtype_serve_probe.{json,md}` with an artifact-index
+entry (count 46 → 47), linked from `deployment.md` and `smolvla_local_runtime.md`. This upgrades the
+`serve --dtype` claim from unit-tested wiring to a recorded runtime path. While setting it up,
+verified that although `SmolVLAConfig` has no declared `dtype` field, the modeling reads the
+attribute set by the override, so the params do load in bf16. `policy_quality` stays `not_verified`
+(a served typed action is not a task-success claim).
+
+With the OpenVLA/SmolVLA/pi0/dtype/serve evidence fully recorded, the remaining visible gap is
+discoverability: the front-page `docs/index.html` surfaces the real-scene probes and comparisons but
+not the new 16 GB-fit deployment story (the `deployment.md` knobs section + the bf16 dtype-serve
+probe). The next best commit closes that:
+
+```text
+surface the 16 GB-fit deployment knobs and the bf16 dtype-serve probe on the GitHub Pages index (v0.4)
+```
+
+Reason: the established pattern is that recorded evidence is made discoverable from the front page
+(as the real-scene probes were). A tile pointing at the `deployment.md` "Fitting heavy checkpoints
+on a 16 GB GPU" section and/or the `smolvla_dtype_serve_probe.md` keeps the new, honest evidence one
+click from the index. Docs-only, link-checked, runtime-centric; no code or schema touched.
 
 Acceptance:
 
