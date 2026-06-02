@@ -42,7 +42,7 @@ class OpenVLAAdapter(VLAAdapter):
         pretrained: str = "openvla/openvla-7b",
         device: str = "cuda:0",
         dtype: str = "bfloat16",
-        attn_implementation: str | None = None,
+        attn_implementation: str | None = "eager",
         unnorm_key: str | None = None,
         trust_remote_code: bool = True,
         do_sample: bool = False,
@@ -67,6 +67,7 @@ class OpenVLAAdapter(VLAAdapter):
         self.prompt_template = prompt_template
 
         torch_dtype = getattr(torch, dtype, None) if dtype else None
+        self.torch_dtype = torch_dtype
         model_kwargs: dict[str, Any] = {"trust_remote_code": trust_remote_code}
         if torch_dtype is not None:
             model_kwargs["torch_dtype"] = torch_dtype
@@ -103,11 +104,20 @@ class OpenVLAAdapter(VLAAdapter):
         inputs = self.processor(prompt, image, return_tensors="pt")
         if hasattr(inputs, "to"):
             inputs = inputs.to(self.device)
+        if self.torch_dtype is not None and hasattr(inputs, "items"):
+            for key, value in inputs.items():
+                if hasattr(value, "is_floating_point") and value.is_floating_point():
+                    inputs[key] = value.to(dtype=self.torch_dtype)
 
         if hasattr(self.model, "predict_action"):
+            predict_inputs = dict(inputs)
+            # OpenVLA's remote-code predict_action appends an action-start token
+            # to input_ids but does not extend attention_mask, so passing the
+            # tokenizer mask can create a one-token generation mismatch.
+            predict_inputs.pop("attention_mask", None)
             try:
                 action = self.model.predict_action(
-                    **inputs,
+                    **predict_inputs,
                     unnorm_key=self.unnorm_key,
                     do_sample=self.do_sample,
                 )
