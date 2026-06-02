@@ -104,3 +104,45 @@ def test_openvla_adapter_uses_compatible_loader_kwargs(
     assert _FakeModel.last_predict_kwargs is not None
     assert "attention_mask" not in _FakeModel.last_predict_kwargs
     assert _FakeModel.last_predict_kwargs["pixel_values"].dtype is _FakeTorch.bfloat16
+
+
+class _RecordingModel(_FakeModel):
+    moved_to: str | None = None
+
+    def to(self, device: str) -> _RecordingModel:
+        type(self).moved_to = device
+        return self
+
+
+class _RecordingAutoModel:
+    last_kwargs: dict[str, Any] | None = None
+
+    @classmethod
+    def from_pretrained(cls, pretrained: str, **kwargs: Any) -> _RecordingModel:
+        cls.last_kwargs = kwargs
+        return _RecordingModel()
+
+
+def test_openvla_adapter_4bit_uses_device_map_and_skips_to(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        openvla,
+        "_import_openvla_dependencies",
+        lambda: (_FakeTorch, _FakeImageModule, (_FakeProcessor, _RecordingAutoModel)),
+    )
+    sentinel = object()
+    monkeypatch.setattr(
+        openvla.OpenVLAAdapter,
+        "_build_quantization_config",
+        staticmethod(lambda **kwargs: sentinel),
+    )
+    _RecordingModel.moved_to = None
+
+    openvla.OpenVLAAdapter(pretrained="fake/openvla", device="cuda:0", load_in_4bit=True)
+
+    assert _RecordingAutoModel.last_kwargs is not None
+    assert _RecordingAutoModel.last_kwargs["quantization_config"] is sentinel
+    assert _RecordingAutoModel.last_kwargs["device_map"] == {"": "cuda:0"}
+    # Quantized models are placed via device_map and must not be moved with .to().
+    assert _RecordingModel.moved_to is None

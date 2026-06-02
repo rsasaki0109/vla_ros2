@@ -252,7 +252,7 @@ def test_cli_compare_evidence_writes_artifacts(tmp_path: Path) -> None:
     assert result.exit_code == 0
     payload = json.loads(json_out.read_text(encoding="utf-8"))
     records = {record["model"]: record for record in payload["records"]}
-    assert records["openvla"]["evidence"]["gpu_inference"]["status"] == "blocked"
+    assert records["openvla"]["evidence"]["gpu_inference"]["status"] == "verified"
     assert records["smolvla"]["evidence"]["gpu_inference"]["status"] == "verified"
     text = markdown_out.read_text(encoding="utf-8")
     assert "VLA Model Evidence Matrix" in text

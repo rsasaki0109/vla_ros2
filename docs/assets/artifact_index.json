@@ -1,5 +1,5 @@
 {
-  "count": 27,
+  "count": 29,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -39,6 +39,26 @@
       "kind": "generated",
       "source_command": "vla-zoo compare evidence --out docs/assets/vla_model_evidence_matrix.json",
       "caveat": "Machine-readable evidence matrix.",
+      "exists": true
+    },
+    {
+      "title": "OpenVLA local runtime evidence",
+      "path": "docs/openvla_local_runtime.md",
+      "category": "model evidence",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "PYTHONPATH=src python3 scripts/measure_openvla_runtime.py --out docs/assets/openvla_local_runtime.json",
+      "caveat": "Measured load/VRAM/latency for OpenVLA-7b (4-bit) on a synthetic frame; a runtime-path claim, not task success.",
+      "exists": true
+    },
+    {
+      "title": "OpenVLA local runtime measurements (JSON)",
+      "path": "docs/assets/openvla_local_runtime.json",
+      "category": "model evidence",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "PYTHONPATH=src python3 scripts/measure_openvla_runtime.py --out docs/assets/openvla_local_runtime.json",
+      "caveat": "Machine-readable measured runtime profile (GPU, 4-bit).",
       "exists": true
     },
     {
@@ -255,10 +275,10 @@
       "title": "OpenVLA prompt probe",
       "path": "docs/assets/sample_task_verification/openvla_prompt_probe.md",
       "category": "GPU probes",
-      "status": "blocked",
+      "status": "verified",
       "kind": "checked",
       "source_command": null,
-      "caveat": "Local CUDA prompt probe blocked by insufficient free VRAM; remote GPU path is next.",
+      "caveat": "Originally bf16-OOM'd on a 16 GB card; resolved via 4-bit. See the measured OpenVLA local runtime evidence.",
       "exists": true
     },
     {

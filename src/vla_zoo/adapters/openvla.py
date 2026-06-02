@@ -46,6 +46,8 @@ class OpenVLAAdapter(VLAAdapter):
         unnorm_key: str | None = None,
         trust_remote_code: bool = True,
         do_sample: bool = False,
+        load_in_4bit: bool = False,
+        load_in_8bit: bool = False,
         prompt_template: str = "In: What action should the robot take to {instruction}?\n Out:",
         action_spec: ActionSpec | None = None,
         **kwargs: Any,
@@ -73,6 +75,18 @@ class OpenVLAAdapter(VLAAdapter):
             model_kwargs["torch_dtype"] = torch_dtype
         if attn_implementation is not None:
             model_kwargs["attn_implementation"] = attn_implementation
+
+        # bitsandbytes quantization lets the 7B model fit a 16 GB consumer GPU (bf16 weights
+        # are ~15 GB and do not fit alongside activations). Quantized models are placed via
+        # ``device_map`` at load time and must not be moved with ``.to(device)`` afterward.
+        quantized = load_in_4bit or load_in_8bit
+        if quantized:
+            model_kwargs["quantization_config"] = self._build_quantization_config(
+                load_in_4bit=load_in_4bit,
+                load_in_8bit=load_in_8bit,
+                compute_dtype=torch_dtype,
+            )
+            model_kwargs["device_map"] = {"": device}
         model_kwargs.update(kwargs)
 
         self.processor = auto_processor.from_pretrained(
@@ -80,10 +94,34 @@ class OpenVLAAdapter(VLAAdapter):
             trust_remote_code=trust_remote_code,
         )
         self.model = auto_model.from_pretrained(pretrained, **model_kwargs)
-        if hasattr(self.model, "to"):
+        if not quantized and hasattr(self.model, "to"):
             self.model = self.model.to(device)
         if hasattr(self.model, "eval"):
             self.model.eval()
+
+    @staticmethod
+    def _build_quantization_config(
+        *,
+        load_in_4bit: bool,
+        load_in_8bit: bool,
+        compute_dtype: Any,
+    ) -> Any:
+        try:
+            from transformers import BitsAndBytesConfig
+        except ImportError as exc:  # pragma: no cover - mirrors the main dependency gate
+            msg = (
+                "4-bit/8-bit loading requires bitsandbytes. "
+                'Install it with: pip install "vla_zoo[openvla]" bitsandbytes'
+            )
+            raise MissingDependencyError(msg) from exc
+        if load_in_4bit:
+            return BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_compute_dtype=compute_dtype,
+            )
+        return BitsAndBytesConfig(load_in_8bit=True)
 
     @classmethod
     def from_config(cls, **kwargs: Any) -> OpenVLAAdapter:

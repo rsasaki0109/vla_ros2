@@ -1,0 +1,30 @@
+{
+  "model": "openvla",
+  "pretrained": "openvla/openvla-7b",
+  "quantization": "nf4-4bit",
+  "instruction": "pick up the red block",
+  "image_source": "synthetic-random-rgb-224",
+  "runs": 5,
+  "load_sec": 19.96,
+  "vram_after_load_gb": 4.351,
+  "vram_peak_gb": 4.628,
+  "latency_ms_min": 1135.0,
+  "latency_ms_p50": 1575.4,
+  "latency_ms_max": 2653.9,
+  "action_dim": 7,
+  "sample_action": [
+    -0.00289,
+    0.00799,
+    0.00989,
+    0.01583,
+    0.01061,
+    0.16272,
+    0.99608
+  ],
+  "platform": "Linux-6.14.0-36-generic-x86_64-with-glibc2.39",
+  "note": "Runtime evidence on a synthetic frame. Measures load/VRAM/latency only; it is not a task-success or policy-quality claim.",
+  "cuda_available": true,
+  "device_name": "NVIDIA GeForce GPU",
+  "torch_version": "2.10.0+cu128",
+  "cuda_version": "12.8"
+}

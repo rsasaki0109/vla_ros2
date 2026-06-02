@@ -15,7 +15,7 @@ code{font-size:0.8rem;word-break:break-all;}
 </head>
 <body>
 <h1>vla_zoo Artifact Index</h1>
-<p>27 artifacts, all present. Statuses and caveats reflect runtime evidence only.</p>
+<p>29 artifacts, all present. Statuses and caveats reflect runtime evidence only.</p>
 <table>
 <thead><tr><th>Artifact</th><th>Status</th><th>Kind</th><th>Source command</th><th>Caveat</th></tr></thead>
 <tbody>
@@ -23,6 +23,8 @@ code{font-size:0.8rem;word-break:break-all;}
 <tr><td><a href="vla_model_evidence_matrix.html">VLA model evidence matrix (HTML)</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare evidence --html-out docs/assets/vla_model_evidence_matrix.html</code></td><td>Runtime-path evidence only; not a policy-quality or robot task-success claim.</td></tr>
 <tr><td><a href="vla_model_evidence_matrix.md">VLA model evidence matrix (Markdown)</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare evidence --markdown-out docs/assets/vla_model_evidence_matrix.md</code></td><td>Runtime-path evidence only.</td></tr>
 <tr><td><a href="vla_model_evidence_matrix.json">VLA model evidence matrix (JSON)</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo compare evidence --out docs/assets/vla_model_evidence_matrix.json</code></td><td>Machine-readable evidence matrix.</td></tr>
+<tr><td><a href="../openvla_local_runtime.md">OpenVLA local runtime evidence</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>PYTHONPATH=src python3 scripts/measure_openvla_runtime.py --out docs/assets/openvla_local_runtime.json</code></td><td>Measured load/VRAM/latency for OpenVLA-7b (4-bit) on a synthetic frame; a runtime-path claim, not task success.</td></tr>
+<tr><td><a href="openvla_local_runtime.json">OpenVLA local runtime measurements (JSON)</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>PYTHONPATH=src python3 scripts/measure_openvla_runtime.py --out docs/assets/openvla_local_runtime.json</code></td><td>Machine-readable measured runtime profile (GPU, 4-bit).</td></tr>
 <tr class="category"><th colspan="5">simulation</th></tr>
 <tr><td><a href="gif_suite/index.html">PyBullet GIF gallery</a></td><td><span class="status">generated</span></td><td>generated</td><td><code>vla-zoo demo gif-report --manifest docs/assets/gif_suite/gif_manifest.json</code></td><td>Deterministic runtime artifact; baselines, not robot skill.</td></tr>
 <tr><td><a href="sample_task_verification/baseline_tasks.html">PyBullet baseline task verification</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>vla-zoo compare tasks --models dummy,scripted,random --tasks all</code></td><td>Deterministic baselines, not VLA model-quality measurements.</td></tr>
@@ -49,7 +51,7 @@ code{font-size:0.8rem;word-break:break-all;}
 <tr><td><a href="../reports/model_comparison.md">Model comparison report</a></td><td><span class="status">manual</span></td><td>manual</td><td>-</td><td>Narrative comparison of runtime paths.</td></tr>
 <tr class="category"><th colspan="5">GPU probes</th></tr>
 <tr><td><a href="sample_task_verification/smolvla_gpu_probe.md">SmolVLA GPU inference-path probe</a></td><td><span class="status">verified</span></td><td>checked</td><td>-</td><td>GPU inference-path probe with lerobot/smolvla_base; not a robot task-success claim.</td></tr>
-<tr><td><a href="sample_task_verification/openvla_prompt_probe.md">OpenVLA prompt probe</a></td><td><span class="status">blocked</span></td><td>checked</td><td>-</td><td>Local CUDA prompt probe blocked by insufficient free VRAM; remote GPU path is next.</td></tr>
+<tr><td><a href="sample_task_verification/openvla_prompt_probe.md">OpenVLA prompt probe</a></td><td><span class="status">verified</span></td><td>checked</td><td>-</td><td>Originally bf16-OOM&#x27;d on a 16 GB card; resolved via 4-bit. See the measured OpenVLA local runtime evidence.</td></tr>
 <tr><td><a href="sample_task_verification/remote_probe_dummy.md">Remote probe tool sample (dummy)</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>vla-zoo remote-probe --model dummy --remote-url http://127.0.0.1:PORT</code></td><td>Verifies the health-first remote probe tool; not an OpenVLA claim.</td></tr>
 <tr><td><a href="sample_task_verification/pi0_compatibility_probe.md">pi0 compatibility probe</a></td><td><span class="status">planned</span></td><td>checked</td><td>-</td><td>pi0/openpi is remote-first and still needs a recorded real action probe.</td></tr>
 </tbody>

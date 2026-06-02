@@ -241,22 +241,22 @@
           ]
         },
         "local_runtime": {
-          "status": "partial",
-          "summary": "Lazy Hugging Face adapter and prompt path are implemented without test-time downloads.",
+          "status": "verified",
+          "summary": "OpenVLA-7b loaded and predicted a 7-DoF action through the public adapter on a local GPU (4-bit), with measured load time, VRAM, and latency.",
           "links": [
             {
-              "label": "adapter card",
-              "href": "../adapters/openvla.md"
+              "label": "local runtime evidence",
+              "href": "../openvla_local_runtime.md"
             }
           ]
         },
         "gpu_inference": {
-          "status": "blocked",
-          "summary": "Local CUDA prompt probe found weights/deps but did not complete due to free VRAM.",
+          "status": "verified",
+          "summary": "4-bit (nf4) loading fits a 16 GB consumer GPU: ~4.6 GB peak VRAM, ~1.1-2.7 s per inference. Measured via scripts/measure_openvla_runtime.py.",
           "links": [
             {
-              "label": "OpenVLA prompt probe",
-              "href": "sample_task_verification/openvla_prompt_probe.md"
+              "label": "local runtime evidence",
+              "href": "../openvla_local_runtime.md"
             }
           ]
         },
@@ -300,7 +300,7 @@
           "links": []
         }
       },
-      "next_step": "Run OpenVLA behind a GPU server with enough free VRAM and check in remote action logs.",
+      "next_step": "Local 4-bit GPU inference is now verified; next, record remote-server and ROS2 remote action logs, then add task-level probes.",
       "caveat": "Adapter scaffold and prompt path are documented. In the latest local run, the CUDA prompt probe did not complete because free GPU memory was insufficient."
     },
     {
