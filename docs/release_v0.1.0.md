@@ -5,7 +5,7 @@
 ## Highlights
 
 - Python API: `from vla_zoo import load_model, list_models`
-- No-GPU dummy adapter for CI, docs, demos, and dry-run operation
+- CPU smoke dummy adapter for CI, docs, demos, and dry-run operation
 - OpenVLA adapter scaffold with lazy optional dependencies
 - Local and remote inference runtime paths
 - FastAPI inference server and HTTP client

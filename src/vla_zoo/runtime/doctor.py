@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
 from importlib.util import find_spec
@@ -72,6 +73,92 @@ def _check_dummy_predict() -> DoctorCheck:
     )
 
 
+def _check_nvidia_smi() -> DoctorCheck:
+    path = shutil.which("nvidia-smi")
+    if path is None:
+        return DoctorCheck(
+            "gpu.nvidia_smi",
+            "warn",
+            "nvidia-smi not found; GPU VLA inference will need a CUDA host or remote server",
+        )
+    try:
+        result = subprocess.run(
+            [
+                path,
+                "--query-gpu=name,memory.total,driver_version",
+                "--format=csv,noheader,nounits",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=3.0,
+        )
+    except Exception as exc:
+        return DoctorCheck("gpu.nvidia_smi", "warn", f"nvidia-smi failed: {exc}", {"path": path})
+
+    if result.returncode != 0:
+        return DoctorCheck(
+            "gpu.nvidia_smi",
+            "warn",
+            "nvidia-smi returned a non-zero exit code",
+            {"path": path, "stderr": result.stderr.strip()[:300]},
+        )
+    gpus = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if not gpus:
+        return DoctorCheck("gpu.nvidia_smi", "warn", "nvidia-smi did not report any GPUs")
+    first = gpus[0].split(",")
+    details = {
+        "path": path,
+        "gpu_count": len(gpus),
+        "first_gpu": first[0].strip() if first else gpus[0],
+        "memory_total_mib": first[1].strip() if len(first) > 1 else None,
+        "driver_version": first[2].strip() if len(first) > 2 else None,
+    }
+    return DoctorCheck(
+        "gpu.nvidia_smi",
+        "ok",
+        f"{len(gpus)} CUDA GPU(s) visible via nvidia-smi",
+        details,
+    )
+
+
+def _check_torch_cuda() -> DoctorCheck:
+    if not _module_available("torch"):
+        return DoctorCheck(
+            "gpu.torch_cuda",
+            "warn",
+            'torch missing; install GPU model extras such as pip install "vla_zoo[openvla]"',
+        )
+    try:
+        import torch
+    except Exception as exc:
+        return DoctorCheck("gpu.torch_cuda", "warn", f"could not import torch: {exc}")
+
+    cuda_available = bool(torch.cuda.is_available())
+    if not cuda_available:
+        return DoctorCheck(
+            "gpu.torch_cuda",
+            "warn",
+            "torch is installed but torch.cuda.is_available() is false",
+            {"torch_version": getattr(torch, "__version__", None)},
+        )
+    device_count = int(torch.cuda.device_count())
+    current = int(torch.cuda.current_device())
+    device_name = torch.cuda.get_device_name(current)
+    details = {
+        "torch_version": getattr(torch, "__version__", None),
+        "device_count": device_count,
+        "current_device": current,
+        "device_name": device_name,
+    }
+    return DoctorCheck(
+        "gpu.torch_cuda",
+        "ok",
+        f"torch CUDA available on {device_name}",
+        details,
+    )
+
+
 def _check_adapter(name: str) -> DoctorCheck:
     info = get_adapter_info(name)
     if name == "dummy":
@@ -135,6 +222,7 @@ def _check_remote(remote_url: str) -> DoctorCheck:
 def run_doctor(
     *,
     include_ros: bool = True,
+    include_gpu: bool = True,
     remote_url: str | None = None,
 ) -> list[DoctorCheck]:
     checks = [
@@ -147,6 +235,8 @@ def run_doctor(
         _check_module("httpx", "httpx", required=False),
         _check_dummy_predict(),
     ]
+    if include_gpu:
+        checks.extend([_check_nvidia_smi(), _check_torch_cuda()])
     checks.extend(_check_adapter(adapter.name) for adapter in list_models())
     if include_ros:
         checks.extend([_check_command("ros2"), _check_command("colcon")])

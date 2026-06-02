@@ -38,7 +38,7 @@ _BUILTINS: dict[str, AdapterInfo] = {
         description="Always-available zero-action adapter for tests and dry runs.",
         metadata={
             "family": "dry-run baseline",
-            "compare_role": "CI/no-GPU runtime sanity check",
+            "compare_role": "CI/runtime smoke sanity check",
             "input_requirements": (
                 "image optional",
                 "instruction optional",

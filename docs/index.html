@@ -275,13 +275,13 @@
     <section class="section">
       <h2>What This Shows</h2>
       <p class="lead">
-        This demo page is generated from the repository's no-GPU path. The PyBullet scene is
+        This demo page is generated from the repository's CPU smoke path. The PyBullet scene is
         deterministic; the selected adapter is queried through the same `BaseVLA.predict()`
         boundary used by Python, HTTP server, ROS2, and benchmarks.
       </p>
       <div class="quick-grid">
         <div class="tile">
-          <h3>No GPU demo</h3>
+          <h3>CPU smoke demo</h3>
           <p>Run the dummy adapter and verify the runtime API without downloading weights.</p>
           <a href="assets/sample_runtime_comparison.json">View sample JSON</a>
         </div>
@@ -313,6 +313,28 @@
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
 vla-zoo compare suite --out-dir results/vla_compare_suite</code></pre>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>GPU VLA Path</h2>
+      <p class="lead">
+        Heavyweight VLA inference should run on CUDA locally or on a GPU workstation
+        serving the robot-side ROS2 process over the same prediction boundary.
+      </p>
+      <div class="command-block">
+        <button class="copy-button" type="button" data-copy-target="gpu-command">
+          Copy
+        </button>
+        <pre><code id="gpu-command">pip install -e ".[cli,server,sim,openvla]"
+vla-zoo doctor --no-ros
+vla-zoo serve --model openvla \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --pretrained openvla/openvla-7b \
+  --device cuda:0 \
+  --dtype bfloat16 \
+  --unnorm-key bridge_orig</code></pre>
       </div>
     </section>
 
@@ -360,7 +382,7 @@ vla-zoo compare suite --out-dir results/vla_compare_suite</code></pre>
           <tr>
             <td><code>dummy</code></td>
             <td><span class="badge ok">available</span></td>
-            <td>No-GPU dry-run adapter for CI, docs, ROS2 launch, and demos.</td>
+            <td>Dry-run adapter for CI, docs, ROS2 launch, and CPU smoke demos.</td>
           </tr>
           <tr>
             <td><code>openvla</code></td>
