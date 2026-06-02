@@ -12,7 +12,11 @@ cell at `blocked` or `partial` for exactly this reason.
 ## Why blocked
 
 - The Isaac GR00T runtime is an external NVIDIA stack with its own dependencies,
-  weights, and license; vla_zoo does not redistribute or vendor it.
+  weights, and license; vla_zoo does not redistribute or vendor it. It is **not a
+  pip-installable package** — `gr00t`, `isaac-gr00t`, and `nvidia-gr00t` all 404 on
+  PyPI; the real runtime is the [NVIDIA Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T)
+  GitHub stack. This is recorded as a reproducible
+  [block probe](assets/sample_task_verification/groot_block_probe.md).
 - `vla_zoo.adapters.groot:GR00TAdapter` intentionally **does not fabricate
   actions**. `predict_observation` raises:
   - `MissingDependencyError` when the upstream `gr00t` package is absent, and

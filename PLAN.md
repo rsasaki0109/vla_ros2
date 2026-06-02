@@ -1021,22 +1021,37 @@ in `run_pi0_local_preflight`'s docstring so a future maintainer neither thinks S
 overlooked nor removes the pi0 guard as redundant. No code generalization (it would be wrong); no
 test (the repo's suite has no lerobot, by convention). Investigation + recorded finding only.
 
-With the pi0/dtype/serve track fully closed and the silent-weight hazard scoped, the next thread is
-the other consistently-`blocked` adapter, GR00T. Unlike pi0 (now reduced to a license gate), GR00T
-has no installable stack here, so the honest move mirrors the *first* pi0 step: confirm and
-precisely document the block rather than fake support.
+The GR00T block is now backed by a reproducible probe (DONE):
 
 ```text
-re-confirm the GR00T block with a reproducible probe and tighten its evidence-matrix wording (v0.4)
+re-confirm the GR00T block with a reproducible probe and tighten its evidence-matrix wording (v0.4)  [DONE]
 ```
 
-Reason: GR00T's matrix cells are `blocked`/`planned` with prose that may have drifted from the
-actual import/installation failure. Time-box a check of what `load_model("groot", enable_local=True)`
-(or the documented install path) actually does today, capture the precise failure (missing package,
-unavailable stack), and tighten `groot_remote.md` + the evidence matrix so the `blocked` status is
-backed by a reproducible probe — the same honesty bar pi0 now meets. If a real GR00T path
-unexpectedly exists, record what it needs. Keep `policy_quality` `not_verified` and no fabricated
-inference.
+What landed: a reproducible `docs/assets/sample_task_verification/groot_block_probe.md` records two
+probes — (1) `load_model("groot").predict(...)` raises `MissingDependencyError` with the
+single-source `GROOT_BLOCKED_NOTE` (the adapter refuses rather than fabricating an action), and (2)
+`gr00t` is not importable in any env **and no GR00T package exists on PyPI** (`gr00t` /
+`isaac-gr00t` / `nvidia-gr00t` all 404), so the block is not a missing `pip install` line — the real
+runtime is the NVIDIA Isaac-GR00T GitHub stack. The evidence matrix `local_runtime` cell and
+`groot_remote.md` were tightened with this precise finding and link the probe; an artifact-index
+entry (status `blocked`, count 47 → 48) was added and the matrix + artifact-index HTML/JSON
+regenerated. All links pass `report link-check --strict`; existing `test_groot.py` still covers the
+refuse-don't-fabricate contract. No fabricated inference; `policy_quality` `not_verified`.
+
+Every adapter's matrix status is now backed by either recorded runtime evidence (dummy/scripted/
+random/openvla/smolvla) or a reproducible block probe (pi0 license gate, GR00T no-stack). The
+remaining gap is discoverability symmetry: the front-page `docs/index.html` GR00T tile points at the
+status page but not the new reproducible probe, and the pi0 tile was just refreshed while GR00T was
+not. The next best commit closes that:
+
+```text
+surface the GR00T block probe on the Pages index and align the blocked-adapter tiles (v0.4)
+```
+
+Reason: the established pattern is recorded evidence → one click from the index. The GR00T "blocked"
+tile in *What Works Now* should link/mention the reproducible block probe the same way the pi0
+compatibility tile does, so both blocked adapters present their evidence symmetrically. Docs-only,
+link-checked, runtime-centric; no code or schema touched.
 
 Acceptance:
 
