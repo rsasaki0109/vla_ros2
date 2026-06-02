@@ -1100,3 +1100,34 @@ def test_diag_report_summary_aggregates_log(tmp_path: Path) -> None:
     assert payload["record_count"] == 2
     assert payload["latency_ms_max"] == 30.0
     assert payload["worst_level"] == "warn"
+
+
+def test_cli_rtc_sim_json_reports_boundary_reduction() -> None:
+    result = CliRunner().invoke(
+        app,
+        ["rtc-sim", "--chunks", "10", "--horizon", "16", "--execute", "8", "--delay", "4", "--json"],  # noqa: E501
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "vla-zoo-rtc-sim/v1"
+    assert payload["rtc"]["mean_boundary_jump"] < payload["naive"]["mean_boundary_jump"]
+
+
+def test_cli_rtc_sim_rejects_infeasible_timing() -> None:
+    result = CliRunner().invoke(
+        app,
+        ["rtc-sim", "--horizon", "8", "--execute", "6", "--delay", "4"],
+    )
+
+    assert result.exit_code == 1
+    assert "must not exceed horizon" in result.output
+
+
+def test_cli_rtc_sim_help_lists_options() -> None:
+    result = CliRunner().invoke(app, ["rtc-sim", "--help"])
+
+    assert result.exit_code == 0
+    assert "--horizon" in result.output
+    assert "--delay" in result.output
+    assert "--action-log" in result.output
