@@ -451,6 +451,14 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000
 ros2 launch vla_zoo log_recorder.launch.py output_dir:=results
 ```
 
+Instruction input defaults to `std_msgs/msg/String`, but the node also supports
+`vla_zoo_msgs/msg/VLAInstruction` for `task_id` and metadata-aware ROS bag replay:
+
+```bash
+ros2 launch vla_zoo dummy.launch.py instruction_msg_type:=vla_instruction
+python examples/ros2/publish_instruction.py --typed --task-id pick_red_block_001
+```
+
 ## Remote GPU Runtime
 
 Run a server on the GPU machine:

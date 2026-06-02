@@ -3,6 +3,7 @@ vla_runtime_node:
     model_name: "dummy"
     runtime: "local"
     dry_run: true
+    instruction_msg_type: "string"
     image_topic: "/camera/image_raw"
     instruction_topic: "/vla/instruction"
     joint_state_topic: "/joint_states"

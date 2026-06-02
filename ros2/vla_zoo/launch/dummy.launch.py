@@ -9,6 +9,7 @@ def generate_launch_description():
     params_file = LaunchConfiguration("params_file")
     dry_run = LaunchConfiguration("dry_run")
     publish_actions_in_dry_run = LaunchConfiguration("publish_actions_in_dry_run")
+    instruction_msg_type = LaunchConfiguration("instruction_msg_type")
     return LaunchDescription(
         [
             DeclareLaunchArgument(
@@ -19,6 +20,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument("dry_run", default_value="true"),
             DeclareLaunchArgument("publish_actions_in_dry_run", default_value="false"),
+            DeclareLaunchArgument("instruction_msg_type", default_value="string"),
             Node(
                 package="vla_zoo",
                 executable="vla_runtime_node",
@@ -30,6 +32,7 @@ def generate_launch_description():
                         "model_name": "dummy",
                         "runtime": "local",
                         "dry_run": dry_run,
+                        "instruction_msg_type": instruction_msg_type,
                         "publish_actions_in_dry_run": publish_actions_in_dry_run,
                     },
                 ],

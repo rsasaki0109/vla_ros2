@@ -17,6 +17,7 @@ def generate_launch_description():
             DeclareLaunchArgument("model_name", default_value="openvla"),
             DeclareLaunchArgument("remote_url", default_value="http://localhost:8000"),
             DeclareLaunchArgument("dry_run", default_value="true"),
+            DeclareLaunchArgument("instruction_msg_type", default_value="string"),
             DeclareLaunchArgument("diagnostics_topic", default_value="/diagnostics"),
             DeclareLaunchArgument("publish_diagnostics", default_value="true"),
             DeclareLaunchArgument("publish_actions_in_dry_run", default_value="false"),
@@ -36,6 +37,7 @@ def generate_launch_description():
                         "runtime": "remote",
                         "remote_url": LaunchConfiguration("remote_url"),
                         "dry_run": LaunchConfiguration("dry_run"),
+                        "instruction_msg_type": LaunchConfiguration("instruction_msg_type"),
                         "diagnostics_topic": LaunchConfiguration("diagnostics_topic"),
                         "publish_diagnostics": LaunchConfiguration("publish_diagnostics"),
                         "publish_actions_in_dry_run": LaunchConfiguration(

@@ -32,7 +32,7 @@ ros2 launch vla_zoo dummy.launch.py publish_actions_in_dry_run:=true
 Inputs:
 
 - `/camera/image_raw`: `sensor_msgs/msg/Image`
-- `/vla/instruction`: `std_msgs/msg/String`
+- `/vla/instruction`: `std_msgs/msg/String` by default, or `vla_zoo_msgs/msg/VLAInstruction`
 - `/joint_states`: optional `sensor_msgs/msg/JointState`
 
 Outputs:
@@ -49,6 +49,7 @@ Core runtime parameters:
 - `model_name`: adapter name such as `dummy`, `openvla`, or `smolvla`
 - `runtime`: `local` or `remote`
 - `dry_run`: keep the node in non-commanding mode
+- `instruction_msg_type`: `string`, `vla_instruction`, or `vla_zoo_msgs/VLAInstruction`
 - `publish_actions_in_dry_run`: publish actions anyway for demos and logging
 - `control_hz`: outer-loop VLA inference rate
 - `max_queue_size`: ROS publisher/subscriber queue depth
@@ -78,6 +79,32 @@ Safety and observability parameters:
 `dry_run` defaults to true. In dry-run mode the node computes predictions and updates status/diagnostics, but suppresses `/vla/action` and `/vla/action_chunk` unless `publish_actions_in_dry_run:=true` is set. This keeps launch files useful for validation while avoiding accidental downstream command publication.
 
 The watchdog checks image and instruction freshness before starting each inference. If a timeout is hit, `/vla/status` and `/diagnostics` report `stale image` or `stale instruction` and the node skips inference until fresh inputs arrive.
+
+## Typed Instructions
+
+The default instruction topic type is `std_msgs/msg/String` for easy demos:
+
+```bash
+ros2 launch vla_zoo dummy.launch.py
+python examples/ros2/publish_instruction.py --instruction "pick up the red block"
+```
+
+For benchmark runs, issue reports, and task-level logging, use `VLAInstruction`:
+
+```bash
+ros2 launch vla_zoo dummy.launch.py \
+  instruction_msg_type:=vla_instruction \
+  publish_actions_in_dry_run:=true
+python examples/ros2/publish_instruction.py \
+  --typed \
+  --task-id pick_red_block_001 \
+  --instruction "pick up the red block"
+```
+
+`VLAInstruction.task_id` and `metadata_json` are copied into `VLAObservation.metadata`,
+`VLAStatus.metadata_json`, and diagnostics key-values. This keeps ROS bag replay,
+dashboards, and future benchmark runners aligned on the same task identity without
+changing the model adapter API.
 
 ## Runtime Dashboard From Logs
 

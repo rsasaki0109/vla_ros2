@@ -8,6 +8,7 @@ class RuntimeNodeParams:
     model_name: str
     runtime: str
     dry_run: bool
+    instruction_msg_type: str
     image_topic: str
     instruction_topic: str
     joint_state_topic: str

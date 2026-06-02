@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from concurrent.futures import Future, ThreadPoolExecutor
 from time import perf_counter
 from typing import Any
@@ -12,6 +13,7 @@ from sensor_msgs.msg import Image, JointState
 from std_msgs.msg import String
 from vla_zoo_msgs.msg import VLAAction as VLAActionMsg
 from vla_zoo_msgs.msg import VLAActionChunk as VLAActionChunkMsg
+from vla_zoo_msgs.msg import VLAInstruction as VLAInstructionMsg
 from vla_zoo_msgs.msg import VLAStatus as VLAStatusMsg
 
 from vla_zoo import load_model
@@ -28,6 +30,9 @@ class VLARuntimeNode(Node):
         self.params = self._read_params()
         self._latest_image: Image | None = None
         self._latest_instruction: str | None = None
+        self._latest_instruction_task_id = ""
+        self._latest_instruction_metadata: dict[str, Any] = {}
+        self._latest_instruction_source = "none"
         self._latest_joint_state: JointState | None = None
         self._latest_image_received_at: float | None = None
         self._latest_instruction_received_at: float | None = None
@@ -50,12 +55,7 @@ class VLARuntimeNode(Node):
         self.model = load_model(self.params.model_name, runtime=self.params.runtime, **model_kwargs)
 
         self.create_subscription(Image, self.params.image_topic, self._image_cb, image_qos())
-        self.create_subscription(
-            String,
-            self.params.instruction_topic,
-            self._instruction_cb,
-            instruction_qos(self.params.max_queue_size),
-        )
+        self._create_instruction_subscription()
         self.create_subscription(
             JointState,
             self.params.joint_state_topic,
@@ -89,11 +89,37 @@ class VLARuntimeNode(Node):
             f"runtime={self.params.runtime} dry_run={self.params.dry_run}"
         )
 
+    def _create_instruction_subscription(self) -> None:
+        qos = instruction_qos(self.params.max_queue_size)
+        msg_type = self.params.instruction_msg_type
+        if msg_type == "string":
+            self.create_subscription(
+                String,
+                self.params.instruction_topic,
+                self._instruction_cb,
+                qos,
+            )
+            return
+        if msg_type in {"vla_instruction", "vla_zoo_msgs/VLAInstruction"}:
+            self.create_subscription(
+                VLAInstructionMsg,
+                self.params.instruction_topic,
+                self._vla_instruction_cb,
+                qos,
+            )
+            return
+        msg = (
+            "instruction_msg_type must be 'string', 'vla_instruction', or "
+            "'vla_zoo_msgs/VLAInstruction'"
+        )
+        raise ValueError(msg)
+
     def _declare_parameters(self) -> None:
         defaults: dict[str, Any] = {
             "model_name": "dummy",
             "runtime": "local",
             "dry_run": True,
+            "instruction_msg_type": "string",
             "image_topic": "/camera/image_raw",
             "instruction_topic": "/vla/instruction",
             "joint_state_topic": "/joint_states",
@@ -144,6 +170,7 @@ class VLARuntimeNode(Node):
             model_name=str(value("model_name")),
             runtime=str(value("runtime")),
             dry_run=as_bool("dry_run"),
+            instruction_msg_type=str(value("instruction_msg_type")),
             image_topic=str(value("image_topic")),
             instruction_topic=str(value("instruction_topic")),
             joint_state_topic=str(value("joint_state_topic")),
@@ -175,8 +202,49 @@ class VLARuntimeNode(Node):
         self._latest_image_received_at = perf_counter()
 
     def _instruction_cb(self, msg: String) -> None:
-        self._latest_instruction = msg.data
+        self._set_instruction(
+            text=msg.data,
+            task_id="",
+            metadata={},
+            source="std_msgs/String",
+        )
+
+    def _vla_instruction_cb(self, msg: VLAInstructionMsg) -> None:
+        self._set_instruction(
+            text=msg.text,
+            task_id=msg.task_id,
+            metadata=self._parse_metadata_json(msg.metadata_json),
+            source="vla_zoo_msgs/VLAInstruction",
+        )
+
+    def _set_instruction(
+        self,
+        *,
+        text: str,
+        task_id: str,
+        metadata: dict[str, Any],
+        source: str,
+    ) -> None:
+        self._latest_instruction = text
+        self._latest_instruction_task_id = task_id
+        self._latest_instruction_metadata = metadata
+        self._latest_instruction_source = source
         self._latest_instruction_received_at = perf_counter()
+
+    def _parse_metadata_json(self, value: str) -> dict[str, Any]:
+        if not value:
+            return {}
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as exc:
+            self.get_logger().warning(f"invalid instruction metadata_json: {exc}")
+            return {"metadata_parse_error": str(exc), "metadata_json": value}
+        if isinstance(parsed, dict):
+            return parsed
+        return {
+            "metadata_parse_error": "metadata_json must decode to an object",
+            "metadata_json": value,
+        }
 
     def _joint_state_cb(self, msg: JointState) -> None:
         self._latest_joint_state = msg
@@ -250,7 +318,13 @@ class VLARuntimeNode(Node):
             instruction=self._latest_instruction or "",
             images=images,
             state=state,
-            metadata={"dry_run": self.params.dry_run},
+            metadata={
+                "dry_run": self.params.dry_run,
+                "instruction_msg_type": self.params.instruction_msg_type,
+                "instruction_source": self._latest_instruction_source,
+                "task_id": self._latest_instruction_task_id,
+                "instruction_metadata": self._latest_instruction_metadata,
+            },
         )
 
     def _predict_timed(self, observation: VLAObservation) -> VLAAction | VLAActionChunk:
@@ -371,6 +445,9 @@ class VLARuntimeNode(Node):
                 status_text=self._status_text,
                 metadata={
                     "runtime": self.params.runtime,
+                    "instruction_msg_type": self.params.instruction_msg_type,
+                    "instruction_source": self._latest_instruction_source,
+                    "task_id": self._latest_instruction_task_id,
                     "publish_actions_in_dry_run": self.params.publish_actions_in_dry_run,
                     "publish_diagnostics": self.params.publish_diagnostics,
                     "require_image": self.params.require_image,
@@ -410,6 +487,9 @@ class VLARuntimeNode(Node):
         status.values = [
             KeyValue(key="model_name", value=self.params.model_name),
             KeyValue(key="runtime", value=self.params.runtime),
+            KeyValue(key="instruction_msg_type", value=self.params.instruction_msg_type),
+            KeyValue(key="instruction_source", value=self._latest_instruction_source),
+            KeyValue(key="task_id", value=self._latest_instruction_task_id),
             KeyValue(key="dry_run", value=str(self.params.dry_run)),
             KeyValue(
                 key="publish_actions_in_dry_run",
