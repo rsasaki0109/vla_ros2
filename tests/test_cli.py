@@ -21,6 +21,17 @@ def test_cli_demo_pybullet_help() -> None:
     assert result.exit_code == 0
     assert "--model" in result.output
     assert "--runtime" in result.output
+    assert "--task" in result.output
+    assert "--render-stride" in result.output
+
+
+def test_cli_demo_gif_suite_help() -> None:
+    result = CliRunner().invoke(app, ["demo", "gif-suite", "--help"])
+    assert result.exit_code == 0
+    assert "--models" in result.output
+    assert "--tasks" in result.output
+    assert "--out-dir" in result.output
+    assert "--markdown-out" in result.output
 
 
 def test_cli_doctor_json() -> None:
