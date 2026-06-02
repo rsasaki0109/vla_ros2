@@ -47,6 +47,32 @@ fast. See the per-model remote paths: [OpenVLA](openvla_remote.md),
 [SmolVLA](smolvla_remote.md), [pi0](pi0_remote.md). GR00T stays
 [blocked](groot_remote.md) until its stack exists.
 
+### Fitting heavy checkpoints on a 16 GB GPU
+
+The full-precision weights of the larger adapters do not fit a 16 GB consumer card, so each
+exposes a different memory-fit knob. The footprints below are **measured** on an GPU and are runtime-path numbers, not a task-success claim.
+
+| Adapter | Knob | Measured footprint | How to pass it |
+|---|---|---|---|
+| OpenVLA-7b | 4-bit (bitsandbytes nf4) | ~4.6 GB peak (bf16 weights are ~15 GB and OOM) | `vla-zoo serve --model openvla --load-in-4bit` (server), or `load_model("openvla", load_in_4bit=True)` |
+| SmolVLA / pi0 (LeRobot) | `dtype="bfloat16"` | pi0_base ~8.9 GB (its float32 config OOMs); SmolVLA already ~1 GB | `load_model("pi0", dtype="bfloat16")`, or `demo action-probe --adapter-kwarg dtype=bfloat16` |
+
+The `--load-in-4bit` flag is exposed directly on `vla-zoo serve` for OpenVLA. The LeRobot
+`dtype` override builds the policy config with a pinned compute dtype before the weights load,
+so the model never materializes in float32; it is passed as a `load_model(...)` kwarg or a
+`demo action-probe --adapter-kwarg dtype=bfloat16` (serve does not expose a `dtype` flag yet).
+See the measured runs in [OpenVLA local runtime](openvla_local_runtime.md) and
+[SmolVLA local runtime](smolvla_local_runtime.md).
+
+For pi0 specifically, local loading also runs a **preflight** that fails loudly rather than
+silently serving a randomly-initialized model: LeRobot's `from_pretrained` returns an
+un-weighted model when it cannot fetch `model.safetensors`, and the pi0 processor needs the
+**gated** `google/paligemma-3b-pt-224` tokenizer. The preflight probes both (without
+downloading the 14 GB weights) and raises an actionable `AdapterError` — download the
+checkpoint, or accept the tokenizer license and supply an HF token. The full version matrix
+is in the
+[pi0 compatibility probe](assets/sample_task_verification/pi0_compatibility_probe.md).
+
 ## 2. Robot side (Jetson): ROS2 remote runtime
 
 Run the runtime node in `remote` mode pointing at the GPU box. It defaults to dry-run safe
