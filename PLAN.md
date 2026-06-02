@@ -802,22 +802,40 @@ SmolVLA dashboard (106 records, worst level `warn`) is checked in at
 `docs/assets/sample_ros2_remote_smolvla/dashboard.html` with an artifact-index entry.
 Unit-tested with written fixtures; runtime-path claims only.
 
-The next best commit closes the diagnostics-surface loop by giving the recorder a native
-emit path:
+The diagnostics-surface loop is now closed — the recorder has a native emit path (DONE):
 
 ```text
-have the ROS2 log recorder also write a native vla-zoo-diagnostics/v1 JSONL (v0.4)
+have the ROS2 log recorder also write a native vla-zoo-diagnostics/v1 JSONL (v0.4)  [DONE]
 ```
 
-Reason: the recorder writes the ROS2 DiagnosticArray message dump; the native schema log
-(what `diag-report --log` and the dashboard band consume directly) is currently produced
-only by re-deriving from the ROS dump via `diag-report --from-ros-log`. Add an optional
-native-JSONL sink to `RuntimeLogRecorder` (built with `diagnostics_from_key_values` from the
-same `/diagnostics` callback) so a single recording emits both, removing the reconstruction
-step. Keep the pure schema/transform unit-tested (no live ROS2 in CI — gate behind the
-existing rclpy-import guard), model downloads out of tests, claims runtime-centric.
-Alternatives still open: pi0 unblock (version-matched checkpoint — rabbit-hole risk) and a
-task-level probe on real PyBullet scene frames (no policy-quality claims).
+What landed: `RuntimeLogRecorder` gained an optional native sink
+(`record_native_diagnostics`, default on; `native_diagnostics_log_path`,
+`native_diagnostics_status_name`). Its `/diagnostics` callback now also reconstructs native
+records via the new pure `native_records_from_diagnostics_payload` (in `runtime/diagnostics.py`,
+no ROS dep) and writes them to a `vla-zoo-diagnostics/v1` JSONL, so one recording emits both
+the raw ROS dump and the native log — removing the `diag-report --from-ros-log` re-derivation
+step. The pure transform is unit-tested with written fixtures; it is byte-identical to the
+checked-in native logs (verified against both real runs). The recorder wiring was also
+exercised live (same-process rclpy pub→record smoke: 3 published DiagnosticArrays → 3 native
+records). Runtime-path claims only.
+
+With the diagnostics surface saturated (schema → CLI snapshot → CLI summary → dashboard band
+→ recorder native emit), the next best commit moves to honest task-level evidence:
+
+```text
+record a real-scene task-level probe on PyBullet frames (no policy-quality claim) (v0.4)
+```
+
+Reason: every verified cell so far runs on a synthetic random frame — a genuine runtime-path
+claim, but the inputs are noise. The next credibility step is to drive a working adapter
+(SmolVLA, real-time) on actual rendered PyBullet scene frames and record the action stream as
+runtime evidence: it exercises the real image preprocessing/encode path the synthetic frame
+skips. Keep the honesty discipline strict — this is still NOT a task-success or policy-quality
+claim (`policy_quality` stays `not_verified`); it only upgrades the *input* from noise to a
+real scene render. Reuse the PyBullet demo scene renderer, feed frames through the adapter,
+record latency + action magnitude, and check in the artifact with explicit "runtime path on
+real frames, not skill" framing. Keep model downloads out of tests. Alternative still open:
+pi0 unblock (version-matched checkpoint — rabbit-hole risk).
 
 Acceptance:
 

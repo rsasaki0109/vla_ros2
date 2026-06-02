@@ -13,6 +13,7 @@ from vla_zoo.runtime.diagnostics import (
     diagnostics_from_key_values,
     format_diagnostics_markdown,
     format_diagnostics_summary_markdown,
+    native_records_from_diagnostics_payload,
     read_diagnostics_jsonl,
     summarize_diagnostics,
     write_diagnostics_jsonl,
@@ -213,3 +214,44 @@ def test_format_summary_markdown_is_runtime_centric() -> None:
     assert "Runtime Diagnostics Summary" in text
     assert DIAGNOSTICS_SCHEMA_VERSION in text
     assert "not model task-success quality" in text
+
+
+def _diagnostic_array_payload(record: RuntimeDiagnostics, *, name: str) -> dict[str, object]:
+    return {
+        "status": [
+            {
+                "name": name,
+                "values": [{"key": k, "value": v} for k, v in record.to_key_values()],
+            }
+        ]
+    }
+
+
+def test_native_records_from_diagnostics_payload_reconstructs() -> None:
+    record = _record()
+    payload = _diagnostic_array_payload(record, name="vla_zoo/vla_runtime_node")
+
+    restored = native_records_from_diagnostics_payload(payload)
+
+    assert len(restored) == 1
+    assert restored[0].model == record.model
+    assert restored[0].watchdog_ok == record.watchdog_ok
+
+
+def test_native_records_skip_non_schema_and_filter_by_name() -> None:
+    record = _record()
+    payload = {
+        "status": [
+            # a foreign DiagnosticStatus without our schema_version is ignored
+            {"name": "other/node", "values": [{"key": "cpu", "value": "0.5"}]},
+            {
+                "name": "vla_zoo/vla_runtime_node",
+                "values": [{"key": k, "value": v} for k, v in record.to_key_values()],
+            },
+        ]
+    }
+
+    assert native_records_from_diagnostics_payload(payload) == [
+        diagnostics_from_key_values(dict(record.to_key_values()))
+    ]
+    assert native_records_from_diagnostics_payload(payload, status_name="missing") == []
