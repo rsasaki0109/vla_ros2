@@ -43,5 +43,23 @@
         "note": "Real-scene action probe replay: latency/action-rate from a recorded vla_actions.jsonl driven on real PyBullet-rendered frames. No task-success or policy-quality claim."
       }
     }
+  ],
+  "groups": [
+    {
+      "model": "smolvla",
+      "run_count": 1,
+      "metric": "latency_ms_p50",
+      "best": 381.9219139404595,
+      "worst": 381.9219139404595,
+      "median": 381.9219139404595
+    },
+    {
+      "model": "openvla",
+      "run_count": 1,
+      "metric": "latency_ms_p50",
+      "best": 1996.7553580645472,
+      "worst": 1996.7553580645472,
+      "median": 1996.7553580645472
+    }
   ]
 }

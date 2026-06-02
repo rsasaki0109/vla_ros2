@@ -1088,20 +1088,37 @@ unit tests cover ranking direction, ties, the unranked-tail, the metric-validati
 schema, and the runtime-centric Markdown. `success_rate` stays blank when no task-success claim;
 ranking is explicitly latency/throughput, not skill.
 
-A natural follow-up that extends the same surface: `bench-aggregate` ranks but does not *summarize
-the spread* — when several runs exist for one model (e.g. repeated probes), there is no
-fastest/slowest/median-across-runs roll-up per model. The next best commit adds that grouping:
+The aggregate now also rolls up per model (DONE):
 
 ```text
-add per-model roll-up (best/worst/median latency across runs) to the benchmark aggregate (v0.5)
+add per-model roll-up (best/worst/median latency across runs) to the benchmark aggregate (v0.5)  [DONE]
 ```
 
-Reason: once multiple runs per model are recorded, a flat ranked table hides variance; a per-model
-group that reports the best/median/worst of the ranking metric across that model's runs turns the
-aggregate into a stability view, not just a single-run leaderboard. Keep it pure and unit-tested,
-reuse the `vla-zoo-benchmark-aggregate/v1` schema (add an optional `groups` block rather than a
-breaking change), keep `success_rate` honest, and record an example only if multiple same-model runs
-exist. If a different direction is preferred, pick one that adds runtime/benchmark surface.
+What landed: `rank_summaries` now also groups summaries by model and attaches a `ModelRollup`
+per model (run_count + best/worst/median of the ranking metric, best/worst following the metric
+direction; all `None` when a model's runs lack the metric). Groups are ordered best-first and
+metric-less models last; ties keep insertion order. The roll-up is a non-breaking addition to the
+`vla-zoo-benchmark-aggregate/v1` schema (new optional `groups` block) and renders as a "Per-model
+roll-up" Markdown section. The recorded example artifact was regenerated (single-run groups,
+run_count 1). 5 new unit tests cover multi-run best/median/worst, the action-rate direction, the
+metric-less group, the Markdown section, and the `groups` payload. `success_rate` stays honest;
+ranking is latency/throughput, not skill.
+
+The aggregate has Markdown + JSON but, unlike `bench-report`, no standalone HTML — so it cannot sit
+on the Pages surface as a self-contained page the way the comparison report does. The next best
+commit closes that surface gap:
+
+```text
+add standalone HTML rendering for the ranked benchmark aggregate (v0.5)
+```
+
+Reason: `bench-report` renders HTML (`format_benchmark_report_html`) so its comparison table is a
+first-class Pages artifact; the ranked aggregate (with its per-model roll-up) deserves the same so
+it is linkable/embeddable rather than Markdown-only. Add `format_aggregate_html` mirroring the
+existing report HTML template (ranked table + per-model roll-up section), wire a `--html-out` option
+into `bench-aggregate`, record the example `runtime_probe_aggregate.html`, add an artifact-index
+entry + Pages-index link, and keep the runtime-centric disclaimer. Pure/unit-tested renderer; keep
+`success_rate` honest.
 
 Acceptance:
 
