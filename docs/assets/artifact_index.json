@@ -1,0 +1,175 @@
+{
+  "count": 16,
+  "missing": 0,
+  "ok_overall": true,
+  "categories": [
+    "model evidence",
+    "simulation",
+    "runtime dashboard",
+    "ROS2",
+    "adapter docs",
+    "GPU probes"
+  ],
+  "entries": [
+    {
+      "title": "VLA model evidence matrix (HTML)",
+      "path": "docs/assets/vla_model_evidence_matrix.html",
+      "category": "model evidence",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo compare evidence --html-out docs/assets/vla_model_evidence_matrix.html",
+      "caveat": "Runtime-path evidence only; not a policy-quality or robot task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "VLA model evidence matrix (Markdown)",
+      "path": "docs/assets/vla_model_evidence_matrix.md",
+      "category": "model evidence",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo compare evidence --markdown-out docs/assets/vla_model_evidence_matrix.md",
+      "caveat": "Runtime-path evidence only.",
+      "exists": true
+    },
+    {
+      "title": "VLA model evidence matrix (JSON)",
+      "path": "docs/assets/vla_model_evidence_matrix.json",
+      "category": "model evidence",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo compare evidence --out docs/assets/vla_model_evidence_matrix.json",
+      "caveat": "Machine-readable evidence matrix.",
+      "exists": true
+    },
+    {
+      "title": "PyBullet GIF gallery",
+      "path": "docs/assets/gif_suite/index.html",
+      "category": "simulation",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo demo gif-report --manifest docs/assets/gif_suite/gif_manifest.json",
+      "caveat": "Deterministic runtime artifact; baselines, not robot skill.",
+      "exists": true
+    },
+    {
+      "title": "PyBullet baseline task verification",
+      "path": "docs/assets/sample_task_verification/baseline_tasks.html",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo compare tasks --models dummy,scripted,random --tasks all",
+      "caveat": "Deterministic baselines, not VLA model-quality measurements.",
+      "exists": true
+    },
+    {
+      "title": "PyBullet comparison report",
+      "path": "docs/assets/sample_compare_suite/pybullet_report.html",
+      "category": "simulation",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo compare suite --out-dir docs/assets/sample_compare_suite",
+      "caveat": "Smoke-scene runtime telemetry.",
+      "exists": true
+    },
+    {
+      "title": "Runtime dashboard",
+      "path": "docs/assets/sample_compare_suite/runtime_dashboard.html",
+      "category": "runtime dashboard",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo compare dashboard --results docs/assets/sample_compare_suite/pybullet_results.json",
+      "caveat": "Static dashboard rendered from comparison results.",
+      "exists": true
+    },
+    {
+      "title": "ROS2 remote dummy dashboard",
+      "path": "docs/assets/sample_ros2_remote_dummy/dashboard.html",
+      "category": "runtime dashboard",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo compare dashboard --status-log .../vla_status.jsonl",
+      "caveat": "Rendered from recorded ROS2 dummy runtime logs.",
+      "exists": true
+    },
+    {
+      "title": "ROS2 remote smoke check",
+      "path": "docs/assets/sample_ros2_remote_dummy/remote_smoke_check.md",
+      "category": "ROS2",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo ros remote-smoke-check --output-dir docs/assets/sample_ros2_remote_dummy",
+      "caveat": "ROS2 remote dummy runtime evidence; launch stays dry-run safe by default.",
+      "exists": true
+    },
+    {
+      "title": "ROS2 remote smoke plan",
+      "path": "docs/assets/ros2_remote_smoke_plan.md",
+      "category": "ROS2",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo ros remote-smoke-plan --markdown-out docs/assets/ros2_remote_smoke_plan.md",
+      "caveat": "Command plan, not a recorded run.",
+      "exists": true
+    },
+    {
+      "title": "ROS2 action trace",
+      "path": "docs/assets/sample_ros2_remote_dummy/action_trace.html",
+      "category": "ROS2",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo ros action-trace --action-log .../vla_actions.jsonl",
+      "caveat": "Typed action messages only; core never commands motors.",
+      "exists": true
+    },
+    {
+      "title": "Adapter cards index",
+      "path": "docs/adapters/README.md",
+      "category": "adapter docs",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo compare cards --out-dir docs/adapters",
+      "caveat": "Generated from registry metadata.",
+      "exists": true
+    },
+    {
+      "title": "Model comparison report",
+      "path": "docs/reports/model_comparison.md",
+      "category": "adapter docs",
+      "status": "manual",
+      "kind": "manual",
+      "source_command": null,
+      "caveat": "Narrative comparison of runtime paths.",
+      "exists": true
+    },
+    {
+      "title": "SmolVLA GPU inference-path probe",
+      "path": "docs/assets/sample_task_verification/smolvla_gpu_probe.md",
+      "category": "GPU probes",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": null,
+      "caveat": "GPU inference-path probe with lerobot/smolvla_base; not a robot task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "OpenVLA prompt probe",
+      "path": "docs/assets/sample_task_verification/openvla_prompt_probe.md",
+      "category": "GPU probes",
+      "status": "blocked",
+      "kind": "checked",
+      "source_command": null,
+      "caveat": "Local CUDA prompt probe blocked by insufficient free VRAM; remote GPU path is next.",
+      "exists": true
+    },
+    {
+      "title": "pi0 compatibility probe",
+      "path": "docs/assets/sample_task_verification/pi0_compatibility_probe.md",
+      "category": "GPU probes",
+      "status": "planned",
+      "kind": "checked",
+      "source_command": null,
+      "caveat": "pi0/openpi is remote-first and still needs a recorded real action probe.",
+      "exists": true
+    }
+  ]
+}

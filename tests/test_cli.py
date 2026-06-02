@@ -100,6 +100,14 @@ def test_cli_report_link_check_help() -> None:
     assert "--strict" in result.output
 
 
+def test_cli_report_index_help() -> None:
+    result = CliRunner().invoke(app, ["report", "index", "--help"])
+    assert result.exit_code == 0
+    assert "--out" in result.output
+    assert "--html-out" in result.output
+    assert "--strict" in result.output
+
+
 def test_cli_doctor_json() -> None:
     result = CliRunner().invoke(app, ["doctor", "--json", "--no-ros"])
     assert result.exit_code == 0
