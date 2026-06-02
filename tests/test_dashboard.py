@@ -64,6 +64,9 @@ def test_dashboard_html_embeds_records_and_interactions() -> None:
     assert "Fleet Health" in html
     assert "triageQueue" in html
     assert "runtimeFilter" in html
+    assert "Runtime Evidence Matrix" in html
+    assert "What This Does Not Claim" in html
+    assert "renderEvidenceMatrix" in html
     assert "goalDistanceChart" in html
     assert "sort by task score" in html
     assert "exportCsv" in html
