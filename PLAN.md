@@ -858,32 +858,48 @@ is task-success / policy quality. The three checked-in matrix artifacts
 (`docs/assets/vla_model_evidence_matrix.{json,md,html}`) were regenerated and the new link is
 covered by `report link-check`. Existing evidence tests still pass (status assertions unchanged).
 
-The honest-evidence surface for SmolVLA is now saturated (contract → local/GPU → remote →
-ROS2 → real-scene PyBullet probe, all verified; policy_quality explicitly unclaimed). The next
-best commit broadens the real-scene runtime evidence to a second heavy adapter:
+The real-scene runtime evidence now covers both heavy adapters — OpenVLA also has a probe (DONE):
 
 ```text
-record an OpenVLA real-scene action probe on PyBullet frames (no policy-quality claim) (v0.4)
+record an OpenVLA real-scene action probe on PyBullet frames (no policy-quality claim) (v0.4)  [DONE]
 ```
 
-Reason: only SmolVLA has a real-scene runtime probe; OpenVLA's `pybullet_tasks` cell is still
-`planned`. Reuse `vla-zoo demo action-probe --model openvla --allow-local-heavy` to drive the
-verified local 4-bit OpenVLA-7b on real renders and record the action stream, then flip its
-matrix cell from `planned` to a recorded real-scene probe. Env risk: the probe needs PyBullet
-*inside* the timm<1.0 openvla venv (`/tmp/openvla_venv`) — confirm pybullet is importable there
-first; if not, install it into that venv or treat this as blocked and document why. Keep model
-downloads out of tests and `policy_quality` `not_verified`. Alternative still open: pi0 unblock
-(version-matched checkpoint — rabbit-hole risk).
+What landed: `vla-zoo demo action-probe` gained a generic `--adapter-kwarg key=value` option
+(coerced to bool/int/float/str) so adapter-specific load args flow through without per-adapter
+flags. A real OpenVLA-7b (4-bit) run — `--model openvla --allow-local-heavy --adapter-kwarg
+load_in_4bit=true --adapter-kwarg unnorm_key=bridge_orig`, executed in the timm<1.0 openvla venv
+(`/tmp/openvla_venv`, which has PyBullet) — recorded 21 queries (action dim 7, latency p50 ~2.0 s)
+to `docs/assets/sample_pybullet_openvla/{openvla_action_probe.jsonl,runtime_action_probe.md,json}`
+with artifact-index entries and a `docs/openvla_local_runtime.md` section. The OpenVLA
+`pybullet_tasks` matrix cell flipped from `planned` to a `partial` recorded real-scene probe;
+`policy_quality` stays `not_verified`. The three matrix artifacts were regenerated. Runtime-path
+claims only.
+
+Both heavy adapters now have the full honest surface (contract → local/GPU → remote → ROS2 →
+real-scene PyBullet probe, all verified; policy_quality explicitly unclaimed). The next best
+commit makes the two real-scene probes directly comparable:
+
+```text
+render a real-scene runtime comparison report from the SmolVLA + OpenVLA action probes (v0.4)
+```
+
+Reason: both probes are canonical `vla_actions.jsonl` logs, so `bench-replay` reduces each to a
+`vla-zoo-benchmark/v1` latency/action-rate summary (`success=None`) and `bench-report` renders an
+HTML/Markdown comparison — surfacing the two real-scene runtime profiles side by side
+(SmolVLA p50 ~382 ms vs OpenVLA p50 ~2.0 s) without any task-success claim. Wire the two probe
+logs through `bench-replay --summary-out` then `bench-report --summaries`, check in the
+comparison artifact, and add an artifact-index entry. Keep model downloads out of tests.
+Alternative still open: pi0 unblock (version-matched checkpoint — rabbit-hole risk).
 
 Acceptance:
 
 ```bash
 rtk proxy env PYTHONPATH=src pytest -q tests/test_evidence.py tests/test_demo_action_probe.py \
-  tests/test_cli.py
+  tests/test_cli.py tests/test_benchmark_replay.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/assets/vla_model_evidence_matrix.md,docs/smolvla_local_runtime.md \
+  --paths docs/assets/vla_model_evidence_matrix.md,docs/openvla_local_runtime.md,docs/smolvla_local_runtime.md \
   --strict
 ```
 

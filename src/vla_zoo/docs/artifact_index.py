@@ -380,6 +380,42 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="OpenVLA real-scene action probe (PyBullet)",
+        path="docs/assets/sample_pybullet_openvla/runtime_action_probe.md",
+        category="simulation",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo demo action-probe --model openvla --allow-local-heavy "
+            "--pretrained openvla/openvla-7b --device cuda:0 "
+            "--adapter-kwarg load_in_4bit=true --adapter-kwarg unnorm_key=bridge_orig "
+            "--out docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl "
+            "--summary-md docs/assets/sample_pybullet_openvla/runtime_action_probe.md"
+        ),
+        caveat=(
+            "Real OpenVLA-7b (4-bit) driven on real PyBullet-rendered frames (21 queries, "
+            "action dim 7); exercises the real image preprocessing path. Runtime-path "
+            "latency/magnitude only, NOT task success (policy_quality=not_verified)."
+        ),
+    ),
+    ArtifactEntry(
+        title="OpenVLA real-scene action log (PyBullet)",
+        path="docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl",
+        category="simulation",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo demo action-probe --model openvla --allow-local-heavy "
+            "--pretrained openvla/openvla-7b --device cuda:0 "
+            "--adapter-kwarg load_in_4bit=true --adapter-kwarg unnorm_key=bridge_orig "
+            "--out docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl"
+        ),
+        caveat=(
+            "Canonical vla_actions.jsonl action stream from real renders; replayable via "
+            "vla-zoo bench-replay (success=None). Runtime path, not a task-success claim."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke plan",
         path="docs/assets/ros2_remote_smoke_plan.md",
         category="ROS2",

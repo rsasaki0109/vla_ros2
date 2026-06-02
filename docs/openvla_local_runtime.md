@@ -106,6 +106,30 @@ peaks, worst-severity record) is at
 See the [SmolVLA evidence page](smolvla_local_runtime.md) for the loopback-multicast note on
 why this uses the single-process harness on this host.
 
+## Real-scene action probe (verified runtime path)
+
+The measurements above run on a synthetic random frame. To exercise the *real* image
+preprocessing/encode path, `vla-zoo demo action-probe` drives OpenVLA-7b (4-bit) through the
+PyBullet pick-and-place rollout and records the action stream from genuinely rendered frames:
+
+```bash
+HF_HUB_OFFLINE=1 PYTHONPATH=src /tmp/openvla_venv/bin/python -m vla_zoo.cli.main demo action-probe \
+  --model openvla --runtime local --allow-local-heavy \
+  --pretrained openvla/openvla-7b --device cuda:0 \
+  --adapter-kwarg load_in_4bit=true --adapter-kwarg unnorm_key=bridge_orig \
+  --out docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl \
+  --summary-md docs/assets/sample_pybullet_openvla/runtime_action_probe.md
+```
+
+The recorded run (21 adapter queries, action dim 7, latency p50 ~2.0 s) is at
+[`runtime_action_probe.md`](assets/sample_pybullet_openvla/runtime_action_probe.md); the
+canonical `vla_actions.jsonl` log
+([`openvla_action_probe.jsonl`](assets/sample_pybullet_openvla/openvla_action_probe.jsonl))
+replays through `vla-zoo bench-replay` (`success=None`). This upgrades only the **input** — from
+synthetic noise to a real scene render — and is still **not** a task-success or policy-quality
+claim (`policy_quality=not_verified`). The probe needs PyBullet *inside* the timm<1.0 OpenVLA
+venv (`/tmp/openvla_venv`).
+
 ## Scope and limitations
 
 - The input is a synthetic random frame. This verifies the **runtime path** (load →
