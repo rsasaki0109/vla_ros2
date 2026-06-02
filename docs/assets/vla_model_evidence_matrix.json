@@ -414,11 +414,15 @@
         },
         "remote_server": {
           "status": "planned",
-          "summary": "Server command can be generated; recorded SmolVLA /v1/predict run is still needed.",
+          "summary": "Isolated-env server plan is reproducible (vla-zoo smolvla-remote-plan); a recorded SmolVLA /v1/predict response is still needed.",
           "links": [
             {
-              "label": "GPU server plan",
-              "href": "sample_compare_suite/gpu_server_plan.md"
+              "label": "SmolVLA remote plan",
+              "href": "smolvla_remote_smoke_plan.md"
+            },
+            {
+              "label": "env isolation",
+              "href": "../smolvla_remote.md"
             }
           ]
         },

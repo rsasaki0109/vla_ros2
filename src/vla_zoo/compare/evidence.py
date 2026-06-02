@@ -273,8 +273,12 @@ def _smolvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         ),
         "remote_server": _cell(
             "planned",
-            "Server command can be generated; recorded SmolVLA /v1/predict run is still needed.",
-            (_link("GPU server plan", "sample_compare_suite/gpu_server_plan.md"),),
+            "Isolated-env server plan is reproducible (vla-zoo smolvla-remote-plan); a "
+            "recorded SmolVLA /v1/predict response is still needed.",
+            (
+                _link("SmolVLA remote plan", "smolvla_remote_smoke_plan.md"),
+                _link("env isolation", "../smolvla_remote.md"),
+            ),
         ),
         "ros2_remote": _cell(
             "planned",

@@ -1,5 +1,5 @@
 {
-  "count": 16,
+  "count": 18,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -119,6 +119,26 @@
       "kind": "generated",
       "source_command": "vla-zoo ros action-trace --action-log .../vla_actions.jsonl",
       "caveat": "Typed action messages only; core never commands motors.",
+      "exists": true
+    },
+    {
+      "title": "SmolVLA remote serving plan",
+      "path": "docs/assets/smolvla_remote_smoke_plan.md",
+      "category": "adapter docs",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo smolvla-remote-plan --markdown-out docs/assets/smolvla_remote_smoke_plan.md",
+      "caveat": "Isolated-env command plan, not a recorded /v1/predict run.",
+      "exists": true
+    },
+    {
+      "title": "SmolVLA remote environment isolation",
+      "path": "docs/smolvla_remote.md",
+      "category": "adapter docs",
+      "status": "manual",
+      "kind": "manual",
+      "source_command": null,
+      "caveat": "Operations guidance; no policy-quality claim.",
       "exists": true
     },
     {
