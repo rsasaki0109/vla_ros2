@@ -172,6 +172,8 @@ def test_check_gif_suite_validates_manifest_and_links(tmp_path: Path) -> None:
 
     assert report.ok
     assert len(report.assets) == 1
+    assert report.assets[0].model_name == "dummy"
+    assert report.assets[0].task_id == "pick_red_block"
     assert report.assets[0].frames == 3
     assert report.assets[0].width == 4
     assert report.assets[0].height == 3
@@ -223,6 +225,9 @@ def test_gif_check_markdown_and_html_report(tmp_path: Path) -> None:
     assert "vla_zoo GIF Gallery" in html
     assert "What This Proves" in html
     assert "What This Does Not Prove" in html
+    assert "Task x Adapter Matrix" in html
+    assert "pick red block" in html
+    assert "dummy" in html
     assert '<img src="demo.gif"' in html
 
 
