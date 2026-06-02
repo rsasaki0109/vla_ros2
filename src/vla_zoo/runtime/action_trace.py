@@ -36,6 +36,34 @@ class ActionTraceSummary:
     max_magnitude: float | None
 
 
+@dataclass(frozen=True)
+class ActionDimensionStats:
+    index: int
+    name: str
+    minimum: float
+    maximum: float
+    mean: float
+    last: float
+
+
+@dataclass(frozen=True)
+class ActionTraceAnalysis:
+    action_count: int
+    duration_sec: float
+    action_rate_hz: float | None
+    action_dim: int
+    mean_magnitude: float | None
+    max_magnitude: float | None
+    mean_gap_sec: float | None
+    max_gap_sec: float | None
+    mean_delta_l1: float | None
+    max_delta_l1: float | None
+    zero_action_rate: float | None
+    repeated_action_rate: float | None
+    warnings: list[str]
+    dimensions: list[ActionDimensionStats]
+
+
 def _read_jsonl(path: Path) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -140,6 +168,165 @@ def summarize_action_trace(events: list[ActionTraceEvent]) -> ActionTraceSummary
         mean_magnitude=mean(magnitudes),
         max_magnitude=max(magnitudes),
     )
+
+
+def _l1(values: list[float]) -> float:
+    return sum(abs(value) for value in values)
+
+
+def _delta_l1(left: list[float], right: list[float]) -> float | None:
+    if len(left) != len(right):
+        return None
+    return sum(abs(a - b) for a, b in zip(left, right, strict=True))
+
+
+def analyze_action_trace(
+    events: list[ActionTraceEvent],
+    *,
+    zero_epsilon: float = 1e-6,
+    repeat_epsilon: float = 1e-6,
+    max_gap_warn_sec: float = 1.0,
+    min_rate_warn_hz: float = 1.0,
+) -> ActionTraceAnalysis:
+    if not events:
+        return ActionTraceAnalysis(
+            action_count=0,
+            duration_sec=0.0,
+            action_rate_hz=None,
+            action_dim=0,
+            mean_magnitude=None,
+            max_magnitude=None,
+            mean_gap_sec=None,
+            max_gap_sec=None,
+            mean_delta_l1=None,
+            max_delta_l1=None,
+            zero_action_rate=None,
+            repeated_action_rate=None,
+            warnings=["no action records"],
+            dimensions=[],
+        )
+
+    sorted_events = sorted(events, key=lambda event: event.timestamp_sec)
+    duration_sec = max(event.relative_sec for event in sorted_events)
+    action_rate_hz = None
+    if duration_sec > 0 and len(sorted_events) > 1:
+        action_rate_hz = (len(sorted_events) - 1) / duration_sec
+    magnitudes = [_l1(event.data) for event in sorted_events]
+    gaps = [
+        max(0.0, right.timestamp_sec - left.timestamp_sec)
+        for left, right in zip(sorted_events, sorted_events[1:], strict=False)
+    ]
+    deltas = [
+        delta
+        for delta in (
+            _delta_l1(left.data, right.data)
+            for left, right in zip(sorted_events, sorted_events[1:], strict=False)
+        )
+        if delta is not None
+    ]
+    action_dim = max((len(event.data) for event in sorted_events), default=0)
+    dimensions: list[ActionDimensionStats] = []
+    for index in range(action_dim):
+        values = [event.data[index] for event in sorted_events if index < len(event.data)]
+        if not values:
+            continue
+        name = next(
+            (event.names[index] for event in sorted_events if index < len(event.names)),
+            f"a{index}",
+        )
+        dimensions.append(
+            ActionDimensionStats(
+                index=index,
+                name=name,
+                minimum=min(values),
+                maximum=max(values),
+                mean=mean(values),
+                last=values[-1],
+            )
+        )
+
+    zero_count = sum(1 for magnitude in magnitudes if magnitude <= zero_epsilon)
+    repeated_count = sum(1 for delta in deltas if delta <= repeat_epsilon)
+    warnings: list[str] = []
+    if action_rate_hz is not None and action_rate_hz < min_rate_warn_hz:
+        warnings.append(f"low action rate: {action_rate_hz:.2f} Hz")
+    if gaps and max(gaps) > max_gap_warn_sec:
+        warnings.append(f"large action gap: {max(gaps):.2f}s")
+    if len({len(event.data) for event in sorted_events}) > 1:
+        warnings.append("action dimension changed during trace")
+    zero_action_rate = zero_count / len(sorted_events)
+    repeated_action_rate = repeated_count / len(deltas) if deltas else None
+    if len(sorted_events) >= 4 and zero_action_rate > 0.8:
+        warnings.append(f"mostly near-zero actions: {zero_action_rate:.0%}")
+    if repeated_action_rate is not None and len(sorted_events) >= 4 and repeated_action_rate > 0.8:
+        warnings.append(f"mostly repeated actions: {repeated_action_rate:.0%}")
+
+    return ActionTraceAnalysis(
+        action_count=len(sorted_events),
+        duration_sec=duration_sec,
+        action_rate_hz=action_rate_hz,
+        action_dim=action_dim,
+        mean_magnitude=mean(magnitudes),
+        max_magnitude=max(magnitudes),
+        mean_gap_sec=mean(gaps) if gaps else None,
+        max_gap_sec=max(gaps) if gaps else None,
+        mean_delta_l1=mean(deltas) if deltas else None,
+        max_delta_l1=max(deltas) if deltas else None,
+        zero_action_rate=zero_action_rate,
+        repeated_action_rate=repeated_action_rate,
+        warnings=warnings,
+        dimensions=dimensions,
+    )
+
+
+def format_action_analysis_markdown(
+    analysis: ActionTraceAnalysis,
+    *,
+    title: str = "vla_zoo Action Analysis",
+) -> str:
+    def fmt(value: float | None, digits: int = 3) -> str:
+        return "-" if value is None else f"{value:.{digits}f}"
+
+    lines = [
+        f"# {title}",
+        "",
+        "| Metric | Value |",
+        "|---|---:|",
+        f"| action_count | {analysis.action_count} |",
+        f"| duration_sec | {fmt(analysis.duration_sec)} |",
+        f"| action_rate_hz | {fmt(analysis.action_rate_hz)} |",
+        f"| action_dim | {analysis.action_dim} |",
+        f"| mean_magnitude | {fmt(analysis.mean_magnitude)} |",
+        f"| max_magnitude | {fmt(analysis.max_magnitude)} |",
+        f"| mean_gap_sec | {fmt(analysis.mean_gap_sec)} |",
+        f"| max_gap_sec | {fmt(analysis.max_gap_sec)} |",
+        f"| mean_delta_l1 | {fmt(analysis.mean_delta_l1)} |",
+        f"| max_delta_l1 | {fmt(analysis.max_delta_l1)} |",
+        f"| zero_action_rate | {fmt(analysis.zero_action_rate)} |",
+        f"| repeated_action_rate | {fmt(analysis.repeated_action_rate)} |",
+        "",
+        "## Warnings",
+        "",
+    ]
+    if analysis.warnings:
+        lines.extend(f"- {warning}" for warning in analysis.warnings)
+    else:
+        lines.append("- none")
+    lines.extend(
+        [
+            "",
+            "## Dimensions",
+            "",
+            "| Index | Name | Min | Mean | Max | Last |",
+            "|---:|---|---:|---:|---:|---:|",
+        ]
+    )
+    for item in analysis.dimensions:
+        lines.append(
+            f"| {item.index} | `{item.name}` | {item.minimum:.4f} | {item.mean:.4f} | "
+            f"{item.maximum:.4f} | {item.last:.4f} |"
+        )
+    return "\n".join(lines) + "\n"
 
 
 def format_action_trace_html(

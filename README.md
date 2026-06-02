@@ -112,7 +112,7 @@ vla-zoo ros smoke-report --output-dir results/ros2_smoke
 ```
 
 This writes status, diagnostics, and action JSONL logs, then generates
-`dashboard.html`, `action_trace.html`, and `report_bundle.zip`.
+`dashboard.html`, `action_trace.html`, `action_analysis.md`, and `report_bundle.zip`.
 
 | Topic | Type | Direction |
 |---|---|---|
@@ -155,6 +155,7 @@ Live samples:
 - Runtime dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/runtime_dashboard.html
 - ROS2 dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html
 - Action trace: https://rsasaki0109.github.io/vla_zoo/assets/sample_action_trace.html
+- Action analysis: https://rsasaki0109.github.io/vla_zoo/assets/sample_action_analysis.md
 
 ## Adapters
 

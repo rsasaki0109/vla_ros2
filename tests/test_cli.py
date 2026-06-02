@@ -217,6 +217,58 @@ def test_cli_ros_action_trace(tmp_path: Path) -> None:
     assert "Action Timeline" in out.read_text(encoding="utf-8")
 
 
+def test_cli_ros_action_analyze(tmp_path: Path) -> None:
+    action_log = tmp_path / "actions.jsonl"
+    json_out = tmp_path / "analysis.json"
+    markdown_out = tmp_path / "analysis.md"
+    action_log.write_text(
+        json.dumps(
+            {
+                "header": {"stamp": {"sec": 1, "nanosec": 0}},
+                "model_name": "dummy",
+                "adapter_name": "DummyAdapter",
+                "action_space": "eef_delta",
+                "data": [0.0, 0.1, 0.0],
+                "names": ["x", "y", "z"],
+            }
+        )
+        + "\n"
+        + json.dumps(
+            {
+                "header": {"stamp": {"sec": 2, "nanosec": 0}},
+                "model_name": "dummy",
+                "adapter_name": "DummyAdapter",
+                "action_space": "eef_delta",
+                "data": [0.0, 0.2, 0.0],
+                "names": ["x", "y", "z"],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ros",
+            "action-analyze",
+            "--action-log",
+            str(action_log),
+            "--out",
+            str(json_out),
+            "--markdown-out",
+            str(markdown_out),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(json_out.read_text(encoding="utf-8"))
+    assert payload["action_count"] == 2
+    assert payload["action_dim"] == 3
+    assert "action_rate_hz" in payload
+    assert "Dimensions" in markdown_out.read_text(encoding="utf-8")
+
+
 def test_cli_ros_smoke_report_skip_launch(tmp_path: Path) -> None:
     action_log = tmp_path / "vla_actions.jsonl"
     status_log = tmp_path / "vla_status.jsonl"
@@ -275,9 +327,13 @@ def test_cli_ros_smoke_report_skip_launch(tmp_path: Path) -> None:
     assert (tmp_path / "dashboard.html").exists()
     assert (tmp_path / "report_bundle.zip").exists()
     assert (tmp_path / "action_trace.html").exists()
+    assert (tmp_path / "action_analysis.json").exists()
+    assert (tmp_path / "action_analysis.md").exists()
     with ZipFile(tmp_path / "report_bundle.zip") as bundle:
         names = set(bundle.namelist())
         assert "action_trace.html" in names
+        assert "action_analysis.json" in names
+        assert "action_analysis.md" in names
         assert "inputs/actions/00_vla_actions.jsonl" in names
     assert "ROS2 smoke report written" in result.output
 

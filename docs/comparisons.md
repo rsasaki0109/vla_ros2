@@ -97,6 +97,7 @@ vla-zoo ros smoke-report --output-dir results
 ```
 
 This runs the ROS2 smoke recording launch, writes status/diagnostics JSONL, and
-creates `dashboard.html`, `action_trace.html`, and `report_bundle.zip`.
+creates `dashboard.html`, `action_trace.html`, `action_analysis.md`, and
+`report_bundle.zip`.
 
 The comparison output is intentionally runtime-centric, with extra scripted-scene telemetry for the PyBullet smoke task: frames, adapter query count, adapter errors, latency, action magnitude, cube lift, final cube distance to the goal, cube travel distance, grasp-attached frames, and phase completion. The smoke task uses a 15 cm placement zone for success. Treat these as deployment-path checks, not as model-quality claims.

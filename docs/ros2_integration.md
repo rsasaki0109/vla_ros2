@@ -45,7 +45,8 @@ vla-zoo ros smoke-report --output-dir results/ros2_smoke
 ```
 
 That command runs `smoke_record.launch.py`, writes JSONL logs, and builds
-`dashboard.html`, `action_trace.html`, and `report_bundle.zip`.
+`dashboard.html`, `action_trace.html`, `action_analysis.json`,
+`action_analysis.md`, and `report_bundle.zip`.
 
 The manual sequence is:
 
@@ -63,6 +64,10 @@ vla-zoo compare dashboard \
 vla-zoo ros action-trace \
   --action-log results/ros2_smoke/vla_actions.jsonl \
   --out results/ros2_smoke/action_trace.html
+vla-zoo ros action-analyze \
+  --action-log results/ros2_smoke/vla_actions.jsonl \
+  --out results/ros2_smoke/action_analysis.json \
+  --markdown-out results/ros2_smoke/action_analysis.md
 ```
 
 ## Topics
@@ -176,6 +181,9 @@ vla-zoo report bundle \
 vla-zoo ros action-trace \
   --action-log results/vla_actions.jsonl \
   --out results/vla_action_trace.html
+vla-zoo ros action-analyze \
+  --action-log results/vla_actions.jsonl \
+  --markdown-out results/vla_action_analysis.md
 ```
 
 This is intended for issue reports and field debugging: attach the JSONL plus generated HTML instead of screenshots alone.
@@ -184,6 +192,8 @@ The bundle command packages the logs, normalized records, generated dashboard, a
 The recorder node subscribes to `/vla/status` and `/diagnostics` by default. It does not command hardware and can run beside `dummy.launch.py`, `openvla.launch.py`, or `remote.launch.py`.
 It can also record `/vla/action` to `vla_actions.jsonl`; the action trace HTML
 visualizes action magnitude, timing, action space, and per-dimension values.
+The action analysis report flags low action rate, large action gaps, repeated
+actions, near-zero actions, and per-dimension ranges.
 
 ## Hardware Bridges
 
