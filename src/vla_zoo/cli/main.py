@@ -5,6 +5,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from importlib.util import find_spec
 from pathlib import Path
+from shlex import quote
 from typing import TYPE_CHECKING, Annotated, Any
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -400,6 +401,197 @@ def compare_methods(
         typer.echo(f"JSON written to {out}")
     if markdown_out is not None:
         typer.echo(f"Markdown written to {markdown_out}")
+
+
+@compare_app.command("suite")
+def compare_suite(
+    out_dir: Annotated[
+        Path,
+        typer.Option("--out-dir", "-o", help="Output directory for suite artifacts."),
+    ] = Path("results/vla_compare_suite"),
+    models: Annotated[
+        str,
+        typer.Option(
+            "--models",
+            "-m",
+            help="Comma-separated adapters for the optional PyBullet smoke comparison.",
+        ),
+    ] = "dummy,scripted,random",
+    runtime: Annotated[str, typer.Option("--runtime")] = "local",
+    remote_url: Annotated[str, typer.Option("--remote-url")] = "http://localhost:8000",
+    remote_map: Annotated[
+        str | None,
+        typer.Option(
+            "--remote-map",
+            help="Comma-separated model=url overrides for remote PyBullet comparisons.",
+        ),
+    ] = None,
+    instruction: Annotated[
+        str,
+        typer.Option("--instruction", "-i"),
+    ] = "pick up the red block",
+    model_call_every: Annotated[int, typer.Option("--model-call-every")] = 8,
+    render_stride: Annotated[int, typer.Option("--render-stride")] = 12,
+    allow_local_heavy: Annotated[
+        bool,
+        typer.Option(
+            "--allow-local-heavy",
+            help="Allow local heavy adapters such as OpenVLA to load real model weights.",
+        ),
+    ] = False,
+    pybullet: Annotated[
+        bool,
+        typer.Option("--pybullet/--no-pybullet", help="Run the PyBullet smoke comparison."),
+    ] = True,
+    dashboard: Annotated[
+        bool,
+        typer.Option("--dashboard/--no-dashboard", help="Generate dashboard HTML."),
+    ] = True,
+) -> None:
+    """Generate a shareable VLA comparison artifact directory."""
+
+    from vla_zoo.compare.profiles import format_method_profiles_markdown, method_profiles
+    from vla_zoo.compare.suite import SuiteArtifact, format_suite_readme
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    created_at = datetime.now(timezone.utc).isoformat()
+    command_parts = [
+        "vla-zoo",
+        "compare",
+        "suite",
+        "--out-dir",
+        str(out_dir),
+        "--models",
+        models,
+        "--runtime",
+        runtime,
+        "--instruction",
+        instruction,
+        "--model-call-every",
+        str(model_call_every),
+        "--render-stride",
+        str(render_stride),
+    ]
+    if not pybullet:
+        command_parts.append("--no-pybullet")
+    if runtime == "remote":
+        command_parts.extend(["--remote-url", remote_url])
+    if remote_map:
+        command_parts.extend(["--remote-map", remote_map])
+    if allow_local_heavy:
+        command_parts.append("--allow-local-heavy")
+    if not dashboard:
+        command_parts.append("--no-dashboard")
+    command = " ".join(quote(part) for part in command_parts)
+
+    profiles = method_profiles(status_provider=_adapter_status)
+    method_profiles_json = out_dir / "method_profiles.json"
+    method_profiles_md = out_dir / "method_profiles.md"
+    method_markdown = format_method_profiles_markdown(profiles)
+    _write_text(
+        method_profiles_json,
+        json.dumps([profile.to_dict() for profile in profiles], indent=2) + "\n",
+    )
+    _write_text(method_profiles_md, method_markdown)
+    artifacts = [
+        SuiteArtifact(
+            label="method profiles JSON",
+            path=method_profiles_json.name,
+            description="structured adapter integration profiles",
+        ),
+        SuiteArtifact(
+            label="method profiles Markdown",
+            path=method_profiles_md.name,
+            description="README-ready adapter integration table",
+        ),
+    ]
+
+    pybullet_markdown: str | None = None
+    if pybullet:
+        from vla_zoo.demo.pybullet import (
+            compare_pybullet_models,
+            format_pybullet_comparison_html,
+            format_pybullet_comparison_markdown,
+        )
+
+        model_names = [item.strip() for item in models.split(",") if item.strip()]
+        if not model_names:
+            raise typer.BadParameter("At least one model name is required.")
+        results = compare_pybullet_models(
+            model_names,
+            runtime=runtime,
+            remote_url=remote_url,
+            remote_urls=_parse_remote_map(remote_map) or None,
+            instruction=instruction,
+            model_call_every=model_call_every,
+            render_stride=render_stride,
+            allow_local_heavy=allow_local_heavy,
+        )
+        pybullet_json = out_dir / "pybullet_results.json"
+        pybullet_md = out_dir / "pybullet_results.md"
+        pybullet_html = out_dir / "pybullet_report.html"
+        pybullet_markdown = format_pybullet_comparison_markdown(results)
+        pybullet_payload = json.dumps(
+            [asdict(result) for result in results],
+            indent=2,
+        )
+        _write_text(pybullet_json, f"{pybullet_payload}\n")
+        _write_text(pybullet_md, pybullet_markdown)
+        _write_text(pybullet_html, format_pybullet_comparison_html(results))
+        artifacts.extend(
+            [
+                SuiteArtifact(
+                    label="PyBullet JSON",
+                    path=pybullet_json.name,
+                    description="deterministic smoke-scene runtime and task telemetry",
+                ),
+                SuiteArtifact(
+                    label="PyBullet Markdown",
+                    path=pybullet_md.name,
+                    description="README-ready PyBullet comparison table",
+                ),
+                SuiteArtifact(
+                    label="PyBullet HTML",
+                    path=pybullet_html.name,
+                    description="self-contained PyBullet comparison report",
+                ),
+            ]
+        )
+        if dashboard:
+            from vla_zoo.runtime.dashboard import (
+                dashboard_records_from_payload,
+                format_comparison_dashboard_html,
+            )
+
+            dashboard_html = out_dir / "runtime_dashboard.html"
+            records = dashboard_records_from_payload([asdict(result) for result in results])
+            _write_text(
+                dashboard_html,
+                format_comparison_dashboard_html(records, title="vla_zoo Comparison Suite"),
+            )
+            artifacts.append(
+                SuiteArtifact(
+                    label="runtime dashboard",
+                    path=dashboard_html.name,
+                    description="interactive static dashboard for PyBullet results",
+                )
+            )
+
+    readme_path = out_dir / "README.md"
+    _write_text(
+        readme_path,
+        format_suite_readme(
+            title="vla_zoo Comparison Suite",
+            created_at=created_at,
+            command=command,
+            artifacts=artifacts,
+            method_profiles_markdown=method_markdown,
+            pybullet_markdown=pybullet_markdown,
+        ),
+    )
+    typer.echo(f"Comparison suite written to {out_dir}")
+    for artifact in [*artifacts, SuiteArtifact("suite README", readme_path.name, "index")]:
+        typer.echo(f"- {artifact.path}: {artifact.description}")
 
 
 @compare_app.command("dashboard")

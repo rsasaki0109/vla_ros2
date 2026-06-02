@@ -34,6 +34,16 @@ chunks, proprioception expectations, runtime support, dependency profile, and li
 It is useful for deciding which models can be compared locally, which should be served
 remotely, and which require robot-specific adapter work.
 
+For issue reports, release notes, and README snippets, generate a complete artifact directory:
+
+```bash
+vla-zoo compare suite --out-dir results/vla_compare_suite
+```
+
+The suite writes method profiles, PyBullet result tables, a self-contained PyBullet HTML report,
+an interactive dashboard, and an index `README.md`. Use `--no-pybullet` to generate only the
+lightweight method profile artifacts.
+
 Then run the same deterministic PyBullet smoke scene for baseline methods and runtime paths:
 
 ```bash
