@@ -1,5 +1,5 @@
 {
-  "count": 18,
+  "count": 20,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -142,6 +142,16 @@
       "exists": true
     },
     {
+      "title": "OpenVLA remote GPU path",
+      "path": "docs/openvla_remote.md",
+      "category": "adapter docs",
+      "status": "manual",
+      "kind": "manual",
+      "source_command": null,
+      "caveat": "Remote serving + health-first probe guidance; no task-success claim.",
+      "exists": true
+    },
+    {
       "title": "Adapter cards index",
       "path": "docs/adapters/README.md",
       "category": "adapter docs",
@@ -179,6 +189,16 @@
       "kind": "checked",
       "source_command": null,
       "caveat": "Local CUDA prompt probe blocked by insufficient free VRAM; remote GPU path is next.",
+      "exists": true
+    },
+    {
+      "title": "Remote probe tool sample (dummy)",
+      "path": "docs/assets/sample_task_verification/remote_probe_dummy.md",
+      "category": "GPU probes",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo remote-probe --model dummy --remote-url http://127.0.0.1:PORT",
+      "caveat": "Verifies the health-first remote probe tool; not an OpenVLA claim.",
       "exists": true
     },
     {

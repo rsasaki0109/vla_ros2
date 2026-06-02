@@ -647,6 +647,57 @@ def serve(
         raise typer.Exit(1) from exc
 
 
+@app.command("remote-probe")
+def remote_probe(
+    model: Annotated[
+        str,
+        typer.Option("--model", "-m", help="Model name the remote server hosts."),
+    ] = "openvla",
+    remote_url: Annotated[
+        str,
+        typer.Option("--remote-url", help="Base URL of the server, e.g. http://gpu-box:8000."),
+    ] = "http://gpu-box:8000",
+    instruction: Annotated[
+        str,
+        typer.Option("--instruction", "-i", help="Instruction sent in the probe request."),
+    ] = "pick up the red block",
+    timeout: Annotated[
+        float,
+        typer.Option("--timeout", help="HTTP timeout in seconds for health and predict."),
+    ] = 30.0,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write the recorded probe result JSON."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write a Markdown probe report."),
+    ] = None,
+    strict: Annotated[
+        bool,
+        typer.Option("--strict", help="Exit non-zero if the probe did not complete."),
+    ] = False,
+) -> None:
+    """Check a remote server's health, then record one /v1/predict response."""
+
+    from vla_zoo.runtime.remote_probe import format_remote_probe_markdown, probe_remote_model
+
+    result = probe_remote_model(
+        model_name=model,
+        remote_url=remote_url,
+        instruction=instruction,
+        timeout=timeout,
+    )
+    payload = result.to_dict()
+    if out is not None:
+        _write_text(out, json.dumps(payload, indent=2) + "\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, format_remote_probe_markdown(result))
+    typer.echo(json.dumps(payload, indent=2))
+    if strict and not result.is_ok:
+        raise typer.Exit(1)
+
+
 @gpu_app.command("smoke")
 def gpu_smoke(
     device: Annotated[

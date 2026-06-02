@@ -262,11 +262,15 @@
         },
         "remote_server": {
           "status": "planned",
-          "summary": "GPU server command is generated; recorded OpenVLA /v1/predict run is still needed.",
+          "summary": "Health-first remote probe (vla-zoo remote-probe) is reproducible and verified against the dummy server; a recorded OpenVLA /v1/predict run on a GPU box is still needed.",
           "links": [
             {
-              "label": "GPU server plan",
-              "href": "sample_compare_suite/gpu_server_plan.md"
+              "label": "OpenVLA remote path",
+              "href": "../openvla_remote.md"
+            },
+            {
+              "label": "remote probe tool sample",
+              "href": "sample_task_verification/remote_probe_dummy.md"
             }
           ]
         },

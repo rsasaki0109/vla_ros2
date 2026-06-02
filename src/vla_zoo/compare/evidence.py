@@ -185,8 +185,13 @@ def _openvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         ),
         "remote_server": _cell(
             "planned",
-            "GPU server command is generated; recorded OpenVLA /v1/predict run is still needed.",
-            (_link("GPU server plan", "sample_compare_suite/gpu_server_plan.md"),),
+            "Health-first remote probe (vla-zoo remote-probe) is reproducible and verified "
+            "against the dummy server; a recorded OpenVLA /v1/predict run on a GPU box is "
+            "still needed.",
+            (
+                _link("OpenVLA remote path", "../openvla_remote.md"),
+                _link("remote probe tool sample", "sample_task_verification/remote_probe_dummy.md"),
+            ),
         ),
         "ros2_remote": _cell(
             "planned",
