@@ -199,6 +199,15 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Typed action messages only; core never commands motors.",
     ),
     ArtifactEntry(
+        title="Jetson + remote GPU deployment guide",
+        path="docs/deployment.md",
+        category="ROS2",
+        status="manual",
+        kind="manual",
+        source_command=None,
+        caveat="Topology + serving + guards + bridges; runtime-centric, no task-success claim.",
+    ),
+    ArtifactEntry(
         title="ROS2 action replay summary",
         path="docs/assets/sample_benchmark/ros2_replay_summary.md",
         category="ROS2",
