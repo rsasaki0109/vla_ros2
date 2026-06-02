@@ -79,6 +79,23 @@ vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4   # numbers
 vla-zoo demo rtc-gif --out rtc.gif                               # the animation above
 ```
 
+**Real model, not just simulation.** `vla-zoo rtc-record` drives a real adapter through the
+PyBullet rollout in action-chunk mode and records every predicted chunk plus its *measured*
+inference latency into a `vla-zoo-rtc-trace/v1` log. Replaying that trace
+(`rtc-sim --trace` / `demo rtc-gif --trace`) reproduces exactly what a two-thread async
+executor would emit — so the continuity numbers are a real runtime property of the model's
+own output, not synthetic. On a recorded **SmolVLA** run (81 chunks, horizon 50, 6-DoF, real
+per-cycle delays ~533 ms at 30 Hz), freeze cuts the chunk-boundary jump **87%**
+([trace](docs/assets/rtc_sim/smolvla_rtc_trace.json) ·
+[comparison](docs/assets/rtc_sim/smolvla_rtc_compare.md)):
+
+![SmolVLA real-model RTC continuity](docs/assets/rtc_sim/smolvla_rtc.gif)
+
+```bash
+vla-zoo rtc-record --model smolvla --allow-local-heavy --out smolvla_rtc_trace.json
+vla-zoo demo rtc-gif --trace smolvla_rtc_trace.json --out smolvla_rtc.gif
+```
+
 ### Roofline floor vs measured latency
 
 How much of the recorded latency is the hardware, and how much is overhead? `vla-zoo

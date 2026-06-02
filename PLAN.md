@@ -1349,10 +1349,42 @@ and a Pages "Roofline floor vs measured" tile; 2 artifact-index entries (count 6
 8 module tests + 4 CLI tests (334 → 346). The floor is a first-order analytical lower bound, not
 a measurement or an achievable target, and makes no policy-quality claim.
 
+The RTC sim was then promoted from synthetic to a **real-model verified runtime path** — the
+"hard challenge" the user picked (DONE):
+
+```text
+add vla-zoo rtc-record: record a real adapter's chunk stream + latency, replay RTC from it (v0.7)  [DONE]
+```
+
+What landed: the key insight is that a two-thread async chunk executor's emitted control
+stream is *fully determined* by (the chunk sequence, the per-cycle inference latency, the
+control rate, execute horizon, freeze policy) — so instead of a flaky real-time thread race
+we record those two real inputs once and replay both strategies deterministically.
+`runtime/realtime_chunking.py` gained `simulate_emission_variable` (per-cycle delays, with a
+clamp + late-cycle counter when a chunk arrives too late to cover the cycle), refactored from
+the constant-delay path via a shared `_emit_with_delays`. New `runtime/rtc_executor.py`
+(`vla-zoo-rtc-trace/v1`): `RTCChunkEvent`/`RTCTrace` (+ `to_dict`/`from_dict`),
+`record_rtc_trace(adapter, observations, *, clock=…)` (injectable clock → deterministic CPU
+tests), `build_trace_from_chunks` (shared assembly used by the PyBullet sink path),
+`trace_delays_ticks`, and `compare_trace_strategies(trace) → RTCSimReport` using the real
+per-cycle delays. CLI: `rtc-record` (heavy, `--allow-local-heavy`-gated; drives the PyBullet
+rollout with `return_action_chunk=True` and captures chunks via the prediction sink),
+`rtc-sim --trace`, and `demo rtc-gif --trace` (+ `--max-frames` to sub-sample long streams).
+
+Verified on the real model: a recorded **SmolVLA** run (`docs/assets/rtc_sim/smolvla_rtc_trace.json`,
+81 chunks, horizon 50, 6-DoF, real per-cycle delays p50 16 ticks ≈ 533 ms @ 30 Hz, 0 late
+cycles) shows freeze cuts the chunk-boundary jump **87.4%** (naive 1.16 → RTC 0.15);
+`smolvla_rtc_compare.{md,json}` + the 76-frame `smolvla_rtc.gif` are checked in. This is the
+honesty jump from `simulation` to a real-model runtime path. Surfaced in the README RTC
+section + the Pages tile; 3 artifact-index entries (count 69 → 72). Tested: variable-emission
++ recorder + trace round-trip + comparison (8 module tests) + 3 CLI tests (346 → 357), all CPU
+with a fake chunk adapter (no weights downloaded in the suite). Still no policy-quality claim:
+continuity is a runtime scheduling property of the recorded chunks.
+
 Remaining v0.7 candidates (pause for direction before each):
 
 1. **HTML roofline page** + fold the real-time band / headroom into the leaderboard itself.
-2. **`chunks_from_action_log` driven artifact** + a real-log RTC view.
+2. **OpenVLA real-model RTC trace** (7-DoF) for a second verified RTC artifact + a race overlay.
 3. Update GR00T note to **N1.7**; scope an X-VLA server-client adapter.
 4. **PyPI publish** + release workflow (metadata already install-correct).
 

@@ -56,8 +56,14 @@ def render_rtc_chunking_gif(
     footer: int = 22,
     step_ms: int = 70,
     hold_ms: int = 2600,
+    max_frames: int = 160,
 ) -> Path:
-    """Render naive-async vs RTC-freeze emitted control streams as a stacked comparison GIF."""
+    """Render naive-async vs RTC-freeze emitted control streams as a stacked comparison GIF.
+
+    Long streams (e.g. recorded real-model traces with hundreds of ticks) are sub-sampled
+    to at most ``max_frames`` animation frames by revealing several ticks per frame; the
+    final frame always shows the complete stream so the GIF stays small.
+    """
 
     from PIL import Image, ImageDraw
 
@@ -118,9 +124,11 @@ def render_rtc_chunking_gif(
             draw.ellipse((hx - 3, hy - 3, hx + 3, hy + 3), fill=colors[d])
 
     reduction = report.boundary_jump_reduction * 100
+    stride = max(1, (ticks - 1) // max(1, max_frames) + 1)
+    reveal = sorted(set(list(range(1, ticks, stride)) + [ticks - 1]))
     images: list[Image.Image] = []
     durations: list[int] = []
-    for i in range(1, ticks):
+    for i in reveal:
         image = Image.new("RGB", (width, height), _PALETTE["bg"])
         draw = ImageDraw.Draw(image)
         draw.text(

@@ -1009,6 +1009,10 @@ def rtc_sim(
         Path | None,
         typer.Option("--action-log", help="Drive from a recorded log instead of synthetic chunks."),
     ] = None,
+    trace: Annotated[
+        Path | None,
+        typer.Option("--trace", help="Replay a recorded vla-zoo-rtc-trace/v1 (real-model run)."),
+    ] = None,
     out: Annotated[
         Path | None,
         typer.Option("--out", help="Write the comparison as versioned JSON."),
@@ -1025,9 +1029,9 @@ def rtc_sim(
     """Simulate latency-aware action-chunk scheduling (Real-Time Chunking style).
 
     Compares naive async chunk-swapping against the RTC freeze-prefix + soft-mask blend
-    over a chunk stream, reporting the chunk-boundary continuity of each. Pure CPU
-    simulation of the scheduling layer (no diffusion/flow policy, no gradient-guided
-    sampler); a runtime mechanism characterization, not a policy-quality claim.
+    over a chunk stream, reporting the chunk-boundary continuity of each. With ``--trace``
+    it replays a recorded real-model chunk stream (real per-cycle inference delays) instead
+    of synthetic chunks. A runtime mechanism characterization, not a policy-quality claim.
     """
 
     from vla_zoo.runtime.realtime_chunking import (
@@ -1037,6 +1041,26 @@ def rtc_sim(
         format_rtc_sim_markdown,
         synthetic_chunk_stream,
     )
+
+    if trace is not None:
+        from vla_zoo.runtime.rtc_executor import RTCTrace, compare_trace_strategies
+
+        if not trace.is_file():
+            typer.echo(f"trace not found: {trace}", err=True)
+            raise typer.Exit(1)
+        loaded = RTCTrace.from_dict(json.loads(trace.read_text(encoding="utf-8")))
+        report = compare_trace_strategies(loaded)
+        payload = report.to_dict()
+        if out is not None:
+            _write_text(out, json.dumps(payload, indent=2) + "\n")
+            typer.echo(f"JSON written to {out}")
+        if markdown_out is not None:
+            _write_text(markdown_out, format_rtc_sim_markdown(report))
+            typer.echo(f"Markdown written to {markdown_out}")
+        typer.echo(
+            json.dumps(payload, indent=2) if json_out else format_rtc_sim_markdown(report)
+        )
+        return
 
     try:
         config = RealtimeChunkingConfig(
@@ -1077,6 +1101,115 @@ def rtc_sim(
         typer.echo(json.dumps(payload, indent=2))
     else:
         typer.echo(format_rtc_sim_markdown(report))
+
+
+@app.command("rtc-record")
+def rtc_record(
+    out: Annotated[
+        Path,
+        typer.Option("--out", help="Write the recorded vla-zoo-rtc-trace/v1 JSON."),
+    ],
+    model: Annotated[str, typer.Option("--model", "-m", help="Adapter to record.")] = "smolvla",
+    task: Annotated[str, typer.Option("--task", help="PyBullet task id.")] = "pick_red_block",
+    control_hz: Annotated[
+        float,
+        typer.Option("--control-hz", help="Control loop rate the async executor would run at."),
+    ] = 30.0,
+    execute: Annotated[
+        int,
+        typer.Option("--execute", help="Actions executed per cycle before swapping (s)."),
+    ] = 8,
+    model_call_every: Annotated[int, typer.Option("--model-call-every")] = 12,
+    render_stride: Annotated[int, typer.Option("--render-stride")] = 24,
+    adapter_kwarg: Annotated[
+        list[str] | None,
+        typer.Option("--adapter-kwarg", help="Adapter load kwargs as key=value (repeatable)."),
+    ] = None,
+    pretrained: Annotated[str | None, typer.Option("--pretrained")] = None,
+    device: Annotated[str | None, typer.Option("--device")] = None,
+    allow_local_heavy: Annotated[
+        bool,
+        typer.Option("--allow-local-heavy", help="Allow heavy adapters to load real weights."),
+    ] = False,
+) -> None:
+    """Record a real adapter's action-chunk stream + per-cycle latency into an RTC trace.
+
+    Drives the PyBullet rollout with the adapter in action-chunk mode, capturing each
+    predicted chunk and its measured inference latency. Replay the trace with
+    ``rtc-sim --trace`` / ``demo rtc-gif --trace`` to get real-model RTC continuity.
+    Runtime path only; no task-success claim.
+    """
+
+    from vla_zoo.core.types import VLAActionChunk
+    from vla_zoo.demo.pybullet import (
+        HEAVY_LOCAL_MODELS,
+        AdapterPredictionEvent,
+        PyBulletDemoConfig,
+        pybullet_task_by_id,
+        run_simulation,
+    )
+    from vla_zoo.runtime.rtc_executor import build_trace_from_chunks
+
+    canonical = model.strip().lower()
+    if canonical in HEAVY_LOCAL_MODELS and not allow_local_heavy:
+        typer.echo(
+            f"local heavy adapter {model!r} skipped to avoid model download; "
+            "use --allow-local-heavy",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    try:
+        adapter_kwargs = _parse_adapter_kwargs(adapter_kwarg)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    adapter_kwargs["return_action_chunk"] = True
+    if pretrained:
+        adapter_kwargs["pretrained"] = pretrained
+    if device:
+        adapter_kwargs["device"] = device
+
+    pairs: list[tuple[tuple[tuple[float, ...], ...], float]] = []
+
+    def _sink(event: AdapterPredictionEvent) -> None:
+        if not isinstance(event.prediction, VLAActionChunk):
+            return
+        rows = tuple(tuple(a.tolist()) for a in event.prediction.actions)
+        pairs.append((rows, float(event.latency_ms or 0.0)))
+
+    try:
+        task_spec = pybullet_task_by_id(task)
+        config = PyBulletDemoConfig.from_task(
+            task_spec,
+            model_name=model,
+            out=out.with_suffix(".gif"),
+            model_call_every=model_call_every,
+            render_stride=render_stride,
+            adapter_kwargs=adapter_kwargs,
+        )
+        run_simulation(config, prediction_sink=_sink)
+        if not pairs:
+            typer.echo("no action chunks captured (adapter did not return chunks)", err=True)
+            raise typer.Exit(1)
+        trace = build_trace_from_chunks(
+            pairs,
+            model=model,
+            control_hz=control_hz,
+            execute_horizon=execute,
+            source=f"pybullet-rtc-record:{task}",
+        )
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    _write_text(out, json.dumps(trace.to_dict(), indent=2) + "\n")
+    typer.echo(
+        f"RTC trace written to {out} ({len(trace.events)} chunks, horizon {trace.horizon}, "
+        f"model {trace.model})"
+    )
 
 
 @app.command("bench-report")
@@ -3960,13 +4093,22 @@ def demo_rtc_gif(
         typer.Option("--mode-strength", help="Per-chunk mode-offset magnitude (jump source)."),
     ] = 0.6,
     seed: Annotated[int, typer.Option("--seed", help="Seed for the synthetic stream.")] = 7,
+    trace: Annotated[
+        Path | None,
+        typer.Option("--trace", help="Animate a recorded vla-zoo-rtc-trace/v1 (real-model run)."),
+    ] = None,
     width: Annotated[int, typer.Option("--width", help="GIF width in pixels.")] = 760,
+    max_frames: Annotated[
+        int,
+        typer.Option("--max-frames", help="Cap animation frames (sub-samples long streams)."),
+    ] = 160,
 ) -> None:
-    """Animate the RTC scheduler simulation (naive async vs freeze) into a comparison GIF.
+    """Animate the RTC scheduler comparison (naive async vs freeze) into a GIF.
 
     Renders both emitted control streams stacked with chunk-boundary markers so the
-    naive panel's jumps and the RTC panel's continuity are visible. Pure simulation of
-    the scheduling layer; a runtime property, not a policy-quality claim.
+    naive panel's jumps and the RTC panel's continuity are visible. With ``--trace`` the
+    streams come from a recorded real-model run; otherwise from a synthetic stream. A
+    runtime property, not a policy-quality claim.
     """
 
     from vla_zoo.demo.rtc_chunking_gif import render_rtc_chunking_gif
@@ -3975,6 +4117,22 @@ def demo_rtc_gif(
         compare_strategies,
         synthetic_chunk_stream,
     )
+
+    if trace is not None:
+        from vla_zoo.runtime.rtc_executor import RTCTrace, compare_trace_strategies
+
+        if not trace.is_file():
+            typer.echo(f"trace not found: {trace}", err=True)
+            raise typer.Exit(1)
+        report = compare_trace_strategies(
+            RTCTrace.from_dict(json.loads(trace.read_text(encoding="utf-8")))
+        )
+        render_rtc_chunking_gif(report, out, width=width, max_frames=max_frames)
+        typer.echo(
+            f"GIF written to {out} "
+            f"(boundary-jump reduction {report.boundary_jump_reduction * 100:.1f}%)"
+        )
+        return
 
     try:
         config = RealtimeChunkingConfig(
@@ -3990,7 +4148,7 @@ def demo_rtc_gif(
     report = compare_strategies(
         stream, config, source=f"synthetic(seed={seed}, mode_strength={mode_strength:g})"
     )
-    render_rtc_chunking_gif(report, out, width=width)
+    render_rtc_chunking_gif(report, out, width=width, max_frames=max_frames)
     typer.echo(
         f"GIF written to {out} "
         f"(boundary-jump reduction {report.boundary_jump_reduction * 100:.1f}%)"

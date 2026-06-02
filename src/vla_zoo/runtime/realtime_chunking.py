@@ -133,19 +133,19 @@ class RTCSimReport:
         }
 
 
-def _soft_weight(chunk_index: int, config: RealtimeChunkingConfig) -> float:
+def _soft_weight(chunk_index: int, delay: int, horizon: int) -> float:
     """Soft-mask weight for the offset correction at a given chunk index.
 
-    Weight is 1.0 at the first executable index (``d``) so the new chunk connects
+    Weight is 1.0 at the first executable index (``delay``) so the new chunk connects
     smoothly to the frozen prefix, then decays exponentially toward 0 so far-future
     actions return to the raw predicted chunk. Mirrors the soft mask in RTC's Eq. 5
     with a deterministic offset blend in place of the gradient-guided sampler.
     """
 
-    distance = chunk_index - config.inference_delay_ticks
+    distance = chunk_index - delay
     if distance < 0:
         return 1.0
-    tau = max(1.0, (config.horizon - config.inference_delay_ticks) / 3.0)
+    tau = max(1.0, (horizon - delay) / 3.0)
     return float(np.exp(-distance / tau))
 
 
@@ -165,6 +165,71 @@ def _continuity_stats(
     return mean_boundary, max_boundary, mean_step
 
 
+def _emit_with_delays(
+    arrays: list[NDArray[np.float32]],
+    delays: list[int],
+    *,
+    horizon: int,
+    execute: int,
+    freeze: bool,
+) -> tuple[EmissionResult, int]:
+    """Core emission shared by the constant- and variable-delay paths.
+
+    ``delays[k]`` is the inference delay (in control ticks) for the chunk that takes over
+    at cycle ``k`` (``delays[0]`` is unused). A delay too large to leave ``execute``
+    actions in the horizon means the chunk arrived late; it is clamped and counted.
+    """
+
+    emitted: list[NDArray[np.float32]] = []
+    boundaries: list[int] = []
+    prev_last: NDArray[np.float32] | None = None
+    late = 0
+    for cycle, chunk in enumerate(arrays):
+        if cycle == 0:
+            segment = chunk[0:execute].copy()
+        else:
+            delay = delays[cycle]
+            if delay + execute > horizon:  # chunk arrived too late to cover the cycle
+                delay = max(0, horizon - execute)
+                late += 1
+            segment = chunk[delay : delay + execute].copy()
+            # With delay == 0 there is no stale prefix to freeze (inference is
+            # instantaneous), so the freeze strategy degenerates to naive async.
+            if freeze and prev_last is not None and delay >= 1:
+                offset = prev_last - chunk[delay - 1]
+                for local, chunk_index in enumerate(range(delay, delay + execute)):
+                    weight = _soft_weight(chunk_index, delay, horizon)
+                    segment[local] = chunk[chunk_index] + weight * offset
+            boundaries.append(len(emitted))
+        emitted.extend(segment)
+        prev_last = emitted[-1]
+
+    mean_boundary, max_boundary, mean_step = _continuity_stats(emitted, boundaries)
+    result = EmissionResult(
+        strategy="rtc-freeze" if freeze else "naive-async",
+        emitted=np.stack(emitted).astype(np.float32),
+        boundary_indices=tuple(boundaries),
+        mean_boundary_jump=mean_boundary,
+        max_boundary_jump=max_boundary,
+        mean_step_jump=mean_step,
+    )
+    return result, late
+
+
+def _validated_arrays(
+    chunks: list[NDArray[np.float32]], horizon: int
+) -> list[NDArray[np.float32]]:
+    if not chunks:
+        msg = "at least one chunk is required"
+        raise ValueError(msg)
+    arrays = [np.asarray(chunk, dtype=np.float32) for chunk in chunks]
+    for chunk in arrays:
+        if chunk.shape[0] != horizon:
+            msg = f"every chunk must have {horizon} actions, got {chunk.shape[0]}"
+            raise ValueError(msg)
+    return arrays
+
+
 def simulate_emission(
     chunks: list[NDArray[np.float32]], config: RealtimeChunkingConfig, *, freeze: bool
 ) -> EmissionResult:
@@ -177,42 +242,39 @@ def simulate_emission(
     decaying soft mask returning later actions to the raw prediction.
     """
 
-    if not chunks:
-        msg = "at least one chunk is required"
+    arrays = _validated_arrays(chunks, config.horizon)
+    delays = [config.inference_delay_ticks] * len(arrays)
+    result, _ = _emit_with_delays(
+        arrays, delays, horizon=config.horizon, execute=config.execute_horizon, freeze=freeze
+    )
+    return result
+
+
+def simulate_emission_variable(
+    chunks: list[NDArray[np.float32]],
+    delays_ticks: list[int],
+    *,
+    horizon: int,
+    execute_horizon: int,
+    freeze: bool,
+) -> tuple[EmissionResult, int]:
+    """Emit under per-cycle inference delays (e.g. recorded from a real model run).
+
+    Returns the emission and the number of late cycles (a chunk whose measured delay left
+    fewer than ``execute_horizon`` fresh actions in the horizon). Unlike the constant-delay
+    path this models the variable inference latency a real adapter exhibits.
+    """
+
+    if len(delays_ticks) != len(chunks):
+        msg = "delays_ticks must have one entry per chunk"
         raise ValueError(msg)
-    arrays = [np.asarray(chunk, dtype=np.float32) for chunk in chunks]
-    horizon, execute, delay = config.horizon, config.execute_horizon, config.inference_delay_ticks
-    for chunk in arrays:
-        if chunk.shape[0] != horizon:
-            msg = f"every chunk must have {horizon} actions, got {chunk.shape[0]}"
-            raise ValueError(msg)
-
-    emitted: list[NDArray[np.float32]] = []
-    boundaries: list[int] = []
-    prev_last: NDArray[np.float32] | None = None
-    for cycle, chunk in enumerate(arrays):
-        if cycle == 0:
-            segment = chunk[0:execute].copy()
-        else:
-            segment = chunk[delay : delay + execute].copy()
-            # With delay == 0 there is no stale prefix to freeze (inference is
-            # instantaneous), so the freeze strategy degenerates to naive async.
-            if freeze and prev_last is not None and delay >= 1:
-                offset = prev_last - chunk[delay - 1]
-                for local, chunk_index in enumerate(range(delay, delay + execute)):
-                    segment[local] = chunk[chunk_index] + _soft_weight(chunk_index, config) * offset
-            boundaries.append(len(emitted))
-        emitted.extend(segment)
-        prev_last = emitted[-1]
-
-    mean_boundary, max_boundary, mean_step = _continuity_stats(emitted, boundaries)
-    return EmissionResult(
-        strategy="rtc-freeze" if freeze else "naive-async",
-        emitted=np.stack(emitted).astype(np.float32),
-        boundary_indices=tuple(boundaries),
-        mean_boundary_jump=mean_boundary,
-        max_boundary_jump=max_boundary,
-        mean_step_jump=mean_step,
+    if not 1 <= execute_horizon <= horizon:
+        msg = "execute_horizon must be in [1, horizon]"
+        raise ValueError(msg)
+    arrays = _validated_arrays(chunks, horizon)
+    clamped = [max(0, int(d)) for d in delays_ticks]
+    return _emit_with_delays(
+        arrays, clamped, horizon=horizon, execute=execute_horizon, freeze=freeze
     )
 
 
