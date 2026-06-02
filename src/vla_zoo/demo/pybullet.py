@@ -21,6 +21,20 @@ HEIGHT = 540
 FPS = 24
 STEPS_PER_FRAME = 10
 HEAVY_LOCAL_MODELS = frozenset({"openvla"})
+CUBE_INITIAL_POSITION = (0.58, -0.16, 0.035)
+CUBE_GOAL_POSITION = (0.58, 0.22, 0.035)
+TASK_GOAL_TOLERANCE_M = 0.15
+PHASE_ORDER = (
+    "observe",
+    "approach",
+    "descend",
+    "close gripper",
+    "lift",
+    "transport",
+    "place",
+    "open gripper",
+    "retreat",
+)
 
 
 def font(size: int, *, mono: bool = False) -> Any:
@@ -51,6 +65,8 @@ class RenderSample:
     image: Image.Image
     phase: str
     position: tuple[float, float, float]
+    cube_position: tuple[float, float, float]
+    cube_goal_position: tuple[float, float, float]
     scripted_action: tuple[float, float, float, float]
     adapter_action: tuple[float, float, float, float] | None
     adapter_error: str | None
@@ -88,6 +104,12 @@ class PyBulletComparisonResult:
     mean_latency_ms: float | None = None
     max_latency_ms: float | None = None
     mean_abs_action: float | None = None
+    task_success: bool = False
+    cube_lifted: bool = False
+    cube_moved_distance: float | None = None
+    final_cube_distance_to_goal: float | None = None
+    grasp_attached_frames: int = 0
+    phase_completion: float = 0.0
     last_error: str | None = None
 
 
@@ -128,6 +150,13 @@ def lerp(
 
 def clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
+
+
+def distance3(
+    a: tuple[float, float, float],
+    b: tuple[float, float, float],
+) -> float:
+    return float(math.sqrt(sum((a[index] - b[index]) ** 2 for index in range(3))))
 
 
 def make_model(config: PyBulletDemoConfig) -> BaseVLA:
@@ -212,7 +241,7 @@ def setup_world(p: Any, pybullet_data: Any) -> tuple[int, int, int]:
         baseMass=0.08,
         baseCollisionShapeIndex=cube_collision,
         baseVisualShapeIndex=cube_visual,
-        basePosition=[0.58, -0.16, 0.035],
+        basePosition=list(CUBE_INITIAL_POSITION),
         baseOrientation=[0, 0, 0, 1],
     )
     p.changeDynamics(cube, -1, lateralFriction=1.2, spinningFriction=0.02, rollingFriction=0.02)
@@ -355,28 +384,17 @@ def overlay(sample: RenderSample) -> Image.Image:
     draw.line((332, 485, 376, 485), fill=(74, 222, 128), width=3)
     draw.polygon([(376, 485), (366, 480), (366, 490)], fill=(74, 222, 128))
 
-    phase_order = [
-        "observe",
-        "approach",
-        "descend",
-        "close gripper",
-        "lift",
-        "transport",
-        "place",
-        "open gripper",
-        "retreat",
-    ]
     x0, y0, width = 520, 482, 380
     draw.rounded_rectangle((x0, y0, x0 + width, y0 + 10), radius=5, fill=(45, 55, 72))
-    current_index = phase_order.index(sample.phase) if sample.phase in phase_order else 0
-    progress = (current_index + 1) / len(phase_order)
+    current_index = PHASE_ORDER.index(sample.phase) if sample.phase in PHASE_ORDER else 0
+    progress = (current_index + 1) / len(PHASE_ORDER)
     draw.rounded_rectangle(
         (x0, y0, x0 + int(width * progress), y0 + 10),
         radius=5,
         fill=(34, 211, 238),
     )
-    for index, _ in enumerate(phase_order):
-        x = x0 + int(width * index / max(1, len(phase_order) - 1))
+    for index, _ in enumerate(PHASE_ORDER):
+        x = x0 + int(width * index / max(1, len(PHASE_ORDER) - 1))
         draw.line((x, y0 - 4, x, y0 + 14), fill=(148, 160, 178), width=1)
     draw.text((520, 504), f"phase timeline: {sample.phase}", fill=(188, 199, 216), font=MONO)
     return image
@@ -468,11 +486,19 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                     adapter_query_fresh = True
                 else:
                     adapter_query_fresh = False
+                cube_position_raw, _ = p.getBasePositionAndOrientation(cube)
+                cube_position = (
+                    float(cube_position_raw[0]),
+                    float(cube_position_raw[1]),
+                    float(cube_position_raw[2]),
+                )
                 samples.append(
                     RenderSample(
                         image=raw,
                         phase=waypoint.name,
                         position=target,
+                        cube_position=cube_position,
+                        cube_goal_position=CUBE_GOAL_POSITION,
                         scripted_action=scripted_action,
                         adapter_action=last_adapter_action,
                         adapter_error=last_adapter_error,
@@ -490,6 +516,41 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                 rendered_frames += 1
         current = waypoint.position
         current_gripper = waypoint.gripper
+
+    if samples:
+        raw = render_camera(p)
+        scripted_action = (
+            (current[0] - last_target[0]) * 8.0,
+            (current[1] - last_target[1]) * 8.0,
+            (current[2] - last_target[2]) * 8.0,
+            1.0 - current_gripper,
+        )
+        cube_position_raw, _ = p.getBasePositionAndOrientation(cube)
+        cube_position = (
+            float(cube_position_raw[0]),
+            float(cube_position_raw[1]),
+            float(cube_position_raw[2]),
+        )
+        samples.append(
+            RenderSample(
+                image=raw,
+                phase=waypoints[-1].name,
+                position=current,
+                cube_position=cube_position,
+                cube_goal_position=CUBE_GOAL_POSITION,
+                scripted_action=scripted_action,
+                adapter_action=last_adapter_action,
+                adapter_error=last_adapter_error,
+                adapter_latency_ms=last_adapter_latency_ms,
+                adapter_query_count=adapter_query_count,
+                adapter_query_fresh=False,
+                attached=grasp_constraint is not None,
+                sim_time=sim_step / 240.0,
+                model_name=config.model_name,
+                runtime=config.runtime,
+                frame_index=rendered_frames,
+            )
+        )
 
     p.disconnect()
     return samples
@@ -520,6 +581,37 @@ def summarize_pybullet_samples(
     mean_abs_action = (
         float(np.mean(np.abs(action_values))) if action_values.size else None
     )
+    cube_positions = [sample.cube_position for sample in samples]
+    initial_cube_position = cube_positions[0] if cube_positions else None
+    final_cube_position = cube_positions[-1] if cube_positions else None
+    cube_goal_position = samples[-1].cube_goal_position if samples else CUBE_GOAL_POSITION
+    max_cube_z = max((position[2] for position in cube_positions), default=0.0)
+    cube_lifted = max_cube_z > 0.12
+    cube_moved_distance = (
+        distance3(initial_cube_position, final_cube_position)
+        if initial_cube_position is not None and final_cube_position is not None
+        else None
+    )
+    final_cube_distance_to_goal = (
+        distance3(final_cube_position, cube_goal_position)
+        if final_cube_position is not None
+        else None
+    )
+    grasp_attached_frames = sum(1 for sample in samples if sample.attached)
+    phase_indices = [
+        PHASE_ORDER.index(sample.phase) for sample in samples if sample.phase in PHASE_ORDER
+    ]
+    phase_completion = (
+        (max(phase_indices) + 1) / len(PHASE_ORDER) if phase_indices else 0.0
+    )
+    task_success = (
+        bool(samples)
+        and cube_lifted
+        and grasp_attached_frames > 0
+        and final_cube_distance_to_goal is not None
+        and final_cube_distance_to_goal <= TASK_GOAL_TOLERANCE_M
+        and phase_completion >= 1.0
+    )
     observed_error = last_error or next(
         (sample.adapter_error for sample in reversed(fresh_samples) if sample.adapter_error),
         None,
@@ -535,6 +627,12 @@ def summarize_pybullet_samples(
         mean_latency_ms=float(np.mean(latencies)) if latencies else None,
         max_latency_ms=float(np.max(latencies)) if latencies else None,
         mean_abs_action=mean_abs_action,
+        task_success=task_success,
+        cube_lifted=cube_lifted,
+        cube_moved_distance=cube_moved_distance,
+        final_cube_distance_to_goal=final_cube_distance_to_goal,
+        grasp_attached_frames=grasp_attached_frames,
+        phase_completion=phase_completion,
         last_error=observed_error,
     )
 
@@ -641,8 +739,9 @@ def format_pybullet_comparison_markdown(
         f"## {title}",
         "",
         "| Model | Runtime | Endpoint | OK | Frames | Queries | Errors | "
-        "Mean latency ms | Mean abs action | Note |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---|",
+        "Task | Lifted | Goal dist m | Cube moved m | Phase | Mean latency ms | "
+        "Mean abs action | Note |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for result in results:
         endpoint = result.remote_url or "-"
@@ -652,18 +751,31 @@ def format_pybullet_comparison_markdown(
         mean_action = (
             f"{result.mean_abs_action:0.3f}" if result.mean_abs_action is not None else "-"
         )
+        goal_distance = (
+            f"{result.final_cube_distance_to_goal:0.3f}"
+            if result.final_cube_distance_to_goal is not None
+            else "-"
+        )
+        moved_distance = (
+            f"{result.cube_moved_distance:0.3f}"
+            if result.cube_moved_distance is not None
+            else "-"
+        )
+        phase = f"{result.phase_completion:0.2f}"
         note = (result.last_error or "-").replace("|", "\\|")
         lines.append(
             f"| `{result.model_name}` | `{result.runtime}` | {endpoint} | "
             f"{str(result.ok).lower()} | {result.frames} | {result.adapter_queries} | "
-            f"{result.adapter_errors} | {mean_latency} | {mean_action} | {note} |"
+            f"{result.adapter_errors} | {str(result.task_success).lower()} | "
+            f"{str(result.cube_lifted).lower()} | {goal_distance} | {moved_distance} | "
+            f"{phase} | {mean_latency} | {mean_action} | {note} |"
         )
     lines.extend(
         [
             "",
             "This is a runtime smoke comparison on the same deterministic PyBullet scene. "
-            "It measures adapter availability, query behavior, errors, latency, and action "
-            "magnitude; it is not a model-quality benchmark.",
+            "It measures adapter availability, query behavior, errors, latency, action "
+            "magnitude, and scripted-scene task telemetry; it is not a model-quality benchmark.",
         ]
     )
     return "\n".join(lines) + "\n"
@@ -694,6 +806,7 @@ def format_pybullet_comparison_html(
     title: str = "PyBullet VLA Runtime Comparison",
 ) -> str:
     ok_count = sum(1 for result in results if result.ok)
+    task_success_count = sum(1 for result in results if result.task_success)
     total_queries = sum(result.adapter_queries for result in results)
     total_errors = sum(result.adapter_errors for result in results)
     latencies = [
@@ -712,15 +825,24 @@ def format_pybullet_comparison_html(
     rows = []
     for result in results:
         status = "ok" if result.ok else "error"
+        task_status = "ok" if result.task_success else "error"
+        task_label = "success" if result.task_success else "miss"
         note = result.last_error or "-"
         latency = _html_metric(result.mean_latency_ms)
         action = _html_metric(result.mean_abs_action, precision=3)
+        goal_distance = _html_metric(result.final_cube_distance_to_goal, precision=3)
+        moved_distance = _html_metric(result.cube_moved_distance, precision=3)
         rows.append(
             "<tr>"
             f"<td><code>{escape(result.model_name)}</code></td>"
             f"<td><code>{escape(result.runtime)}</code></td>"
             f"<td>{escape(result.remote_url or '-')}</td>"
             f'<td><span class="badge {status}">{status}</span></td>'
+            f'<td><span class="badge {task_status}">{task_label}</span></td>'
+            f"<td>{str(result.cube_lifted).lower()}</td>"
+            f"<td>{goal_distance}</td>"
+            f"<td>{moved_distance}</td>"
+            f"<td>{result.phase_completion:0.2f}</td>"
             f"<td>{result.frames}</td>"
             f"<td>{result.adapter_queries}</td>"
             f"<td>{result.adapter_errors}</td>"
@@ -859,11 +981,14 @@ def format_pybullet_comparison_html(
     <p>
       Static VLA runtime report generated from the deterministic PyBullet smoke scene.
       It is useful for comparing adapter availability, remote server wiring, latency, and
-      action magnitude. It is not a model-quality benchmark.
+      scripted-scene task telemetry. It is not a model-quality benchmark.
     </p>
     <section class="cards">
       <div class="card"><div class="label">models</div><div class="value">{len(results)}</div></div>
       <div class="card"><div class="label">ok</div><div class="value">{ok_count}</div></div>
+      <div class="card">
+        <div class="label">task success</div><div class="value">{task_success_count}</div>
+      </div>
       <div class="card">
         <div class="label">adapter queries</div><div class="value">{total_queries}</div>
       </div>
@@ -875,6 +1000,7 @@ def format_pybullet_comparison_html(
       <thead>
         <tr>
           <th>Model</th><th>Runtime</th><th>Endpoint</th><th>Status</th>
+          <th>Task</th><th>Lifted</th><th>Goal dist m</th><th>Moved m</th><th>Phase</th>
           <th>Frames</th><th>Queries</th><th>Errors</th>
           <th>Mean latency ms</th><th>Mean abs action</th><th>Note</th>
         </tr>
