@@ -755,11 +755,14 @@ def bench(
 ) -> None:
     """Run a benchmark and optionally emit the versioned JSONL result schema."""
 
-    if benchmark != "smoke":
-        raise typer.BadParameter("Only the smoke benchmark is implemented in the MVP.")
+    if benchmark not in ("smoke", "libero", "simpler"):
+        raise typer.BadParameter(
+            "benchmark must be one of: smoke, libero, simpler "
+            "(libero/simpler are dependency-gated smoke runners)."
+        )
     loaded = load_model(model)
 
-    if jsonl_out is None and summary_out is None and summary_md is None:
+    if benchmark == "smoke" and jsonl_out is None and summary_out is None and summary_md is None:
         typer.echo(json.dumps(run_smoke_benchmark(loaded, episodes=episodes, seed=seed), indent=2))
         return
 
@@ -770,9 +773,26 @@ def bench(
     )
     from vla_zoo.benchmark.runner import run_smoke_episode_records
 
-    records, action_rate_hz = run_smoke_episode_records(
-        loaded, model_name=model, episodes=episodes, seed=seed
-    )
+    try:
+        if benchmark == "libero":
+            from vla_zoo.benchmark.libero import run_libero_smoke
+
+            records, action_rate_hz = run_libero_smoke(
+                loaded, model_name=model, episodes=episodes
+            )
+        elif benchmark == "simpler":
+            from vla_zoo.benchmark.simpler import run_simpler_smoke
+
+            records, action_rate_hz = run_simpler_smoke(
+                loaded, model_name=model, episodes=episodes
+            )
+        else:
+            records, action_rate_hz = run_smoke_episode_records(
+                loaded, model_name=model, episodes=episodes, seed=seed
+            )
+    except (MissingDependencyError, NotImplementedError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     summary = summarize_records(records, action_rate_hz=action_rate_hz)
     if jsonl_out is not None:
         write_episode_jsonl(jsonl_out, records)
