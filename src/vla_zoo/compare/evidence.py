@@ -286,12 +286,15 @@ def _smolvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
             (_link("local runtime evidence", "../smolvla_local_runtime.md"),),
         ),
         "remote_server": _cell(
-            "planned",
-            "Isolated-env server plan is reproducible (vla-zoo smolvla-remote-plan); a "
-            "recorded SmolVLA /v1/predict response is still needed.",
+            "verified",
+            "A real `vla-zoo serve --model smolvla` server passed a health-first probe and "
+            "returned a typed 6-DoF action over HTTP /v1/predict (recorded end-to-end).",
             (
+                _link(
+                    "SmolVLA remote probe",
+                    "sample_task_verification/smolvla_remote_probe.md",
+                ),
                 _link("SmolVLA remote plan", "smolvla_remote_smoke_plan.md"),
-                _link("env isolation", "../smolvla_remote.md"),
             ),
         ),
         "ros2_remote": _cell(
@@ -435,8 +438,8 @@ def _next_step(info: AdapterInfo) -> str:
         )
     if info.name == "smolvla":
         return (
-            "Local GPU inference is verified (~0.97 GB, ~60-130 ms); next, record "
-            "remote-server and ROS2 remote traces, then broaden task probes."
+            "Local GPU inference and a real remote /v1/predict are both verified; next, "
+            "record a ROS2 remote trace against the server, then broaden task probes."
         )
     if info.name == "groot":
         return (

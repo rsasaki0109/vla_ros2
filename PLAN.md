@@ -434,6 +434,12 @@ Reproducible via `scripts/measure_lerobot_runtime.py --model smolvla` (artifact
 `local_runtime`/`gpu_inference` cells carry measured numbers. Runtime-path claim on a
 synthetic frame, not task success; `policy_quality` stays `not_verified`.
 
+Remote serving (verified): a real `vla-zoo serve --model smolvla` FastAPI server passed a
+health-first probe and returned a typed 6-DoF action over HTTP `/v1/predict`, recorded
+end-to-end (`docs/assets/sample_task_verification/smolvla_remote_probe.{md,json}`). This is
+the first real-model (non-dummy) remote `/v1/predict` recording in the repo, so the SmolVLA
+`remote_server` cell is now `verified`.
+
 
 
 Status: `vla-zoo smolvla-remote-plan` generates a reproducible isolated-env bring-up
