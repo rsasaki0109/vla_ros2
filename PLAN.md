@@ -573,7 +573,9 @@ Remaining/next useful tasks:
 - MoveIt Servo bridge example. (DONE — pure mapping in `runtime/servo_bridge.py`
   (`eef_delta`->TwistStamped, joint->JointJog) + dry-run-safe example
   `examples/ros2/moveit_servo_bridge.py` that runs the clip+watchdog guards.)
-- ros2_control bridge example.
+- ros2_control bridge example. (DONE — pure mapping in `runtime/control_bridge.py`
+  (joint_position/velocity -> JointTrajectory point) + dry-run-safe example
+  `examples/ros2/ros2_control_bridge.py` that runs the clip+watchdog guards.)
 - Jetson + remote GPU deployment guide.
 
 ### v0.5 ecosystem hub
@@ -675,31 +677,32 @@ Shell/tooling conventions in this environment:
 ## 13. Current Best Next Commit
 
 Section 7 (adapter hardening) and the v0.3 benchmark-credibility track are done, and the
-v0.4 robot-readiness track is progressing: the pure clip + watchdog guards
-(`runtime/guard.py`) and the dry-run-safe MoveIt Servo bridge (pure mapping in
-`runtime/servo_bridge.py` + `examples/ros2/moveit_servo_bridge.py`) are now in, and the
-ROS2 node delegates to the guards. The next best commit continues v0.4 with the second
-hardware-bridge example:
+v0.4 robot-readiness track is well along: the pure clip + watchdog guards
+(`runtime/guard.py`), the dry-run-safe MoveIt Servo bridge (`runtime/servo_bridge.py` +
+example), and the dry-run-safe ros2_control bridge (`runtime/control_bridge.py` + example)
+are all in, with the ROS2 node delegating to the guards. The next best commit continues
+v0.4 with the deployment-guidance piece:
 
 ```text
-add a ros2_control action-bridge example (v0.4)
+add a Jetson + remote GPU deployment guide (v0.4)
 ```
 
-Reason: Servo is the Cartesian/teleop path; many arms are driven through ros2_control
-controllers instead. Add a pure mapping (`runtime/control_bridge.py`) from joint-space
-actions onto a `trajectory_msgs/JointTrajectory` (forward position/velocity controller
-input) plus a dry-run-safe `examples/ros2/ros2_control_bridge.py` that runs the
-clip+watchdog guards before forwarding. Keep it an example (core stays action-only), gate
-rclpy imports, and keep model downloads out of tests.
+Reason: the runtime, guards, and hardware-bridge examples exist, but there is no single
+guide for the realistic split deployment (lightweight robot-side runtime on a Jetson /
+robot computer, heavyweight VLA served from a remote GPU box). Write a `docs/deployment.md`
+that ties together the remote serving path, the ROS2 remote runtime, the clip/watchdog
+guards, and the bridge examples into one Jetson + remote-GPU topology, and surface it from
+the README / index / artifact index. Keep all claims runtime-centric (no task-success
+claims) and keep model downloads out of tests.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_servo_bridge.py tests/test_runtime_guard.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_control_bridge.py tests/test_servo_bridge.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/ros2_integration.md,docs/index.html,docs/safety.md \
+  --paths docs/deployment.md,docs/index.html,docs/ros2_integration.md \
   --strict
 ```
 

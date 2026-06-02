@@ -276,3 +276,31 @@ python examples/ros2/moveit_servo_bridge.py --engage \
 The bridge is an example, not core: the core publishes actions only and never actuates. A
 real deployment must still add an e-stop, workspace/joint-limit validation, and a high-rate
 deterministic controller below Servo.
+
+## ros2_control Bridge Example (dry-run safe)
+
+`examples/ros2/ros2_control_bridge.py` is the controller-driven counterpart to the Servo
+bridge: subscribe to `/vla/action`, run the clip + staleness guards, map a joint-space
+action onto a `trajectory_msgs/JointTrajectory` point, and forward it to a
+`joint_trajectory_controller`. The mapping is pure and unit-tested in
+`vla_zoo.runtime.control_bridge`:
+
+- `joint_position` -> trajectory point `positions` (velocities left empty).
+- `joint_velocity` -> trajectory point `velocities` (positions left empty).
+- `time_from_start_sec` (from the VLA control rate) sets how fast the controller is asked
+  to reach the point; `scale` throttles raw outputs.
+
+It is **dry-run safe**: without `--engage` it only logs the trajectory it would send.
+rclpy imports are lazy, so the pure mapping is testable without ROS2.
+
+```bash
+# dry-run: print the mapped trajectory point for each action
+python examples/ros2/ros2_control_bridge.py
+
+# engage publishing on a configured, safe robot only
+python examples/ros2/ros2_control_bridge.py --engage \
+  --command-topic /joint_trajectory_controller/joint_trajectory --time-from-start 0.1
+```
+
+Like the Servo bridge it is an example, not core. A real deployment must still validate
+joint limits, add an e-stop, and keep a deterministic controller in the loop.
