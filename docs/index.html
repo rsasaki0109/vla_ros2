@@ -315,6 +315,7 @@
 vla-zoo doctor --no-ros
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
+vla-zoo compare tasks --models dummy,scripted,random --tasks all
 vla-zoo compare suite --out-dir results/vla_compare_suite</code></pre>
       </div>
     </section>
@@ -395,6 +396,16 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre
           <h3>Result JSON</h3>
           <p>Machine-readable comparison artifact for dashboards and reproducible triage.</p>
           <a href="assets/sample_compare_suite/pybullet_results.json">Open JSON</a>
+        </div>
+        <div class="tile">
+          <h3>Task verification</h3>
+          <p>Three PyBullet runtime tasks for baseline adapters and external adapter status.</p>
+          <a href="assets/sample_task_verification/baseline_tasks.html">Open verification</a>
+        </div>
+        <div class="tile">
+          <h3>External status</h3>
+          <p>OpenVLA, openpi, SmolVLA, and GR00T status without claiming false support.</p>
+          <a href="assets/sample_task_verification/external_adapter_status.html">Open status</a>
         </div>
         <div class="tile">
           <h3>Action trace</h3>

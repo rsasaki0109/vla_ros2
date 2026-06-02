@@ -1401,6 +1401,142 @@ def compare_pybullet(
         typer.echo(f"HTML written to {html_out}")
 
 
+@compare_app.command("tasks")
+def compare_tasks(
+    models: Annotated[
+        str,
+        typer.Option(
+            "--models",
+            "-m",
+            help="Comma-separated adapters to verify across the PyBullet task suite.",
+        ),
+    ] = "dummy,scripted,random,openvla,pi0,smolvla,groot",
+    tasks: Annotated[
+        str,
+        typer.Option(
+            "--tasks",
+            help="Comma-separated task ids, or 'all' for the built-in PyBullet task suite.",
+        ),
+    ] = "all",
+    runtime: Annotated[str, typer.Option("--runtime")] = "local",
+    remote_url: Annotated[str, typer.Option("--remote-url")] = "http://localhost:8000",
+    remote_map: Annotated[
+        str | None,
+        typer.Option(
+            "--remote-map",
+            help="Comma-separated model=url overrides for remote comparisons.",
+        ),
+    ] = None,
+    model_call_every: Annotated[int, typer.Option("--model-call-every")] = 12,
+    render_stride: Annotated[int, typer.Option("--render-stride")] = 24,
+    allow_local_heavy: Annotated[
+        bool,
+        typer.Option(
+            "--allow-local-heavy",
+            help="Allow local heavy adapters such as OpenVLA to load real model weights.",
+        ),
+    ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Emit machine-readable JSON instead of a table."),
+    ] = False,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write JSON results to this path."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write a Markdown verification report."),
+    ] = None,
+    html_out: Annotated[
+        Path | None,
+        typer.Option("--html-out", help="Write a self-contained HTML verification report."),
+    ] = None,
+) -> None:
+    """Run several PyBullet runtime verification tasks per adapter."""
+
+    from vla_zoo.demo.pybullet import (
+        PyBulletComparisonTarget,
+        compare_pybullet_task_suite,
+        default_pybullet_tasks,
+        format_pybullet_comparison_html,
+        format_pybullet_comparison_markdown,
+        pybullet_task_by_id,
+    )
+
+    model_names = [item.strip() for item in models.split(",") if item.strip()]
+    if not model_names:
+        raise typer.BadParameter("At least one model name is required.")
+    remote_urls = _parse_remote_map(remote_map)
+    targets = [
+        PyBulletComparisonTarget(
+            model_name=model_name,
+            runtime=runtime,
+            remote_url=remote_urls.get(model_name.strip().lower(), remote_url),
+        )
+        for model_name in model_names
+    ]
+    if tasks.strip().lower() == "all":
+        task_specs = default_pybullet_tasks()
+    else:
+        task_specs = [pybullet_task_by_id(item) for item in tasks.split(",") if item.strip()]
+    if not task_specs:
+        raise typer.BadParameter("At least one task id is required.")
+
+    results = compare_pybullet_task_suite(
+        targets,
+        task_specs,
+        model_call_every=model_call_every,
+        render_stride=render_stride,
+        allow_local_heavy=allow_local_heavy,
+    )
+    title = "PyBullet Multi-Task VLA Runtime Verification"
+    json_payload = json.dumps([asdict(result) for result in results], indent=2)
+    if out is not None:
+        _write_text(out, f"{json_payload}\n")
+    if markdown_out is not None:
+        _write_text(
+            markdown_out,
+            format_pybullet_comparison_markdown(results, title=title),
+        )
+    if html_out is not None:
+        _write_text(
+            html_out,
+            format_pybullet_comparison_html(results, title=title),
+        )
+    if json_output:
+        typer.echo(json_payload)
+        return
+
+    typer.echo(
+        f"{'task':<21} {'model':<11} {'ok':<5} {'queries':>7} {'errors':>6} "
+        f"{'scene':<7} {'goal_m':>8} {'mean_ms':>9} {'mean|a|':>9} note"
+    )
+    typer.echo(
+        f"{'-' * 21} {'-' * 11} {'-' * 5} {'-' * 7} {'-' * 6} "
+        f"{'-' * 7} {'-' * 8} {'-' * 9} {'-' * 9} {'-' * 32}"
+    )
+    for result in results:
+        typer.echo(
+            f"{result.task_id:<21} "
+            f"{result.model_name:<11} "
+            f"{str(result.ok):<5} "
+            f"{result.adapter_queries:>7} "
+            f"{result.adapter_errors:>6} "
+            f"{('success' if result.task_success else 'miss'):<7} "
+            f"{_format_optional_float(result.final_cube_distance_to_goal):>8} "
+            f"{_format_optional_float(result.mean_latency_ms):>9} "
+            f"{_format_optional_float(result.mean_abs_action):>9} "
+            f"{_shorten(result.last_error)}"
+        )
+    if out is not None:
+        typer.echo(f"\nJSON written to {out}")
+    if markdown_out is not None:
+        typer.echo(f"Markdown written to {markdown_out}")
+    if html_out is not None:
+        typer.echo(f"HTML written to {html_out}")
+
+
 @demo_app.command("pybullet")
 def demo_pybullet(
     model: Annotated[str, typer.Option("--model", "-m")] = "dummy",

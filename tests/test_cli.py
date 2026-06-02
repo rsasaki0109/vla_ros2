@@ -349,6 +349,15 @@ def test_cli_compare_pybullet_help() -> None:
     assert "--html-out" in result.output
 
 
+def test_cli_compare_tasks_help() -> None:
+    result = CliRunner().invoke(app, ["compare", "tasks", "--help"])
+    assert result.exit_code == 0
+    assert "--models" in result.output
+    assert "--tasks" in result.output
+    assert "--remote-map" in result.output
+    assert "--allow-local-heavy" in result.output
+
+
 def test_cli_compare_manifest_loads_targets(tmp_path: Path) -> None:
     manifest = tmp_path / "comparison.json"
     manifest.write_text(

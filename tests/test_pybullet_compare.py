@@ -64,6 +64,7 @@ def test_pybullet_comparison_markdown_includes_remote_url() -> None:
     assert "`openvla`" in markdown
     assert "http://gpu-box:8001" in markdown
     assert "12.34" in markdown
+    assert "`pick_red_block`" in markdown
     assert "Goal dist m" in markdown
     assert "true" in markdown
 
@@ -89,6 +90,7 @@ def test_pybullet_comparison_html_includes_summary_and_json() -> None:
 
     assert "<!doctype html>" in html
     assert "Dummy Report" in html
+    assert "<code>pick_red_block</code>" in html
     assert "<code>dummy</code>" in html
     assert "task success" in html
     assert "Goal dist m" in html
@@ -127,3 +129,12 @@ def test_pybullet_summary_computes_scene_task_telemetry() -> None:
     assert result.final_cube_distance_to_goal == 0.0
     assert result.cube_moved_distance is not None
     assert result.cube_moved_distance > 0.35
+
+
+def test_pybullet_tasks_have_distinct_instructions() -> None:
+    from vla_zoo.demo.pybullet import default_pybullet_tasks, pybullet_task_by_id
+
+    tasks = default_pybullet_tasks()
+    assert len(tasks) >= 3
+    assert len({task.task_id for task in tasks}) == len(tasks)
+    assert pybullet_task_by_id("move_red_block_left").instruction.startswith("move")
