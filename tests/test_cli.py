@@ -58,6 +58,14 @@ def test_cli_demo_action_playground_help() -> None:
     assert "--allow-local-heavy" in result.output
 
 
+def test_cli_demo_action_playground_view_help() -> None:
+    result = CliRunner().invoke(app, ["demo", "action-playground-view", "--help"])
+    assert result.exit_code == 0
+    assert "--trace" in result.output
+    assert "--merged-out" in result.output
+    assert "--out" in result.output
+
+
 def test_cli_doctor_json() -> None:
     result = CliRunner().invoke(app, ["doctor", "--json", "--no-ros"])
     assert result.exit_code == 0
