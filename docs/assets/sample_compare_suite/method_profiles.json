@@ -1,0 +1,191 @@
+[
+  {
+    "name": "dummy",
+    "source": "built-in",
+    "status": "available",
+    "family": "dry-run baseline",
+    "compare_role": "CI/no-GPU runtime sanity check",
+    "input_requirements": [
+      "image optional",
+      "instruction optional",
+      "state optional"
+    ],
+    "output": "zero 7-DoF end-effector delta",
+    "action_space": "eef_delta",
+    "action_shape": "(7,)",
+    "control_hz": "5",
+    "action_chunks": "optional via chunk_size",
+    "proprioception": "not required",
+    "local_runtime": "supported",
+    "remote_runtime": "supported",
+    "dependency_profile": "base install",
+    "license_caveat": "none",
+    "aliases": [],
+    "experimental": false,
+    "domain": null
+  },
+  {
+    "name": "groot",
+    "source": "built-in",
+    "status": "experimental",
+    "family": "humanoid/generalist foundation model",
+    "compare_role": "experimental humanoid/generalist adapter target",
+    "input_requirements": [
+      "multimodal observations",
+      "instruction/task context",
+      "robot state expected"
+    ],
+    "output": "humanoid/generalist action interface",
+    "action_space": "custom",
+    "action_shape": "adapter-specific",
+    "control_hz": "stack dependent",
+    "action_chunks": "adapter-specific",
+    "proprioception": "expected",
+    "local_runtime": "experimental placeholder",
+    "remote_runtime": "recommended",
+    "dependency_profile": "Isaac GR00T stack in serving environment",
+    "license_caveat": "external NVIDIA project and model license apply",
+    "aliases": [
+      "gr00t",
+      "isaac-groot"
+    ],
+    "experimental": true,
+    "domain": "humanoid/generalist"
+  },
+  {
+    "name": "openvla",
+    "source": "built-in",
+    "status": "missing optional deps: pip install \"vla_zoo[openvla]\"",
+    "family": "VLA foundation model",
+    "compare_role": "single-image VLA reference adapter",
+    "input_requirements": [
+      "single RGB image",
+      "natural language instruction",
+      "optional unnormalization key"
+    ],
+    "output": "OpenVLA-style 7-DoF action",
+    "action_space": "eef_delta",
+    "action_shape": "(7,)",
+    "control_hz": "model/robot dependent",
+    "action_chunks": "no",
+    "proprioception": "not required by default adapter",
+    "local_runtime": "supported with optional ML dependencies",
+    "remote_runtime": "recommended for robot-side ROS2",
+    "dependency_profile": "torch, transformers, HF weights",
+    "license_caveat": "external project and model license apply",
+    "aliases": [],
+    "experimental": false,
+    "domain": null
+  },
+  {
+    "name": "pi0",
+    "source": "built-in",
+    "status": "experimental",
+    "family": "pi-family VLA",
+    "compare_role": "remote-first action-chunk VLA target",
+    "input_requirements": [
+      "images per policy config",
+      "natural language instruction",
+      "robot state expected"
+    ],
+    "output": "policy-specific manipulation action",
+    "action_space": "eef_delta",
+    "action_shape": "(7,) placeholder",
+    "control_hz": "policy/server dependent",
+    "action_chunks": "expected",
+    "proprioception": "expected",
+    "local_runtime": "not implemented in MVP",
+    "remote_runtime": "recommended",
+    "dependency_profile": "openpi stack in serving environment",
+    "license_caveat": "external project and checkpoint license apply",
+    "aliases": [
+      "openpi",
+      "pi0-fast",
+      "pi05"
+    ],
+    "experimental": true,
+    "domain": null
+  },
+  {
+    "name": "random",
+    "source": "built-in",
+    "status": "available",
+    "family": "stochastic baseline",
+    "compare_role": "action plumbing and visualization stress check",
+    "input_requirements": [
+      "instruction optional",
+      "image optional",
+      "state optional"
+    ],
+    "output": "seeded random 7-DoF end-effector delta",
+    "action_space": "eef_delta",
+    "action_shape": "(7,)",
+    "control_hz": "5",
+    "action_chunks": "no",
+    "proprioception": "not required",
+    "local_runtime": "supported",
+    "remote_runtime": "supported",
+    "dependency_profile": "base install",
+    "license_caveat": "none",
+    "aliases": [
+      "random-baseline"
+    ],
+    "experimental": false,
+    "domain": null
+  },
+  {
+    "name": "scripted",
+    "source": "built-in",
+    "status": "available",
+    "family": "rule-based baseline",
+    "compare_role": "upper-bound sanity check for the scripted smoke scene",
+    "input_requirements": [
+      "phase metadata",
+      "instruction optional",
+      "image optional"
+    ],
+    "output": "phase-aware 7-DoF end-effector delta",
+    "action_space": "eef_delta",
+    "action_shape": "(7,)",
+    "control_hz": "5",
+    "action_chunks": "no",
+    "proprioception": "not required",
+    "local_runtime": "supported",
+    "remote_runtime": "supported",
+    "dependency_profile": "base install",
+    "license_caveat": "none",
+    "aliases": [
+      "heuristic",
+      "rule-based"
+    ],
+    "experimental": false,
+    "domain": null
+  },
+  {
+    "name": "smolvla",
+    "source": "built-in",
+    "status": "experimental",
+    "family": "LeRobot policy",
+    "compare_role": "multi-camera/state/action-chunk adapter target",
+    "input_requirements": [
+      "multi-camera images",
+      "natural language instruction",
+      "robot state"
+    ],
+    "output": "policy-specific action chunk",
+    "action_space": "eef_delta",
+    "action_shape": "(7,) placeholder",
+    "control_hz": "policy/server dependent",
+    "action_chunks": "expected",
+    "proprioception": "required by typical deployments",
+    "local_runtime": "not implemented in MVP",
+    "remote_runtime": "recommended",
+    "dependency_profile": "LeRobot stack in serving environment",
+    "license_caveat": "external project, dataset, and checkpoint licenses apply",
+    "aliases": [
+      "lerobot-smolvla"
+    ],
+    "experimental": true,
+    "domain": null
+  }
+]

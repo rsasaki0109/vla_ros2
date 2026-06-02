@@ -6,12 +6,12 @@
   <title>vla_zoo demo</title>
   <meta
     name="description"
-    content="ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models."
+    content="ROS2-native runtime, benchmark, adapter hub, and report generator for VLA models."
   >
   <meta property="og:title" content="vla_zoo">
   <meta
     property="og:description"
-    content="ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models."
+    content="Run, connect, and compare VLA policies through ROS2-native runtime boundaries."
   >
   <meta
     property="og:image"
@@ -256,12 +256,16 @@
       <span class="eyebrow">ROS2-native VLA runtime infrastructure</span>
       <h1>vla_zoo</h1>
       <p>
-        Runtime boundary, ROS2 node, remote inference server, PyBullet smoke demo,
-        and adapter comparison tools for Vision-Language-Action policies.
+        Runtime boundary, ROS2 node, remote inference server, real PyBullet smoke demo,
+        and shareable comparison reports for Vision-Language-Action policies.
       </p>
       <div class="hero-actions">
-        <a class="button primary" href="assets/sample_runtime_dashboard.html">Open dashboard</a>
-        <a class="button" href="assets/sample_runtime_report.html">Open report</a>
+        <a class="button primary" href="assets/sample_compare_suite/pybullet_report.html">
+          Open PyBullet report
+        </a>
+        <a class="button" href="assets/sample_compare_suite/runtime_dashboard.html">
+          Open suite dashboard
+        </a>
         <a class="button" href="https://github.com/rsasaki0109/vla_zoo">GitHub</a>
       </div>
     </div>
@@ -282,14 +286,14 @@
           <a href="assets/sample_runtime_comparison.json">View sample JSON</a>
         </div>
         <div class="tile">
-          <h3>Runtime report</h3>
-          <p>Static HTML table for adapter status, query counts, errors, latency, and action scale.</p>
-          <a href="assets/sample_runtime_report.html">Open report</a>
+          <h3>Comparison suite</h3>
+          <p>Method profiles, PyBullet metrics, dashboard, and reproduce commands.</p>
+          <a href="assets/sample_compare_suite/pybullet_report.html">Open PyBullet report</a>
         </div>
         <div class="tile">
-          <h3>Interactive dashboard</h3>
-          <p>Filter and sort comparison JSON in a self-contained browser dashboard.</p>
-          <a href="assets/sample_runtime_dashboard.html">Open dashboard</a>
+          <h3>Suite dashboard</h3>
+          <p>Filter latency, errors, action scale, and task telemetry from the suite JSON.</p>
+          <a href="assets/sample_compare_suite/runtime_dashboard.html">Open suite dashboard</a>
         </div>
         <div class="tile">
           <h3>ROS2 log dashboard</h3>
@@ -308,24 +312,33 @@
         <pre><code id="local-command">pip install -e ".[dev,cli,server,sim]"
 vla-zoo predict --model dummy --instruction "hello"
 vla-zoo demo pybullet --model dummy --out docs/assets/simulation_pick_place.gif
-vla-zoo compare pybullet --models dummy,scripted,random,openvla,pi0,smolvla,groot \
-  --out results/vla_runtime_comparison.json \
-  --html-out results/vla_runtime_comparison.html
-vla-zoo compare dashboard \
-  --results results/vla_runtime_comparison.json \
-  --out results/vla_runtime_dashboard.html
-vla-zoo compare dashboard \
-  --status-log examples/ros2/vla_status_sample.jsonl \
-  --diagnostics-log examples/ros2/diagnostics_sample.jsonl \
-  --out results/vla_ros_runtime_dashboard.html</code></pre>
+vla-zoo compare suite --out-dir results/vla_compare_suite</code></pre>
       </div>
     </section>
 
     <section class="section">
-      <h2>Dashboard Preview</h2>
+      <h2>Visible Reports</h2>
       <p class="lead">
-        The dashboard is generated from comparison JSON or ROS2 runtime logs and can be shared as a static artifact.
+        The comparison suite writes static artifacts that can be attached to issues,
+        linked from READMEs, or published through GitHub Pages.
       </p>
+      <div class="quick-grid">
+        <div class="tile">
+          <h3>PyBullet report</h3>
+          <p>HTML summary of task telemetry, query counts, latency, and action magnitude.</p>
+          <a href="assets/sample_compare_suite/pybullet_report.html">Open report</a>
+        </div>
+        <div class="tile">
+          <h3>Runtime dashboard</h3>
+          <p>Interactive filters and charts for comparison result JSON.</p>
+          <a href="assets/sample_compare_suite/runtime_dashboard.html">Open dashboard</a>
+        </div>
+        <div class="tile">
+          <h3>Method profiles</h3>
+          <p>Adapter input requirements, action shape, chunking, dependencies, and caveats.</p>
+          <a href="assets/sample_compare_suite/method_profiles.md">Open profiles</a>
+        </div>
+      </div>
       <img
         class="preview-image"
         src="assets/dashboard_preview.png"

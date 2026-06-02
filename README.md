@@ -88,6 +88,9 @@ It writes:
 | `runtime_dashboard.html` | interactive dashboard for latency, errors, and task metrics |
 | `README.md` | index page with reproduce command and tables |
 
+[Open the live sample PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html)
+or [open the live sample dashboard](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/runtime_dashboard.html).
+
 ![vla_zoo runtime dashboard preview](docs/assets/dashboard_preview.png)
 
 For a fast metadata-only artifact:
