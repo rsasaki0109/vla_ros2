@@ -58,7 +58,7 @@ did and did not run.
 |---|---|---|
 | `dummy`, `scripted`, `random` | Verified on 3 PyBullet runtime tasks | Baselines only, not VLA model quality |
 | `openvla` | Adapter scaffold exercised; local heavy runs are skipped by default | Weights/deps were present locally, but the CUDA prompt probe did not complete due to insufficient free GPU memory in this run |
-| `pi0` / `openpi` | Placeholder status recorded | Not verified as a real model in this repo yet |
+| `pi0` / `openpi` | Remote-first adapter with opt-in LeRobot local loading | Local real-model action probe not completed; use remote runtime for robot-side deployment |
 | `smolvla` | Implemented local LeRobot adapter | GPU inference-path probe completed with `lerobot/smolvla_base`; this is not a task-success claim |
 | `groot` / `gr00t` | Experimental placeholder status recorded | Not verified as a real model in this repo yet |
 
@@ -76,6 +76,7 @@ Sample artifacts:
 - Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
 - External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
 - OpenVLA prompt probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md
+- pi0 compatibility probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md
 - SmolVLA GPU probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md
 - SmolVLA PyBullet probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_pybullet_report.html
 
@@ -275,7 +276,7 @@ smoke numbers as deployment-path checks, not robot skill claims.
 | `scripted` | implemented | 7-DoF `eef_delta` | Rule-based PyBullet smoke baseline |
 | `random` | implemented | 7-DoF `eef_delta` | Seeded baseline for report and metric plumbing |
 | `openvla` | implemented scaffold | 7-DoF `eef_delta` | Lazy CUDA/HF path; external weights required |
-| `pi0` / `openpi` | placeholder | model-specific | Remote-first target; no hard dependency |
+| `pi0` / `openpi` | remote-first adapter | checkpoint-specific | Optional LeRobot local load via `enable_local=True`; remote runtime recommended |
 | `smolvla` | implemented local adapter | 6D `custom` for `lerobot/smolvla_base` | LeRobot policy path; multi-camera/state expected; optional chunk output |
 | `groot` / `gr00t` | experimental placeholder | model-specific | Humanoid/generalist target; no hard dependency |
 
@@ -342,6 +343,6 @@ assert action.spec.action_space in {"eef_delta", "eef_pose", "joint_position", "
 ## Roadmap
 
 - v0.1: Python API, dummy adapter, OpenVLA adapter, remote server/client, ROS2 node, action replay
-- v0.2: openpi/GR00T adapter implementations, richer SmolVLA task probes, ROS bag replay benchmark
+- v0.2: pi0 remote-server examples, GR00T adapter implementation, richer SmolVLA task probes, ROS bag replay benchmark
 - v0.3: LIBERO and SimplerEnv runners with reproducible result formats
 - v0.4: lifecycle node, watchdogs, action bridges, real robot deployment guides

@@ -413,6 +413,11 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre
           <a href="assets/sample_task_verification/smolvla_gpu_probe.md">Open probe</a>
         </div>
         <div class="tile">
+          <h3>pi0 compatibility</h3>
+          <p>Version and checkpoint notes for the remote-first pi0/openpi adapter path.</p>
+          <a href="assets/sample_task_verification/pi0_compatibility_probe.md">Open notes</a>
+        </div>
+        <div class="tile">
           <h3>SmolVLA PyBullet probe</h3>
           <p>Local CUDA SmolVLA queried on rendered PyBullet images and 6D simulation state.</p>
           <a href="assets/sample_task_verification/smolvla_pybullet_report.html">Open report</a>
@@ -467,9 +472,14 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre
             <td>LeRobot SmolVLA adapter with local CUDA inference-path probe.</td>
           </tr>
           <tr>
-            <td><code>pi0</code>, <code>groot</code></td>
+            <td><code>pi0</code></td>
+            <td><span class="badge planned">remote-first</span></td>
+            <td>openpi/LeRobot adapter with opt-in local loading and recommended remote runtime.</td>
+          </tr>
+          <tr>
+            <td><code>groot</code></td>
             <td><span class="badge planned">scaffold</span></td>
-            <td>Remote-first adapter paths for external heavy VLA stacks.</td>
+            <td>Experimental adapter path for external humanoid/generalist stacks.</td>
           </tr>
         </tbody>
       </table>
