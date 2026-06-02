@@ -1182,15 +1182,35 @@ Tested: 7 module tests (incl. a real baseline run + an error-row case) + 2 CLI t
 Honest framing throughout: baselines are infrastructure baselines, not VLA policies; this proves the
 plumbing, not model quality. Note: the checked-in report's latencies are machine-specific.
 
+The README now leads with an animated demo (DONE):
+
+```text
+add an animated quickstart terminal-demo GIF for the README hero (PIL-rendered, no external tools) (v0.6)  [DONE]
+```
+
+What landed: new pure module `demo/terminal_cast.py` renders a terminal "cast" (a typed command +
+progressively-revealed output) straight to an animated GIF using only Pillow — no asciinema/agg
+toolchain. `build_quickstart_cast()` scripts the `vla-zoo quickstart` session (type `pip install`,
+type `vla-zoo quickstart`, reveal the table line-by-line, end on a green `✓ runtime boundary works`
++ the report path); `render_cast_gif()` draws each frame (dark terminal, traffic-light title bar,
+monospace via a DejaVuSansMono lookup with a `load_default(size=)` fallback) and writes a looping
+GIF with per-frame durations. CLI `demo quickstart-gif --out ... --width ...`. The 24-frame
+720×382 GIF is checked in at `docs/assets/quickstart/quickstart_demo.gif`, embedded at the **top of
+the README** (right under the intro, above the social preview) and centred at the top of the Pages
+`<main>` (linking to the quickstart report). Artifact-index entry added (count 60 → 61). Tested: 3
+module tests (cast monotonicity + success/path content, animated-GIF render, empty-cast guard) + a
+recorded-GIF validity check (302 → 306). Framed honestly as a presentation asset with representative
+baseline figures, not an evidence artifact.
+
 This is a good point to **pause for direction**. Remaining high-leverage star-growth moves:
 
 1. **PyPI publish** so `pip install vla_zoo` actually works for non-clone users (not yet on PyPI);
    the metadata is now install-correct, so this is mostly packaging + a release workflow.
-2. **README hero + a 60-second animated demo** (asciinema/GIF of `vla-zoo quickstart` or the
-   leaderboard) at the very top of the README.
-3. A genuinely new runtime capability (new adapter / new ROS2 surface).
+2. A genuinely new runtime capability (new adapter / new ROS2 surface).
+3. Deeper onboarding polish (e.g. a short "why vla_zoo" comparison, a GIF in social-preview).
 
-No auto-increment: confirm the direction with the user before starting.
+No auto-increment: confirm the direction with the user before starting. (User has signalled a "new
+feature / new UI" follow-up after the demo GIF — clarify which when resuming.)
 
 Acceptance:
 

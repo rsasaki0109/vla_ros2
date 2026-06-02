@@ -3631,6 +3631,26 @@ def demo_gif_report(
         raise typer.Exit(1)
 
 
+@demo_app.command("quickstart-gif")
+def demo_quickstart_gif(
+    out: Annotated[
+        Path,
+        typer.Option("--out", help="Output GIF path."),
+    ] = Path("docs/assets/quickstart/quickstart_demo.gif"),
+    width: Annotated[
+        int,
+        typer.Option("--width", help="GIF width in pixels."),
+    ] = 720,
+) -> None:
+    """Render the animated ``vla-zoo quickstart`` terminal-demo GIF (PIL only, no tools)."""
+
+    from vla_zoo.demo.terminal_cast import build_quickstart_cast, render_cast_gif
+
+    frames = build_quickstart_cast()
+    render_cast_gif(frames, out, width=width)
+    typer.echo(f"GIF written to {out} ({len(frames)} frames)")
+
+
 @demo_app.command("action-playground")
 def demo_action_playground(
     manifest: Annotated[

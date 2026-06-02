@@ -124,6 +124,22 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Machine-readable vla-zoo-leaderboard/v1 artifact; no task-success claim.",
     ),
     ArtifactEntry(
+        title="Quickstart terminal demo (animated GIF)",
+        path="docs/assets/quickstart/quickstart_demo.gif",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo demo quickstart-gif "
+            "--out docs/assets/quickstart/quickstart_demo.gif"
+        ),
+        caveat=(
+            "Animated terminal demo of `vla-zoo quickstart`, rendered with PIL (no external "
+            "tools). Presentation asset with representative baseline figures; not an evidence "
+            "artifact."
+        ),
+    ),
+    ArtifactEntry(
         title="Quickstart runtime-boundary report (HTML)",
         path="docs/assets/quickstart/report.html",
         category="simulation",

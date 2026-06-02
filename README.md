@@ -14,6 +14,11 @@ ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action model
 
 Live demo and reports: https://rsasaki0109.github.io/vla_zoo/
 
+![vla-zoo quickstart demo](docs/assets/quickstart/quickstart_demo.gif)
+
+> `pip install -e . && vla-zoo quickstart` — runs the real runtime boundary on the
+> pure-Python baselines (no GPU / weights / PyBullet) and writes a local report.
+
 ![vla_zoo social preview](docs/assets/social_preview.png)
 
 ## Open First
