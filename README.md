@@ -105,6 +105,16 @@ For a self-contained ROS2 smoke demo with synthetic camera input and typed instr
 ros2 launch vla_zoo smoke.launch.py
 ```
 
+To record runtime logs for a static dashboard:
+
+```bash
+ros2 launch vla_zoo smoke_record.launch.py output_dir:=results/ros2_smoke
+vla-zoo compare dashboard \
+  --status-log results/ros2_smoke/vla_status.jsonl \
+  --diagnostics-log results/ros2_smoke/vla_diagnostics.jsonl \
+  --out results/ros2_smoke/dashboard.html
+```
+
 | Topic | Type | Direction |
 |---|---|---|
 | `/camera/image_raw` | `sensor_msgs/msg/Image` | input |

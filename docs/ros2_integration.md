@@ -38,6 +38,21 @@ ros2 launch vla_zoo smoke.launch.py
 `instruction_msg_type:=vla_instruction`, requires a fresh image, and publishes
 dummy actions for logging/demo visibility.
 
+To record the same smoke run for dashboards and issue reports:
+
+```bash
+ros2 launch vla_zoo smoke_record.launch.py output_dir:=results/ros2_smoke
+```
+
+Stop the launch after the JSONL files are non-empty, then build a dashboard from the logs:
+
+```bash
+vla-zoo compare dashboard \
+  --status-log results/ros2_smoke/vla_status.jsonl \
+  --diagnostics-log results/ros2_smoke/vla_diagnostics.jsonl \
+  --out results/ros2_smoke/dashboard.html
+```
+
 ## Topics
 
 Inputs:
@@ -137,7 +152,7 @@ Useful launch arguments:
 The static dashboard can ingest JSONL logs shaped like `VLAStatus` and `DiagnosticArray` messages:
 
 ```bash
-ros2 launch vla_zoo log_recorder.launch.py output_dir:=results
+ros2 launch vla_zoo smoke_record.launch.py output_dir:=results
 vla-zoo compare dashboard \
   --status-log results/vla_status.jsonl \
   --diagnostics-log results/vla_diagnostics.jsonl \
