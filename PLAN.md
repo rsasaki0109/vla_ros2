@@ -533,11 +533,25 @@ Remaining/next useful tasks:
 
 ### v0.3 benchmark credibility
 
-- ROS bag replay benchmark stub -> working loader.
-- LIBERO smoke runner when deps are installed.
-- SimplerEnv runner.
-- JSONL benchmark result schema.
-- Latency and action-rate summary reports.
+- ROS bag replay benchmark stub -> working loader. (DONE for JSONL action logs;
+  native rosbag2 .db3/.mcap decoding is still future work, gated on ROS2.)
+- LIBERO smoke runner when deps are installed. (still a stub)
+- SimplerEnv runner. (still a stub)
+- JSONL benchmark result schema. (DONE — `vla-zoo-benchmark/v1` in
+  `benchmark/results.py`.)
+- Latency and action-rate summary reports. (DONE — `BenchmarkSummary` +
+  `vla-zoo bench --summary-md` / `vla-zoo bench-replay`.)
+
+Status: the versioned JSONL result schema, the latency/action-rate summary, and the
+ROS bag replay stub (over vla_zoo JSONL action logs) are done, with a reproducible
+sample summary checked in at `docs/assets/sample_benchmark/`. Acceptance passed: 184
+tests, ruff/mypy clean, link-check 237 ok / 0 broken, git diff --check clean.
+
+Remaining/next useful tasks:
+
+- Native rosbag2 (.db3/.mcap) decoding behind the ROS2 stack.
+- Turn the LIBERO / SimplerEnv placeholders into smoke runners once their deps and a
+  recorded run exist.
 
 ### v0.4 robot readiness
 
@@ -647,29 +661,31 @@ Shell/tooling conventions in this environment:
 
 ## 13. Current Best Next Commit
 
-The docs link checker (7.1), artifact index (7.2), ROS2 metadata tests (7.3), the SmolVLA
-remote serving plan + isolation docs (7.4), the OpenVLA health-first remote probe (7.5),
-the pi0/openpi remote-first docs + plan (7.6), and the GR00T blocked-until-NVIDIA-stack
-path (7.7) are now done. All of section 7 (adapter hardening) is complete. The next best
-commit moves into the v0.3 benchmark-credibility track:
+All of section 7 (adapter hardening) is complete, and the v0.3 benchmark-credibility
+track has started: the versioned JSONL result schema (`vla-zoo-benchmark/v1`), the
+latency/action-rate summary, and the ROS bag replay stub (over vla_zoo JSONL action
+logs) are now done. The next best commit continues v0.3:
 
 ```text
-add a JSONL benchmark result schema + ROS bag replay loader stub (v0.3 start)
+render benchmark summaries into the runtime dashboard / report surface (v0.3)
 ```
 
-Reason: with adapters honest and remote-first, the next quality jump is turning the
-benchmark stubs into a real, schema-backed result format that latency/action-rate summary
-reports can consume. Start with a versioned JSONL result schema and a ROS bag replay
-loader stub, keeping all claims runtime-centric and model downloads out of tests.
+Reason: the JSONL result schema and summaries exist but are only reachable via the CLI
+and a checked-in sample. The next quality jump is surfacing benchmark latency/action-rate
+summaries in the existing HTML report/dashboard surface (alongside the evidence matrix and
+artifact index), and adding a small comparison view across models. Keep all claims
+runtime-centric (`success` stays `null` when no task-success claim is made) and keep
+model downloads out of tests. Native rosbag2 (.db3/.mcap) decoding and the LIBERO /
+SimplerEnv smoke runners remain explicit stubs until their deps and a recorded run exist.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_groot.py tests/test_evidence.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_benchmark_results.py tests/test_benchmark_replay.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/groot_remote.md,docs/index.html,docs/assets/vla_model_evidence_matrix.html \
+  --paths docs/benchmark_results.md,docs/index.html,docs/assets/sample_benchmark/ros2_replay_summary.md \
   --strict
 ```
 

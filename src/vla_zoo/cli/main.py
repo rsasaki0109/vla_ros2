@@ -740,13 +740,115 @@ def bench(
     benchmark: Annotated[str, typer.Option("--benchmark", "-b")] = "smoke",
     episodes: Annotated[int, typer.Option("--episodes", "-e")] = 3,
     seed: Annotated[int, typer.Option("--seed")] = 0,
+    jsonl_out: Annotated[
+        Path | None,
+        typer.Option("--jsonl-out", help="Write per-episode results as versioned JSONL."),
+    ] = None,
+    summary_out: Annotated[
+        Path | None,
+        typer.Option("--summary-out", help="Write the latency/action-rate summary as JSON."),
+    ] = None,
+    summary_md: Annotated[
+        Path | None,
+        typer.Option("--summary-md", help="Write the latency/action-rate summary as Markdown."),
+    ] = None,
 ) -> None:
-    """Run a benchmark."""
+    """Run a benchmark and optionally emit the versioned JSONL result schema."""
 
     if benchmark != "smoke":
         raise typer.BadParameter("Only the smoke benchmark is implemented in the MVP.")
     loaded = load_model(model)
-    typer.echo(json.dumps(run_smoke_benchmark(loaded, episodes=episodes, seed=seed), indent=2))
+
+    if jsonl_out is None and summary_out is None and summary_md is None:
+        typer.echo(json.dumps(run_smoke_benchmark(loaded, episodes=episodes, seed=seed), indent=2))
+        return
+
+    from vla_zoo.benchmark.results import (
+        format_benchmark_summary_markdown,
+        summarize_records,
+        write_episode_jsonl,
+    )
+    from vla_zoo.benchmark.runner import run_smoke_episode_records
+
+    records, action_rate_hz = run_smoke_episode_records(
+        loaded, model_name=model, episodes=episodes, seed=seed
+    )
+    summary = summarize_records(records, action_rate_hz=action_rate_hz)
+    if jsonl_out is not None:
+        write_episode_jsonl(jsonl_out, records)
+        typer.echo(f"JSONL written to {jsonl_out}")
+    if summary_out is not None:
+        _write_text(summary_out, json.dumps(summary.to_dict(), indent=2) + "\n")
+        typer.echo(f"Summary JSON written to {summary_out}")
+    if summary_md is not None:
+        _write_text(summary_md, format_benchmark_summary_markdown(summary))
+        typer.echo(f"Summary Markdown written to {summary_md}")
+    typer.echo(json.dumps(summary.to_dict(), indent=2))
+
+
+@app.command("bench-replay")
+def bench_replay(
+    action_log: Annotated[
+        Path,
+        typer.Option("--action-log", help="Path to a recorded vla_actions.jsonl action log."),
+    ],
+    jsonl_out: Annotated[
+        Path | None,
+        typer.Option("--jsonl-out", help="Write replay results as versioned JSONL."),
+    ] = None,
+    summary_out: Annotated[
+        Path | None,
+        typer.Option("--summary-out", help="Write the latency/action-rate summary as JSON."),
+    ] = None,
+    summary_md: Annotated[
+        Path | None,
+        typer.Option("--summary-md", help="Write the latency/action-rate summary as Markdown."),
+    ] = None,
+) -> None:
+    """Replay a recorded JSONL action log into the versioned benchmark result schema.
+
+    This is a ROS bag replay stub: it consumes vla_zoo's own JSONL action logs (native
+    rosbag2 .db3/.mcap decoding is future work) and makes no task-success claim.
+    """
+
+    from vla_zoo.benchmark.replay import (
+        ROSBAG_REPLAY_NOTE,
+        frames_to_records,
+        load_action_log,
+        replay_action_rate_hz,
+    )
+    from vla_zoo.benchmark.results import (
+        format_benchmark_summary_markdown,
+        summarize_records,
+        write_episode_jsonl,
+    )
+
+    if not action_log.is_file():
+        typer.echo(f"action log not found: {action_log}", err=True)
+        raise typer.Exit(1)
+
+    frames = load_action_log(action_log)
+    records = frames_to_records(frames)
+    summary = summarize_records(
+        records,
+        action_rate_hz=replay_action_rate_hz(frames),
+        note=ROSBAG_REPLAY_NOTE,
+    )
+    if jsonl_out is not None:
+        write_episode_jsonl(jsonl_out, records)
+        typer.echo(f"JSONL written to {jsonl_out}")
+    if summary_out is not None:
+        _write_text(summary_out, json.dumps(summary.to_dict(), indent=2) + "\n")
+        typer.echo(f"Summary JSON written to {summary_out}")
+    if summary_md is not None:
+        _write_text(
+            summary_md,
+            format_benchmark_summary_markdown(
+                summary, title="ROS2 Action Replay Latency / Action-Rate Summary"
+            ),
+        )
+        typer.echo(f"Summary Markdown written to {summary_md}")
+    typer.echo(json.dumps(summary.to_dict(), indent=2))
 
 
 @compare_app.command("adapters")

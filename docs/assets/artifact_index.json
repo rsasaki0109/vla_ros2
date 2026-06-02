@@ -1,5 +1,5 @@
 {
-  "count": 23,
+  "count": 25,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -72,6 +72,16 @@
       "exists": true
     },
     {
+      "title": "Benchmark result schema + ROS bag replay",
+      "path": "docs/benchmark_results.md",
+      "category": "simulation",
+      "status": "manual",
+      "kind": "manual",
+      "source_command": null,
+      "caveat": "Versioned JSONL schema and replay stub; runtime-centric, no task-success claim.",
+      "exists": true
+    },
+    {
       "title": "Runtime dashboard",
       "path": "docs/assets/sample_compare_suite/runtime_dashboard.html",
       "category": "runtime dashboard",
@@ -119,6 +129,16 @@
       "kind": "generated",
       "source_command": "vla-zoo ros action-trace --action-log .../vla_actions.jsonl",
       "caveat": "Typed action messages only; core never commands motors.",
+      "exists": true
+    },
+    {
+      "title": "ROS2 action replay summary",
+      "path": "docs/assets/sample_benchmark/ros2_replay_summary.md",
+      "category": "ROS2",
+      "status": "generated",
+      "kind": "generated",
+      "source_command": "vla-zoo bench-replay --action-log .../vla_actions.jsonl --summary-md docs/assets/sample_benchmark/ros2_replay_summary.md",
+      "caveat": "Latency/action-rate from a recorded action log; no task-success claim.",
       "exists": true
     },
     {
