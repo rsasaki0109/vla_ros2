@@ -566,8 +566,10 @@ Remaining/next useful tasks:
 
 - Lifecycle node design.
 - Diagnostics improvements.
-- Watchdog node/example.
-- Action clipping.
+- Watchdog node/example. (DONE — pure `evaluate_watchdog` in `runtime/guard.py`; the ROS2
+  node delegates to it.)
+- Action clipping. (DONE — pure `clip_action_report` + `ActionClipGuard` with clip-rate
+  reporting in `runtime/guard.py`; the ROS2 node delegates to it.)
 - MoveIt Servo bridge example.
 - ros2_control bridge example.
 - Jetson + remote GPU deployment guide.
@@ -670,32 +672,31 @@ Shell/tooling conventions in this environment:
 
 ## 13. Current Best Next Commit
 
-All of section 7 (adapter hardening) is complete, and the v0.3 benchmark-credibility
-track is essentially done: the versioned JSONL result schema (`vla-zoo-benchmark/v1`), the
-latency/action-rate summary, the ROS bag replay stub, the `bench-report` comparison report
-on the Pages surface, and the dependency-gated LIBERO / SimplerEnv smoke runners are all
-in. The next best commit starts the v0.4 robot-readiness track with a safety-first piece:
+Section 7 (adapter hardening) and the v0.3 benchmark-credibility track are done, and the
+v0.4 robot-readiness track has started: the pure, unit-tested action-clipping guard
+(`clip_action_report` / `ActionClipGuard` with clip-rate reporting) and staleness watchdog
+(`evaluate_watchdog`) now live in `runtime/guard.py`, and the ROS2 node delegates to them.
+The next best commit continues v0.4 with the first concrete hardware-bridge example:
 
 ```text
-add an action-clipping + watchdog runtime guard (v0.4 start)
+add a MoveIt Servo action-bridge example (v0.4)
 ```
 
-Reason: the core publishes actions only, but robot readiness needs an explicit, tested
-safety layer before any hardware bridge. Add a small action-clipping guard (clamp to the
-adapter's declared action `low`/`high` and report a clip rate) and a staleness watchdog
-(flag stale image/instruction inputs), both pure and unit-tested, surfaced through the
-existing diagnostics/JSONL path. Keep the core action-only (no actuation), keep model
-downloads out of tests, and keep claims runtime-centric. Native rosbag2 decoding and the
-real LIBERO/SimplerEnv env loops remain future work.
+Reason: the guards shape and flag the action stream, but nothing yet shows how a robot
+consumes it. Add a documented, dry-run-safe MoveIt Servo bridge example that maps an
+`eef_delta` action onto a `TwistStamped`/`JointJog` Servo input, runs the clip + watchdog
+guards before forwarding, and stays an example (not core) so the core remains action-only.
+Keep model downloads out of tests; gate any rclpy/MoveIt imports so the example documents
+the contract without requiring the full stack in CI.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_benchmark_external.py tests/test_benchmark_results.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_runtime_guard.py tests/test_benchmark_results.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/benchmark_results.md,docs/index.html,docs/safety.md \
+  --paths docs/safety.md,docs/index.html,docs/ros2_integration.md \
   --strict
 ```
 

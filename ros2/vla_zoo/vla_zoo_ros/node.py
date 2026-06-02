@@ -18,6 +18,7 @@ from vla_zoo_msgs.msg import VLAStatus as VLAStatusMsg
 
 from vla_zoo import load_model
 from vla_zoo.core.types import VLAAction, VLAActionChunk, VLAObservation
+from vla_zoo.runtime.guard import WatchdogConfig, clip_action_report, evaluate_watchdog
 from vla_zoo_ros.converters import action_to_msg, chunk_to_msg, ros_image_to_numpy, status_to_msg
 from vla_zoo_ros.params import RuntimeNodeParams
 from vla_zoo_ros.qos import action_qos, image_qos, instruction_qos, status_qos
@@ -255,23 +256,18 @@ class VLARuntimeNode(Node):
         return max(0.0, perf_counter() - received_at)
 
     def _stale_reason(self) -> str | None:
-        image_age = self._age_sec(self._latest_image_received_at)
-        instruction_age = self._age_sec(self._latest_instruction_received_at)
-        if self.params.require_image and image_age is None:
-            return "waiting for image"
-        if (
-            image_age is not None
-            and self.params.stale_image_timeout_sec > 0
-            and image_age > self.params.stale_image_timeout_sec
-        ):
-            return f"stale image: {image_age:.2f}s"
-        if (
-            instruction_age is not None
-            and self.params.stale_instruction_timeout_sec > 0
-            and instruction_age > self.params.stale_instruction_timeout_sec
-        ):
-            return f"stale instruction: {instruction_age:.2f}s"
-        return None
+        # Delegate to the pure, unit-tested staleness watchdog so the published status
+        # text stays consistent with the core guard.
+        status = evaluate_watchdog(
+            image_age_sec=self._age_sec(self._latest_image_received_at),
+            instruction_age_sec=self._age_sec(self._latest_instruction_received_at),
+            config=WatchdogConfig(
+                require_image=self.params.require_image,
+                stale_image_timeout_sec=self.params.stale_image_timeout_sec,
+                stale_instruction_timeout_sec=self.params.stale_instruction_timeout_sec,
+            ),
+        )
+        return status.reason
 
     def _tick(self) -> None:
         if self._pending is not None:
@@ -389,40 +385,16 @@ class VLARuntimeNode(Node):
         return self._clip_action(prediction)
 
     def _clip_action(self, action: VLAAction) -> VLAAction:
-        low = self._action_bound(action, bound="low")
-        high = self._action_bound(action, bound="high")
-        if low is None and high is None:
-            return action
-        data = action.to_numpy()
-        clipped = np.clip(data, low, high).astype(np.float32)
-        was_clipped = bool(np.any(clipped != data))
-        if was_clipped:
-            self._clipped_actions += 1
-        return VLAAction(
-            data=clipped,
-            spec=action.spec,
-            dt=action.dt,
-            confidence=action.confidence,
-            chunk_index=action.chunk_index,
-            metadata={**action.metadata, "clip_actions": True, "was_clipped": was_clipped},
+        # Delegate the safety-critical clamp to the pure, unit-tested guard so the node
+        # and the core share one implementation and one clip-rate definition.
+        report = clip_action_report(
+            action,
+            action_low=self.params.action_low,
+            action_high=self.params.action_high,
         )
-
-    def _action_bound(self, action: VLAAction, *, bound: str) -> np.ndarray | None:
-        configured = self.params.action_low if bound == "low" else self.params.action_high
-        spec_bound = action.spec.low if bound == "low" else action.spec.high
-        values = configured or spec_bound
-        if values is None:
-            return None
-        flat_size = int(action.data.size)
-        if len(values) == 1:
-            return np.full(action.spec.shape, values[0], dtype=np.float32)
-        if len(values) != flat_size:
-            self.get_logger().warning(
-                f"ignoring {bound} action bound with length {len(values)}; "
-                f"expected 1 or {flat_size}"
-            )
-            return None
-        return np.asarray(values, dtype=np.float32).reshape(action.spec.shape)
+        if report.clipped:
+            self._clipped_actions += 1
+        return report.action
 
     def _publish_status(self) -> None:
         stamp = self.get_clock().now().to_msg()
