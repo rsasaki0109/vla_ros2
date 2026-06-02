@@ -81,6 +81,25 @@ The health check returned `ready: true` and `/v1/predict` returned a typed 7-DoF
 recorded result is checked in at
 [`openvla_remote_probe.md`](assets/sample_task_verification/openvla_remote_probe.md).
 
+## ROS2 remote trace (verified end-to-end)
+
+The real `VLARuntimeNode` was driven in `runtime=remote` mode against the live OpenVLA-7b
+(4-bit) server, recording its action/status/diagnostics streams:
+
+```bash
+# server (OpenVLA venv, 4-bit) as above, then with the ROS2 overlay sourced:
+python3 scripts/record_ros2_remote_trace.py --model openvla \
+    --remote-url http://127.0.0.1:8014 --duration 35 --output-dir results/ros2_remote_openvla
+vla-zoo ros remote-smoke-check --output-dir results/ros2_remote_openvla --model openvla \
+    --remote-url http://127.0.0.1:8014
+```
+
+The check passed with 7 `RemoteVLAClient` actions and 143 status/diagnostics records, 0
+inference errors. The recorded result is checked in at
+[`sample_ros2_remote_openvla/remote_smoke_check.md`](assets/sample_ros2_remote_openvla/remote_smoke_check.md).
+See the [SmolVLA evidence page](smolvla_local_runtime.md) for the loopback-multicast note on
+why this uses the single-process harness on this host.
+
 ## Scope and limitations
 
 - The input is a synthetic random frame. This verifies the **runtime path** (load →

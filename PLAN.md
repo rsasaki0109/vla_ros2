@@ -510,9 +510,15 @@ passed a health-first probe and returned a typed 7-DoF action over HTTP `/v1/pre
 recorded end-to-end (`docs/assets/sample_task_verification/openvla_remote_probe.{md,json}`).
 The OpenVLA `remote_server` cell is now `verified`.
 
+ROS2 remote (verified): the real `VLARuntimeNode` was driven in `runtime=remote` mode
+against the live OpenVLA-7b (4-bit) server, recording 7 `RemoteVLAClient` actions + 143
+status/diagnostics with 0 inference errors (`vla-zoo ros remote-smoke-check` passed,
+`docs/assets/sample_ros2_remote_openvla/`, via `scripts/record_ros2_remote_trace.py`). The
+OpenVLA `ros2_remote` cell is now `verified` — OpenVLA is verified across contract / local /
+gpu / remote / ros2.
+
 Remaining/next useful tasks:
 
-- Record a ROS2 remote action log against the OpenVLA server.
 - Add a task-level probe (real scene frame) before any policy-quality claim.
 
 ### 7.6 pi0/openpi Path (remote-first docs + plan DONE)

@@ -20,3 +20,6 @@ build_ros/
 *.bag
 *.db3
 .DS_Store
+
+# Local ROS2/benchmark run outputs (canonical evidence lives in docs/assets/)
+results/
