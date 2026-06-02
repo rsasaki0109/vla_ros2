@@ -1,13 +1,20 @@
 from __future__ import annotations
 
+import json
+import os
+from collections.abc import Mapping
 from typing import Any
 
 from vla_zoo.adapters.smolvla import SmolVLAAdapter
-from vla_zoo.core.errors import MissingDependencyError
+from vla_zoo.core.errors import AdapterError, MissingDependencyError
 from vla_zoo.core.model import VLAAdapter
 from vla_zoo.core.types import ActionSpec, VLAAction, VLAActionChunk, VLAObservation
 
 DEFAULT_PI0_PRETRAINED = "lerobot/pi0_base"
+
+# The pi0 weights file and the asset the processor's tokenizer step pulls from.
+PI0_WEIGHTS_FILENAME = "model.safetensors"
+PI0_PREPROCESSOR_FILENAME = "policy_preprocessor.json"
 
 PI0_ACTION_SPEC = ActionSpec(
     action_space="custom",
@@ -33,6 +40,187 @@ def _import_pi0_dependencies() -> tuple[Any, Any, Any]:
         )
         raise MissingDependencyError(msg) from exc
     return torch, PI0Policy, make_pre_post_processors
+
+
+def _pi0_tokenizer_repo(preprocessor: Mapping[str, Any]) -> str | None:
+    """Extract the tokenizer repo the pi0 processor pulls from, from a decoded
+    ``policy_preprocessor.json``. Returns None if not declared."""
+    steps = preprocessor.get("steps")
+    if not isinstance(steps, list):
+        return None
+    for step in steps:
+        if not isinstance(step, Mapping) or step.get("registry_name") != "tokenizer_processor":
+            continue
+        config = step.get("config")
+        if isinstance(config, Mapping):
+            name = config.get("tokenizer_name")
+            if isinstance(name, str) and name:
+                return name
+    return None
+
+
+def _pi0_local_load_error(
+    *,
+    pretrained: str,
+    weights_status: str,
+    tokenizer_repo: str | None,
+    tokenizer_status: str,
+) -> str | None:
+    """Pure: return an actionable error message when a local pi0 load would NOT
+    produce a real, fully-weighted model, else None.
+
+    ``*_status`` is one of ``"ok"`` / ``"gated"`` / ``"missing"``. This exists
+    because ``PI0Policy.from_pretrained`` silently returns a randomly-initialized
+    model when it cannot fetch the weights ("Returning model without loading
+    pretrained weights"), and the processor build only fails later on the gated
+    tokenizer — both hazards we turn into one explicit, documented failure.
+    """
+    if weights_status != "ok":
+        return (
+            f"pi0 local load aborted: the checkpoint weights for {pretrained} "
+            f"({PI0_WEIGHTS_FILENAME}) could not be resolved (status={weights_status}). "
+            "LeRobot's PI0Policy.from_pretrained silently returns a randomly-initialized "
+            "model in this case, so vla_zoo refuses rather than emit actions from "
+            "un-trained weights. Make the checkpoint available (drop HF_HUB_OFFLINE / set "
+            "local_files_only=False with network access, or point --pretrained at a cached "
+            "checkpoint)."
+        )
+    if tokenizer_repo and tokenizer_status == "gated":
+        return (
+            f"pi0 local load aborted: the processor tokenizer '{tokenizer_repo}' is a gated "
+            f"Hugging Face repo (access restricted). Accept its license at "
+            f"https://huggingface.co/{tokenizer_repo} and run with an authorized HF token "
+            "(huggingface-cli login, or set HF_TOKEN), then retry."
+        )
+    if tokenizer_repo and tokenizer_status == "missing":
+        return (
+            f"pi0 local load aborted: the processor tokenizer '{tokenizer_repo}' could not be "
+            "resolved. Ensure it is cached or reachable (drop HF_HUB_OFFLINE with network "
+            "access)."
+        )
+    return None
+
+
+def _hf_asset_status(
+    repo: str,
+    filename: str,
+    *,
+    local_files_only: bool,
+    cache_dir: str | None,
+    revision: str | None,
+    head_only: bool,
+) -> str:
+    """Best-effort availability probe: ``"ok"`` / ``"gated"`` / ``"missing"``.
+
+    Never downloads large content: a cache hit short-circuits, and when online,
+    large files (``head_only=True``) are checked with a metadata HEAD rather than a
+    full download. Small descriptor files (``head_only=False``) are resolved so a
+    gated repo raises ``GatedRepoError`` exactly as the real load would.
+    """
+    from huggingface_hub import hf_hub_download
+    from huggingface_hub.errors import GatedRepoError, HfHubHTTPError
+
+    # Cache-only check first — authoritative and never touches the network.
+    try:
+        hf_hub_download(
+            repo, filename, local_files_only=True, cache_dir=cache_dir, revision=revision
+        )
+        return "ok"
+    except Exception:  # noqa: BLE001 - not cached; fall through to the online path
+        pass
+
+    if local_files_only or os.environ.get("HF_HUB_OFFLINE"):
+        return "missing"
+
+    if head_only:
+        from huggingface_hub import get_hf_file_metadata, hf_hub_url
+
+        try:
+            get_hf_file_metadata(hf_hub_url(repo, filename, revision=revision))
+            return "ok"
+        except GatedRepoError:
+            return "gated"
+        except HfHubHTTPError as exc:
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            return "gated" if status in (401, 403) else "missing"
+        except Exception:  # noqa: BLE001
+            return "missing"
+
+    try:
+        hf_hub_download(repo, filename, cache_dir=cache_dir, revision=revision)
+        return "ok"
+    except GatedRepoError:
+        return "gated"
+    except HfHubHTTPError as exc:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        return "gated" if status in (401, 403) else "missing"
+    except Exception:  # noqa: BLE001
+        return "missing"
+
+
+def run_pi0_local_preflight(
+    pretrained: str,
+    *,
+    local_files_only: bool = False,
+    cache_dir: str | None = None,
+    revision: str | None = None,
+) -> None:
+    """Abort with an actionable :class:`AdapterError` when a local pi0 load would
+    silently produce a random-weight model or fail later on the gated tokenizer.
+
+    Best-effort: if huggingface_hub is unavailable the normal
+    :class:`MissingDependencyError` path takes over; a probe that itself errors
+    unexpectedly degrades to ``"missing"`` rather than masking the real load.
+    """
+    try:
+        from huggingface_hub import hf_hub_download  # noqa: F401
+    except ImportError:
+        return
+
+    weights_status = _hf_asset_status(
+        pretrained,
+        PI0_WEIGHTS_FILENAME,
+        local_files_only=local_files_only,
+        cache_dir=cache_dir,
+        revision=revision,
+        head_only=True,
+    )
+
+    tokenizer_repo: str | None = None
+    tokenizer_status = "ok"
+    try:
+        from huggingface_hub import hf_hub_download
+
+        preprocessor_path = hf_hub_download(
+            pretrained,
+            PI0_PREPROCESSOR_FILENAME,
+            local_files_only=local_files_only,
+            cache_dir=cache_dir,
+            revision=revision,
+        )
+        with open(preprocessor_path, encoding="utf-8") as handle:
+            tokenizer_repo = _pi0_tokenizer_repo(json.load(handle))
+    except Exception:  # noqa: BLE001 - tokenizer repo is best-effort metadata
+        tokenizer_repo = None
+
+    if tokenizer_repo:
+        tokenizer_status = _hf_asset_status(
+            tokenizer_repo,
+            "tokenizer_config.json",
+            local_files_only=local_files_only,
+            cache_dir=cache_dir,
+            revision=revision,
+            head_only=False,
+        )
+
+    message = _pi0_local_load_error(
+        pretrained=pretrained,
+        weights_status=weights_status,
+        tokenizer_repo=tokenizer_repo,
+        tokenizer_status=tokenizer_status,
+    )
+    if message:
+        raise AdapterError(message)
 
 
 class Pi0Adapter(SmolVLAAdapter):
@@ -67,8 +255,18 @@ class Pi0Adapter(SmolVLAAdapter):
             )
             return
 
+        resolved_pretrained = pretrained or self.default_pretrained
+        # Fail loudly before the heavy load: LeRobot silently returns a
+        # random-weight model when it cannot fetch the checkpoint, and the gated
+        # PaliGemma tokenizer only trips later during processor construction.
+        run_pi0_local_preflight(
+            resolved_pretrained,
+            local_files_only=bool(kwargs.get("local_files_only", False)),
+            cache_dir=kwargs.get("cache_dir"),
+            revision=kwargs.get("revision"),
+        )
         super().__init__(
-            pretrained=pretrained or self.default_pretrained,
+            pretrained=resolved_pretrained,
             strict=strict,
             action_spec=kwargs.pop("action_spec", None),
             **kwargs,

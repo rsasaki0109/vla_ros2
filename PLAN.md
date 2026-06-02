@@ -924,23 +924,39 @@ regenerated evidence matrix (`local_runtime` cell + `next_step`) now carry this 
 The `local_runtime` cell stays `blocked` and `policy_quality` stays `not_verified`; no model
 weights are downloaded in tests.
 
-With pi0 reduced to a license-gated boundary, the next best commit makes that boundary fail loudly
-instead of silently. Today `load_model("pi0", enable_local=True)` (or the action-probe) constructs a
-**random-weight** model and only crashes later when the gated tokenizer/processor cannot be built —
-the "Returning model without loading pretrained weights" path is silent. The next commit adds a
-preflight that detects the missing weights / gated-tokenizer condition and raises a clear,
-actionable error (accept the PaliGemma license, supply a token) before any inference:
+The pi0 license-gated boundary now fails loudly instead of silently (DONE):
 
 ```text
-add a pi0 local-load preflight that fails loudly on missing weights / the gated PaliGemma tokenizer (v0.4)
+add a pi0 local-load preflight that fails loudly on missing weights / the gated PaliGemma tokenizer (v0.4)  [DONE]
 ```
 
-Reason: an adapter that silently loads random weights is a correctness/honesty hazard — a caller
-could record actions from an un-initialized model and not know it. A preflight that turns the
-silent `GatedRepoError`/no-weights path into one explicit, documented failure (pointing at the
-license + token fix) is a small, testable robustness deliverable that closes the loop opened by
-this pi0 investigation. Keep it unit-testable without heavy deps (assert the guard's message/branch,
-not a real load) and keep `policy_quality` `not_verified`.
+What landed: `adapters/pi0.py` gained `run_pi0_local_preflight`, run before the heavy
+`from_pretrained` on every local pi0 load. It probes two assets without ever downloading the
+14 GB weights — `model.safetensors` via a metadata HEAD (cache hit short-circuits) and the
+processor's tokenizer (read from `policy_preprocessor.json`'s `tokenizer_processor` step) via a
+small-file resolve that trips `GatedRepoError` exactly as the real load would — and raises an
+`AdapterError` with an actionable message: missing weights → "LeRobot silently returns a
+randomly-initialized model, refusing"; gated tokenizer → "accept the license at
+huggingface.co/<repo> and supply an HF token". The decision is a pure function
+(`_pi0_local_load_error`) plus a pure extractor (`_pi0_tokenizer_repo`), both unit-tested without
+heavy deps (5 new tests); the live path was verified in `.venv-smolvla` (raises the gated-tokenizer
+`AdapterError` instead of loading random weights). `policy_quality` stays `not_verified`.
+
+With the pi0 track fully closed (version-matched default → dtype-fit → documented gate → loud
+preflight), the two "fit a 16 GB GPU" knobs now diverge by adapter — OpenVLA uses `load_in_4bit`,
+SmolVLA/pi0 use `dtype=bfloat16` — and neither is surfaced in the deployment guide. The next best
+commit makes them discoverable:
+
+```text
+document the 16 GB-fit knobs (openvla 4-bit, smolvla/pi0 dtype=bfloat16) and the pi0 preflight in deployment.md (v0.4)
+```
+
+Reason: the two memory-fit paths and the new pi0 preflight are real, working capabilities that a
+deployer needs but that currently live only in adapter code and the pi0 compatibility probe. A
+short `deployment.md` section ("fitting heavy checkpoints on a 16 GB card") that records both knobs
+with the measured footprints (OpenVLA-7b 4-bit ~4.6 GB; pi0_base bf16 ~8.9 GB) and notes the pi0
+preflight's loud-failure behavior is a docs-only, link-checked deliverable that closes the loop and
+keeps the honesty framing (runtime-path, no policy-quality claim). Keep all claims runtime-centric.
 
 Acceptance:
 
