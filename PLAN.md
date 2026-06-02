@@ -467,16 +467,23 @@ Remaining/next useful tasks:
 - Run a real OpenVLA server on a GPU box and record a real `/v1/predict` artifact.
 - Promote the `remote_server` cell from `planned` to `verified` only then.
 
-### 7.6 pi0/openpi Path
+### 7.6 pi0/openpi Path (remote-first docs + plan DONE)
+
+Status: `examples/python/load_pi0_remote.py` (lightweight robot-side remote client),
+a generated pi0 server plan artifact (`docs/assets/pi0_server_plan.{md,json}` and
+`examples/serve/pi0_server_plan.{md,json}` via `vla-zoo serve-plan --models pi0`), and
+`docs/pi0_remote.md` documenting LeRobot/openpi version compatibility (config-decode
+mismatches, checkpoint-specific action shapes, dedicated `.venv-pi0`) plus the
+health-first remote-probe usage. The pi0 `remote_server` evidence cell stays `planned`
+(no recorded pi0 `/v1/predict` from a version-matched server) and now links the remote
+docs and server plan. Tests in `tests/test_pi0_remote.py`.
 
 Reason: pi0/openpi should not be forced into base env. Treat it as remote-first.
 
-Work items:
+Remaining/next useful tasks:
 
-- Add `examples/python/load_pi0_remote.py`.
-- Add a `pi0` server plan artifact.
-- Add compatibility docs for LeRobot/openpi versioning.
-- If real server becomes available, record a remote action probe and update evidence.
+- If a version-matched pi0 server becomes available, record a real remote action probe.
+- Promote the `remote_server` cell off `planned` only then.
 
 ### 7.7 GR00T Path
 
@@ -626,27 +633,26 @@ Shell/tooling conventions in this environment:
 ## 13. Current Best Next Commit
 
 The docs link checker (7.1), artifact index (7.2), ROS2 metadata tests (7.3), the SmolVLA
-remote serving plan + isolation docs (7.4), and the OpenVLA health-first remote probe
-(7.5) are now done. The next best commit is:
+remote serving plan + isolation docs (7.4), the OpenVLA health-first remote probe (7.5),
+and the pi0/openpi remote-first docs + plan (7.6) are now done. The next best commit is:
 
 ```text
-add pi0/openpi remote-first path (7.6)
+make GR00T blocked-until-NVIDIA-stack explicit (7.7)
 ```
 
-Reason: pi0/openpi should not be forced into the base env; treat it as remote-first. Add
-`examples/python/load_pi0_remote.py`, a pi0 server plan artifact, and LeRobot/openpi
-version-compatibility docs. Record a real remote action probe only if a real server
-becomes available, and promote evidence from `planned` only then. Keep model downloads
-out of tests.
+Reason: GR00T should stay experimental until a real serving adapter exists. Keep
+`experimental=True`, add a clear "blocked until NVIDIA Isaac GR00T stack" note, do not
+write fake local inference, and document the expected observation/action contract in the
+adapter card once known. Keep model downloads out of tests.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_remote_probe.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_pi0_remote.py tests/test_evidence.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/openvla_remote.md,docs/index.html,docs/assets/vla_model_evidence_matrix.html \
+  --paths docs/pi0_remote.md,docs/index.html,docs/assets/vla_model_evidence_matrix.html \
   --strict
 ```
 

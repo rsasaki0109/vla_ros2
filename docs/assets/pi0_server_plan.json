@@ -1,0 +1,31 @@
+{
+  "runtime": "remote",
+  "public_host": "gpu-box",
+  "remote_map": "pi0=http://gpu-box:8001",
+  "compare_command": "vla-zoo compare pybullet --models pi0 --runtime remote --remote-map pi0=http://gpu-box:8001",
+  "servers": [
+    {
+      "model": "pi0",
+      "port": 8001,
+      "host": "0.0.0.0",
+      "public_url": "http://gpu-box:8001",
+      "install_hint": "pip install -e \".[cli,server,openpi]\"",
+      "command": [
+        "vla-zoo",
+        "serve",
+        "--model",
+        "pi0",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8001",
+        "--pretrained",
+        "lerobot/pi0_base",
+        "--device",
+        "cuda:0"
+      ],
+      "notes": "Uses explicit LeRobot checkpoint selection; checkpoint compatibility is version-sensitive.",
+      "shell_command": "vla-zoo serve --model pi0 --host 0.0.0.0 --port 8001 --pretrained lerobot/pi0_base --device cuda:0"
+    }
+  ]
+}

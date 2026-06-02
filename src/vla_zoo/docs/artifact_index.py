@@ -220,6 +220,26 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Remote serving + health-first probe guidance; no task-success claim.",
     ),
     ArtifactEntry(
+        title="pi0 remote-first path",
+        path="docs/pi0_remote.md",
+        category="adapter docs",
+        status="manual",
+        kind="manual",
+        source_command=None,
+        caveat="LeRobot/openpi version-compatibility and remote guidance; no task-success claim.",
+    ),
+    ArtifactEntry(
+        title="pi0 server plan",
+        path="docs/assets/pi0_server_plan.md",
+        category="adapter docs",
+        status="generated",
+        kind="generated",
+        source_command=(
+            "vla-zoo serve-plan --models pi0 --markdown-out docs/assets/pi0_server_plan.md"
+        ),
+        caveat="Command plan, not a recorded /v1/predict run.",
+    ),
+    ArtifactEntry(
         title="Adapter cards index",
         path="docs/adapters/README.md",
         category="adapter docs",

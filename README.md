@@ -225,6 +225,27 @@ vla-zoo serve-plan \
 Sample server plan:
 https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
 
+## pi0 / openpi Remote-First
+
+pi0/openpi is remote-first: `load_model("pi0")` stays light and the
+version-sensitive LeRobot/openpi stack lives in a dedicated serving environment.
+Pin LeRobot/openpi to the version that matches your checkpoint.
+
+```bash
+# dedicated serving environment
+vla-zoo serve --model pi0 --host 0.0.0.0 --port 8000 --device cuda:0 \
+  --pretrained lerobot/pi0_base
+
+# robot/client side
+python examples/python/load_pi0_remote.py --remote-url http://gpu-box:8000
+vla-zoo remote-probe --model pi0 --remote-url http://gpu-box:8000 --strict
+```
+
+See [pi0 / openpi remote-first path](docs/pi0_remote.md) and the generated
+[pi0 server plan](docs/assets/pi0_server_plan.md). The pi0 `remote_server`
+evidence cell stays `planned` until a real recorded pi0 response from a
+version-matched server is checked in.
+
 ## ROS2 Runtime
 
 ```bash
