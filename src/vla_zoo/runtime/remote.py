@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from vla_zoo.core.errors import MissingDependencyError, RemoteRuntimeError
@@ -19,6 +20,21 @@ REMOTE_PLACEHOLDER_SPEC = ActionSpec(
     shape=(1,),
     description="Remote placeholder action spec; responses carry the concrete spec.",
 )
+
+
+def jsonable(value: Any) -> Any:
+    """Convert observation state/metadata into JSON-compatible values."""
+
+    if value is None or isinstance(value, str | int | float | bool):
+        return value
+    tolist = getattr(value, "tolist", None)
+    if callable(tolist):
+        return jsonable(tolist())
+    if isinstance(value, Mapping):
+        return {str(key): jsonable(item) for key, item in value.items()}
+    if isinstance(value, Sequence) and not isinstance(value, bytes | bytearray):
+        return [jsonable(item) for item in value]
+    return str(value)
 
 
 class RemoteVLAClient(BaseVLA):
@@ -66,8 +82,8 @@ class RemoteVLAClient(BaseVLA):
             model=self.model_name,
             instruction=observation.instruction,
             images=self._encode_images(observation),
-            state=dict(observation.state),
-            metadata=observation.metadata,
+            state=jsonable(observation.state),
+            metadata=jsonable(observation.metadata),
         )
         try:
             with self._httpx.Client(timeout=self.timeout) as client:
