@@ -79,10 +79,10 @@ PyBullet traces, and policy-quality claims for each model family.
 | Adapter group | Multi-task runtime status | Real model status |
 |---|---|---|
 | `dummy`, `scripted`, `random` | Verified on 3 PyBullet runtime tasks | Baselines only, not VLA model quality |
-| `openvla` | Adapter scaffold exercised; local heavy runs are skipped by default | Weights/deps were present locally, but the CUDA prompt probe did not complete due to insufficient free GPU memory in this run |
-| `pi0` / `openpi` | Remote-first adapter with opt-in LeRobot local loading | Local real-model action probe not completed; use remote runtime for robot-side deployment |
-| `smolvla` | Implemented local LeRobot adapter | GPU inference-path probe completed with `lerobot/smolvla_base`; this is not a task-success claim |
-| `groot` / `gr00t` | Experimental and blocked until the NVIDIA Isaac GR00T stack is wired in | No inference ships; the adapter raises instead of fabricating actions |
+| `openvla` | Real-scene PyBullet action probe recorded (7-DoF on rendered frames) | Verified runtime path: local 4-bit (~4.6 GB), remote `/v1/predict`, and a ROS2 remote trace all recorded. Not a task-success claim |
+| `smolvla` | Real-scene PyBullet action probe recorded (6-DoF on rendered frames) | Verified runtime path: local GPU (~0.97 GB), remote `/v1/predict` (incl. bf16 `--dtype` serve), and a ROS2 remote trace all recorded. Not a task-success claim |
+| `pi0` / `openpi` | Remote-first adapter with opt-in LeRobot local loading | Version-matched checkpoint resolved (`lerobot/pi0_base`, bf16 fits 16 GB); local inference `blocked` on the gated `google/paligemma-3b-pt-224` tokenizer (reproducible probe). Use the remote runtime |
+| `groot` / `gr00t` | Experimental and blocked until the NVIDIA Isaac GR00T stack is wired in | `blocked`, reproducibly probed: adapter raises rather than fabricating, and no GR00T package exists on PyPI (real runtime is the NVIDIA Isaac-GR00T GitHub stack) |
 
 ```bash
 vla-zoo compare tasks \
@@ -100,7 +100,7 @@ Sample artifacts:
 | Visual demos | [Action Playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html), [Local+remote playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground_with_remote.html), [Action Playground verification](docs/reports/model_comparison.md), [PyBullet GIF gallery](docs/assets/gif_suite/index.html), [GIF QA](docs/assets/gif_suite/gif_check.md), [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
 | Adapter/runtime truth | [VLA evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html), [Adapter cards](docs/adapters/README.md), [external adapter status](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html), [robot compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md) |
 | ROS2 / remote deployment | [Remote runtime smoke](docs/reports/remote_runtime_smoke.md), [ROS2 remote dummy evidence](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros2_remote_dummy/remote_smoke_check.md), [ROS2 remote smoke plan](https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md), [ROS2 dashboard](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html) |
-| Heavy VLA probes | [GPU server plan](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md), [OpenVLA prompt probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md), [pi0 compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md), [SmolVLA GPU probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md) |
+| Heavy VLA probes | [Real-scene probe comparison](https://rsasaki0109.github.io/vla_zoo/assets/sample_pybullet_compare/runtime_probe_comparison.html), [OpenVLA remote probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_remote_probe.md), [SmolVLA bf16 dtype-serve probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_dtype_serve_probe.md), [pi0 compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md), [GR00T block probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/groot_block_probe.md) |
 
 ## Quickstart
 
@@ -140,9 +140,12 @@ returned a 6D `custom` action through `load_model("smolvla")`. This proves the
 adapter and GPU inference path, not robot task success. SmolVLA base still needs
 robot/task-specific fine-tuning and calibrated camera/state/action interfaces.
 
-The first PyBullet-rendered SmolVLA probe also runs locally: 3 adapter queries,
-0 adapter errors, mean latency about 1.0 s, and a 6D action emitted from the
-same 3-camera + state observation path used by the comparison runner.
+A real-scene PyBullet action probe is also recorded: SmolVLA driven on genuinely
+rendered frames (21 adapter queries, 6-DoF, latency p50 ~382 ms with a fresh
+encode per query), exercising the real image-preprocessing path. It is compared
+side by side with the OpenVLA-7b probe at the
+[real-scene probe comparison](docs/assets/sample_pybullet_compare/runtime_probe_comparison.md)
+and is a runtime-path record, not a task-success claim.
 
 For the recommended deployment shape, run SmolVLA as a remote server in an
 isolated environment (the `smolvla` extra pins `transformers`/`torch` versions
@@ -206,11 +209,11 @@ vla-zoo remote-probe --model openvla --remote-url http://gpu-box:8000 \
   --out results/openvla_remote_probe.json --strict
 ```
 
-See [OpenVLA remote GPU path](docs/openvla_remote.md). The probe tool itself is
-verified end-to-end against the `dummy` server
-([sample](docs/assets/sample_task_verification/remote_probe_dummy.md)); the
-OpenVLA `remote_server` evidence cell stays `planned` until a real recorded
-OpenVLA response is checked in.
+See [OpenVLA remote GPU path](docs/openvla_remote.md). The OpenVLA `remote_server`
+evidence cell is now `verified`: a real 4-bit server passed a health-first probe
+and returned a typed 7-DoF action over HTTP, recorded at
+[`openvla_remote_probe.md`](docs/assets/sample_task_verification/openvla_remote_probe.md).
+This is a runtime-path claim, not a task-success claim.
 
 For multi-model comparisons, generate one GPU-server command per adapter:
 

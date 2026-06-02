@@ -1051,25 +1051,42 @@ adapters — pi0 (license gate) and GR00T (no-stack) — now present their repro
 symmetrically, one click from the index. Links pass `report link-check --strict` (41/41). Docs-only;
 no code or schema touched.
 
-This closes the multi-commit honesty arc: every evidence-matrix cell across all seven adapters is now
-backed by recorded runtime evidence or a reproducible block probe, the two 16 GB-fit knobs are
-documented and (for SmolVLA) recorded served-in-bf16, the pi0 silent-weight hazard is guarded and
-scoped, and all of it is discoverable from the Pages index and link-checked. There is no single
-obvious "next best commit" of the same character left in the v0.4 honesty track. The next session
-should either (a) start a genuinely new capability rather than more honesty-polishing, or (b) if
-continuing incrementally, refresh the top-level `README.md` so its model/status table matches the
-now-complete evidence matrix (it predates several of these commits). Recommended next pointer:
+The top-level README now matches the completed evidence matrix (DONE):
 
 ```text
-reconcile README.md's model-status table with the completed evidence matrix (v0.4)
+reconcile README.md's model-status table with the completed evidence matrix (v0.4)  [DONE]
 ```
 
-Reason: `README.md` is the first thing a visitor reads, and its status table likely predates the
-pi0 version-matched/preflight, dtype-serve, and GR00T-probe work. A pass that aligns the README's
-claims with the evidence matrix (and links the matrix/artifact index) keeps the entry point honest.
-Verify every README claim against a checked-in artifact before writing it; keep `policy_quality`
-`not_verified` and all claims runtime-centric. If instead starting new work, pick a capability that
-extends the runtime/benchmark surface rather than re-documenting it.
+What landed: the README's model-status table and prose were corrected against the evidence matrix.
+The stale OpenVLA row ("CUDA prompt probe did not complete due to insufficient GPU memory") became
+the verified runtime path (local 4-bit, remote `/v1/predict`, ROS2 remote, real-scene probe); the
+flatly-wrong "OpenVLA `remote_server` cell stays `planned`" line was replaced with the recorded
+`verified` status + `openvla_remote_probe.md` link; the pi0 row now states the version-matched
+`pi0_base` / bf16-fit / gated-tokenizer finding; the SmolVLA row and section were updated from the
+old "3 adapter queries" probe to the recorded 21-query real-scene probe (and the bf16 dtype-serve
+record); the GR00T row carries the reproducible no-PyPI block; and the "Heavy VLA probes" artifact
+row was refreshed to the real-scene comparison, OpenVLA remote, SmolVLA bf16-serve, pi0
+compatibility, and GR00T block probes. Every changed claim was checked against a committed artifact;
+`report link-check --strict` passes (45/45). Docs-only; `policy_quality` stays `not_verified`.
+
+The v0.4 honesty arc is fully closed and consistent end to end (adapter code → evidence matrix →
+artifact index → deployment guide → Pages index → README). There is no remaining honesty-polish
+commit of the same character. The next session should **start a genuinely new capability** rather
+than re-document the existing surface. A candidate that extends the runtime/benchmark surface (not a
+re-doc):
+
+```text
+add a benchmark aggregation command that merges multiple vla-zoo-benchmark/v1 summaries into a ranked latency/action-rate table (v0.5)
+```
+
+Reason: the repo records per-run `vla-zoo-benchmark/v1` summaries (from `bench-replay`) and renders
+single reports, but there is no command that *aggregates* several runs into one comparison table
+(e.g. SmolVLA vs OpenVLA vs a baseline across recorded probes) ranked by latency p50/p95 and action
+rate. That is a real new capability on the existing schema — pure, unit-testable, and it turns the
+already-recorded probe logs into a single ranked artifact. Keep it schema-versioned, keep
+`success_rate` honest (blank/`None` when not a task-success run), and add a recorded example
+artifact. If a different new direction is preferred, choose one that adds runtime/benchmark surface
+rather than more documentation.
 
 Acceptance:
 
