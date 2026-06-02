@@ -50,7 +50,8 @@ fast. See the per-model remote paths: [OpenVLA](openvla_remote.md),
 ### Fitting heavy checkpoints on a 16 GB GPU
 
 The full-precision weights of the larger adapters do not fit a 16 GB consumer card, so each
-exposes a different memory-fit knob. The footprints below are **measured** on an GPU and are runtime-path numbers, not a task-success claim.
+exposes a different memory-fit knob. The footprints below are **measured** on a 16 GB VRAM
+GPU and are runtime-path numbers, not a task-success claim.
 
 | Adapter | Knob | Measured footprint | How to pass it |
 |---|---|---|---|

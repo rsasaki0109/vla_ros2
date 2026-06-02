@@ -22,7 +22,7 @@ Result:
 |---|---|
 | Model | `lerobot/smolvla_base` |
 | Dependency env | `.venv-smolvla`, `lerobot[smolvla]==0.5.1` |
-| GPU | NVIDIA GeForce GPU |
+| GPU | 16 GB VRAM GPU |
 | Action spec | `custom`, shape `(6,)` |
 | Load time | 38.015 s |
 | CUDA forward time | 2064.141 ms |

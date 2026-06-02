@@ -45,7 +45,7 @@ def test_realtime_band_thresholds() -> None:
 def test_build_report_joins_measured_and_computes_headroom() -> None:
     report = build_roofline_report(
         {"smolvla": 381.9, "openvla": 1996.8, "pi0": None},
-        hardware=HARDWARE_PROFILES["rtx_4070_ti_super"],
+        hardware=HARDWARE_PROFILES["local_16gb"],
     )
     by_model = {c.estimate.model: c for c in report.comparisons}
     assert set(by_model) == {"smolvla", "openvla", "pi0"}
@@ -61,18 +61,18 @@ def test_build_report_joins_measured_and_computes_headroom() -> None:
 
 def test_report_to_dict_carries_schema_and_note() -> None:
     report = build_roofline_report(
-        {"smolvla": 381.9}, hardware=HARDWARE_PROFILES["rtx_4070_ti_super"]
+        {"smolvla": 381.9}, hardware=HARDWARE_PROFILES["local_16gb"]
     )
     payload = report.to_dict()
     assert payload["schema_version"] == ROOFLINE_SCHEMA_VERSION
     assert "not an achievable latency" in payload["note"].lower()
-    assert payload["hardware"]["name"] == "GPU"
+    assert payload["hardware"]["name"] == "16 GB VRAM GPU"
 
 
 def test_markdown_lists_floor_measured_and_headroom() -> None:
     report = build_roofline_report(
         {"smolvla": 381.9, "openvla": 1996.8},
-        hardware=HARDWARE_PROFILES["rtx_4070_ti_super"],
+        hardware=HARDWARE_PROFILES["local_16gb"],
     )
     markdown = format_roofline_markdown(report)
     assert "roofline floor vs recorded latency" in markdown.lower()

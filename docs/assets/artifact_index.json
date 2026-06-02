@@ -47,7 +47,7 @@
       "category": "model evidence",
       "status": "verified",
       "kind": "generated",
-      "source_command": "vla-zoo compare roofline --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --hardware rtx_4070_ti_super --markdown-out docs/assets/roofline/vla_roofline.md",
+      "source_command": "vla-zoo compare roofline --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --hardware local_16gb --markdown-out docs/assets/roofline/vla_roofline.md",
       "caveat": "First-order analytical floor (VLA-Perf style) vs recorded p50: SmolVLA runs ~285\u00d7 and OpenVLA ~383\u00d7 above the hardware memory floor \u2014 the gap is decode + framework overhead, not the GPU. Estimate, not a measurement; no skill claim.",
       "exists": true
     },
@@ -57,7 +57,7 @@
       "category": "model evidence",
       "status": "verified",
       "kind": "generated",
-      "source_command": "vla-zoo compare roofline --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --hardware rtx_4070_ti_super --out docs/assets/roofline/vla_roofline.json",
+      "source_command": "vla-zoo compare roofline --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --hardware local_16gb --out docs/assets/roofline/vla_roofline.json",
       "caveat": "Machine-readable vla-zoo-roofline/v1 artifact; analytical floor, not measured.",
       "exists": true
     },
@@ -208,7 +208,7 @@
       "status": "verified",
       "kind": "checked",
       "source_command": "PYTHONPATH=src python3 scripts/measure_openvla_runtime.py --out docs/assets/openvla_local_runtime.json",
-      "caveat": "Machine-readable measured runtime profile (GPU, 4-bit).",
+      "caveat": "Machine-readable measured runtime profile (16 GB VRAM GPU, 4-bit).",
       "exists": true
     },
     {
@@ -228,7 +228,7 @@
       "status": "verified",
       "kind": "checked",
       "source_command": "PYTHONPATH=src python3 scripts/measure_lerobot_runtime.py --model smolvla --out docs/assets/smolvla_local_runtime.json",
-      "caveat": "Machine-readable measured runtime profile (GPU, ~0.97 GB).",
+      "caveat": "Machine-readable measured runtime profile (16 GB VRAM GPU, ~0.97 GB).",
       "exists": true
     },
     {

@@ -1165,7 +1165,7 @@ def test_cli_compare_roofline_list_hardware() -> None:
     result = CliRunner().invoke(app, ["compare", "roofline", "--list-hardware"])
 
     assert result.exit_code == 0
-    assert "rtx_4070_ti_super" in result.output
+    assert "local_16gb" in result.output
     assert "GB/s" in result.output
 
 

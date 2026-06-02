@@ -426,7 +426,7 @@ Do not require a ROS2 installation in standard CI yet.
 ### 7.4 Strengthen SmolVLA Remote Path (plan + isolation docs DONE; local GPU run VERIFIED)
 
 Local-runtime update (verified): `lerobot/smolvla_base` loads and predicts a 6-DoF action
-through the public adapter on a local GPU. Measured: ~0.97 GB peak VRAM,
+through the public adapter on a local 16 GB VRAM GPU. Measured: ~0.97 GB peak VRAM,
 ~60-133 ms steady latency (real-time capable; ~800 ms first-run warmup), ~23 s warm-cache
 load. LeRobot deps are isolated in a `--system-site-packages` venv (`/tmp/lerobot_venv`).
 Reproducible via `scripts/measure_lerobot_runtime.py --model smolvla` (artifact
@@ -476,7 +476,7 @@ Do not claim policy-quality success.
 ### 7.5 OpenVLA 7B Path (health-first remote probe DONE; local 4-bit GPU run VERIFIED)
 
 Local-runtime update (verified): OpenVLA-7b now loads and predicts a 7-DoF action through
-the public adapter on a local GPU. bf16 weights (~15 GB) do not fit a 16 GB
+the public adapter on a local 16 GB VRAM GPU. bf16 weights (~15 GB) do not fit a 16 GB
 card, so the adapter gained `load_in_4bit` / `load_in_8bit` (bitsandbytes nf4 +
 `device_map`, skipping the post-load `.to()`). Measured: ~4.6 GB peak VRAM, ~1.1-2.7 s
 latency, ~20 s warm-cache load. OpenVLA's `trust_remote_code` needs `timm<1.0`, isolated in
@@ -912,7 +912,7 @@ What landed: the block decomposed into two distinct findings. (1) The old `lerob
 schema is permanently rejected by LeRobot 0.5.1 (`draccus.DecodingError` on 8 named fields).
 (2) `lerobot/pi0_base` is the **version-matched** checkpoint — it decodes cleanly (`PI0Config`,
 32D action, `n_action_steps=50`), and its bf16 model fits a 16 GB GPU (~8.9 GB constructed),
-verified by building the policy on the local 4070 Ti SUPER. The float32 config OOMs on 16 GB, so
+verified by building the policy on the local 16 GB VRAM GPU. The float32 config OOMs on 16 GB, so
 the SmolVLA/pi0 adapter gained a `dtype` override (`--adapter-kwarg dtype=bfloat16`) that builds
 the config with a pinned compute dtype. The pi0 adapter now defaults local loading to
 `lerobot/pi0_base` (action spec `(32,)`), and `pi0` joined `HEAVY_LOCAL_MODELS` so the probe is
@@ -1336,13 +1336,13 @@ add vla-zoo compare roofline: VLA-Perf-style latency floor vs recorded probes + 
 What landed: new pure module `compare/roofline.py` (`vla-zoo-roofline/v1`). It computes each
 model's **single-forward, batch-1 memory-bound roofline floor** (`weight_bytes / bandwidth`,
 VLA-Perf style, arXiv:2602.18397) from declared params × dtype on a chosen `HardwareProfile`
-(presets: GPU / 4090 / Jetson AGX Orin / GPU, nominal vendor specs), and joins
+(presets: 16 GB VRAM GPU / 4090 / Jetson AGX Orin / GPU, nominal vendor specs), and joins
 it with the **recorded** p50 from the real probe logs, reporting headroom (measured/floor) and
 the 10-100 ms real-time band. `MODEL_PROFILES` declares smolvla (0.45B bf16), openvla (7B nf4),
 pi0 (3.3B bf16, latency blocked). CLI `compare roofline` (`--from-log`/`--summaries` source
 measured p50 like `compare leaderboard`, `--hardware`, `--list-hardware`, `--out/--markdown-out/
 --json`). Recorded artifact `docs/assets/roofline/vla_roofline.{json,md}` surfaces the honest
-finding: on the 4070 Ti SUPER, **SmolVLA runs ~285× and OpenVLA ~383× above the hardware memory
+finding: on the 16 GB VRAM GPU, **SmolVLA runs ~285× and OpenVLA ~383× above the hardware memory
 floor** — the latency is decode + framework overhead, not the GPU; pi0 shows its floor with an
 unknown band (blocked). Surfaced in the README "Open First" table + a new RTC-adjacent section,
 and a Pages "Roofline floor vs measured" tile; 2 artifact-index entries (count 67 → 69). Tested:

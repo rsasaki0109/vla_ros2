@@ -84,7 +84,7 @@ vla-zoo demo rtc-gif --out rtc.gif                               # the animation
 How much of the recorded latency is the hardware, and how much is overhead? `vla-zoo
 compare roofline` computes each model's single-forward, batch-1 memory-bound floor
 (`weight_bytes / bandwidth`, [VLA-Perf](https://arxiv.org/abs/2602.18397) style) and joins
-it with the recorded p50. On the GPU the probes ran on, SmolVLA sits **~285×**
+it with the recorded p50. On the 16 GB VRAM GPU the probes ran on, SmolVLA sits **~285×**
 and OpenVLA **~383×** above their hardware floors — i.e. the latency is dominated by
 multi-step decode and Python/framework overhead, not the GPU. The floor is an analytical
 lower bound, not an achievable target; the gap is optimization headroom, never a
@@ -92,7 +92,7 @@ policy-quality claim ([recorded run](docs/assets/roofline/vla_roofline.md)).
 
 ```bash
 vla-zoo compare roofline --list-hardware
-vla-zoo compare roofline --from-log smolvla.jsonl,openvla.jsonl --hardware rtx_4070_ti_super
+vla-zoo compare roofline --from-log smolvla.jsonl,openvla.jsonl --hardware local_16gb
 ```
 
 ## Why vla_zoo?
@@ -210,7 +210,7 @@ pip install -e ".[smolvla]"
 python examples/python/load_smolvla.py --device cuda --local-files-only
 ```
 
-The current local probe used `lerobot/smolvla_base` on an GPU and
+The current local probe used `lerobot/smolvla_base` on a 16 GB VRAM GPU and
 returned a 6D `custom` action through `load_model("smolvla")`. This proves the
 adapter and GPU inference path, not robot task success. SmolVLA base still needs
 robot/task-specific fine-tuning and calibrated camera/state/action interfaces.

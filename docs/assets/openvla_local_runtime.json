@@ -24,7 +24,7 @@
   "platform": "Linux-6.14.0-36-generic-x86_64-with-glibc2.39",
   "note": "Runtime evidence on a synthetic frame. Measures load/VRAM/latency only; it is not a task-success or policy-quality claim.",
   "cuda_available": true,
-  "device_name": "NVIDIA GeForce GPU",
+  "device_name": "16 GB VRAM GPU",
   "torch_version": "2.10.0+cu128",
   "cuda_version": "12.8"
 }
