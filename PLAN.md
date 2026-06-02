@@ -1,6 +1,6 @@
 # vla_zoo Plan and Claude Handoff
 
-Updated: 2026-06-02 JST
+Updated: 2026-06-03 JST
 
 This file is the handoff document for continuing `vla_zoo` development with another
 agent. Read this before making changes.
@@ -749,19 +749,41 @@ robot-readiness track are done: the pure clip + watchdog guards (`runtime/guard.
 hardware-bridge examples (`runtime/servo_bridge.py`, `runtime/control_bridge.py` + dry-run
 examples), the Jetson + remote-GPU deployment guide (`docs/deployment.md`), and the pure,
 versioned `RuntimeDiagnostics` schema (`runtime/diagnostics.py`, `vla-zoo-diagnostics/v1`)
-that the ROS2 node's `/diagnostics` payload is built from are all in. The next best commit
-surfaces that diagnostics schema through the CLI:
+that the ROS2 node's `/diagnostics` payload is built from are all in. The `diag-report`
+CLI command that surfaces the diagnostics schema is now also done (DONE):
 
 ```text
-add a vla-zoo diag-report CLI command for the runtime diagnostics schema (v0.4)
+add a vla-zoo diag-report CLI command for the runtime diagnostics schema (v0.4)  [DONE]
 ```
 
-Reason: `RuntimeDiagnostics` has JSONL read/write and a Markdown renderer, but nothing on
-the CLI exposes them. Mirror the existing `bench-report` command: add a `diag-report`
-command that reads a `vla-zoo-diagnostics/v1` JSONL log (the node can already emit one) and
-renders the Markdown snapshot to stdout or `--markdown-out`, plus an artifact-index entry
-for the generated report. Keep it pure and unit-tested (feed it a written JSONL fixture, no
-ROS2/model deps), keep model downloads out of tests, and keep claims runtime-centric.
+What landed: `vla-zoo diag-report` mirrors `bench-report`. It reads either a native
+`vla-zoo-diagnostics/v1` JSONL (`--log`) or a recorded ROS2 `/diagnostics` DiagnosticArray
+JSONL (`--from-ros-log`, selecting `--status-name`) and renders the latest record's Markdown
+snapshot to stdout / `--markdown-out`, with `--jsonl-out` to persist the reconstructed native
+log and `--json` for machine output. The `--from-ros-log` path uses a new pure inverse,
+`diagnostics_from_key_values` (correctly parses string bools — `bool("False")` is `True`, so
+`from_dict` cannot be used for KeyValue payloads). Real snapshots reconstructed from the
+SmolVLA and OpenVLA-7b ROS2 runs are checked in at
+`docs/assets/sample_ros2_remote_{smolvla,openvla}/runtime_diagnostics_snapshot.md` (+ native
+JSONL), with artifact-index entries. Unit-tested with written fixtures (no ROS2/model deps);
+runtime-path claims only.
+
+The next best commit advances the diagnostics surface from a single snapshot to a time
+series:
+
+```text
+render a diag-report time-series summary over a full diagnostics JSONL (v0.4)
+```
+
+Reason: `diag-report` currently renders only the latest record. A real run is a stream
+(106-143 records here); the useful runtime view is the trend — latency p50/max over the
+log, dropped-frame growth, clip-rate drift, and the worst (highest-level) record. Add a
+`--summary` mode that aggregates all records in the log into one Markdown table (min/p50/max
+latency, max dropped_frames, peak clip rate, worst level + its status_text), keeping the
+single-snapshot default. Keep it pure and unit-tested (written JSONL fixture, no ROS2/model
+deps), keep model downloads out of tests, and keep claims runtime-centric. Alternatives still
+open: pi0 unblock (version-matched checkpoint — rabbit-hole risk) and a task-level probe on
+real PyBullet scene frames (no policy-quality claims).
 
 Acceptance:
 

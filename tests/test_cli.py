@@ -772,3 +772,86 @@ def test_cli_compare_manifest_loads_targets(tmp_path: Path) -> None:
     assert targets[0].model_name == "dummy"
     assert targets[0].runtime == "remote"
     assert targets[0].remote_url == "http://127.0.0.1:8010"
+
+
+def _native_diag_log(path: Path) -> Path:
+    from vla_zoo.runtime.diagnostics import RuntimeDiagnostics
+    from vla_zoo.runtime.guard import ActionClipGuard, evaluate_watchdog
+
+    record = RuntimeDiagnostics.from_parts(
+        model="dummy",
+        status_text="ready",
+        level="ok",
+        clip_guard=ActionClipGuard(),
+        watchdog=evaluate_watchdog(image_age_sec=0.1, instruction_age_sec=0.2),
+        last_latency_ms=12.5,
+        avg_latency_ms=11.0,
+    )
+    path.write_text(json.dumps(record.to_dict()) + "\n", encoding="utf-8")
+    return path
+
+
+def test_diag_report_renders_native_log(tmp_path: Path) -> None:
+    log = _native_diag_log(tmp_path / "diag.jsonl")
+
+    result = CliRunner().invoke(app, ["diag-report", "--log", str(log)])
+
+    assert result.exit_code == 0, result.output
+    assert "Runtime Diagnostics Snapshot" in result.output
+    assert "vla-zoo-diagnostics/v1" in result.output
+
+
+def test_diag_report_reconstructs_from_ros_log(tmp_path: Path) -> None:
+    ros_log = tmp_path / "vla_diagnostics.jsonl"
+    ros_log.write_text(
+        json.dumps(
+            {
+                "status": [
+                    {
+                        "name": "vla_zoo/vla_runtime_node",
+                        "values": [
+                            {"key": "schema_version", "value": "vla-zoo-diagnostics/v1"},
+                            {"key": "model", "value": "smolvla"},
+                            {"key": "status_text", "value": "inference pending"},
+                            {"key": "level", "value": "ok"},
+                            {"key": "last_latency_ms", "value": "120.500"},
+                            {"key": "pending_inference", "value": "False"},
+                            {"key": "watchdog_ok", "value": "True"},
+                        ],
+                    }
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "snapshot.md"
+    jsonl_out = tmp_path / "native.jsonl"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "diag-report",
+            "--from-ros-log",
+            str(ros_log),
+            "--markdown-out",
+            str(out),
+            "--jsonl-out",
+            str(jsonl_out),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    rendered = out.read_text(encoding="utf-8")
+    assert "smolvla" in rendered
+    assert "120.50 ms" in rendered
+    # native JSONL must round-trip back through the schema reader
+    from vla_zoo.runtime.diagnostics import read_diagnostics_jsonl
+
+    records = read_diagnostics_jsonl(jsonl_out)
+    assert records[-1].pending_inference is False
+    assert records[-1].watchdog_ok is True
+
+
+def test_diag_report_requires_exactly_one_input() -> None:
+    assert CliRunner().invoke(app, ["diag-report"]).exit_code == 1

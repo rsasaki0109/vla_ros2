@@ -97,6 +97,9 @@ vla-zoo ros remote-smoke-check --output-dir results/ros2_remote_openvla --model 
 The check passed with 7 `RemoteVLAClient` actions and 143 status/diagnostics records, 0
 inference errors. The recorded result is checked in at
 [`sample_ros2_remote_openvla/remote_smoke_check.md`](assets/sample_ros2_remote_openvla/remote_smoke_check.md).
+The latest `vla-zoo-diagnostics/v1` snapshot reconstructed from that run's `/diagnostics`
+stream (`vla-zoo diag-report --from-ros-log .../vla_diagnostics.jsonl`) is at
+[`runtime_diagnostics_snapshot.md`](assets/sample_ros2_remote_openvla/runtime_diagnostics_snapshot.md).
 See the [SmolVLA evidence page](smolvla_local_runtime.md) for the loopback-multicast note on
 why this uses the single-process harness on this host.
 
