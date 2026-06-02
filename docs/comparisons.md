@@ -21,6 +21,19 @@ vla-zoo doctor --no-ros
 vla-zoo compare adapters
 ```
 
+Then inspect method profiles. This is the lightweight way to compare integration shape
+before running heavyweight policies:
+
+```bash
+vla-zoo compare methods
+vla-zoo compare methods --markdown-out results/vla_method_profiles.md
+```
+
+The method profile output covers input requirements, action space, action shape, action
+chunks, proprioception expectations, runtime support, dependency profile, and license caveats.
+It is useful for deciding which models can be compared locally, which should be served
+remotely, and which require robot-specific adapter work.
+
 Then run the same deterministic PyBullet smoke scene for baseline methods and runtime paths:
 
 ```bash

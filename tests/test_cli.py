@@ -38,6 +38,29 @@ def test_cli_compare_adapters() -> None:
     assert "openvla" in result.output
 
 
+def test_cli_compare_methods_json() -> None:
+    result = CliRunner().invoke(app, ["compare", "methods", "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    names = {item["name"] for item in payload}
+    assert {"dummy", "openvla", "pi0", "smolvla", "groot"}.issubset(names)
+    openvla = next(item for item in payload if item["name"] == "openvla")
+    assert openvla["action_space"] == "eef_delta"
+    assert "single RGB image" in openvla["input_requirements"]
+
+
+def test_cli_compare_methods_writes_markdown(tmp_path: Path) -> None:
+    out = tmp_path / "methods.md"
+
+    result = CliRunner().invoke(app, ["compare", "methods", "--markdown-out", str(out)])
+
+    assert result.exit_code == 0
+    text = out.read_text(encoding="utf-8")
+    assert "VLA Method Profiles" in text
+    assert "`dummy`" in text
+    assert "`openvla`" in text
+
+
 def test_cli_compare_dashboard_help() -> None:
     result = CliRunner().invoke(app, ["compare", "dashboard", "--help"])
     assert result.exit_code == 0
