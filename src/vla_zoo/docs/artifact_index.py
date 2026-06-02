@@ -297,6 +297,38 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="Runtime diagnostics summary (SmolVLA ROS2)",
+        path="docs/assets/sample_ros2_remote_smolvla/runtime_diagnostics_summary.md",
+        category="ROS2",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo diag-report --from-ros-log "
+            "docs/assets/sample_ros2_remote_smolvla/vla_diagnostics.jsonl --summary "
+            "--markdown-out docs/assets/sample_ros2_remote_smolvla/runtime_diagnostics_summary.md"
+        ),
+        caveat=(
+            "Time-series reduction of the real SmolVLA ROS2 run (latency spread, drop/clip "
+            "peaks, worst-severity record); runtime-path evidence, not task success."
+        ),
+    ),
+    ArtifactEntry(
+        title="Runtime diagnostics summary (OpenVLA ROS2)",
+        path="docs/assets/sample_ros2_remote_openvla/runtime_diagnostics_summary.md",
+        category="ROS2",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo diag-report --from-ros-log "
+            "docs/assets/sample_ros2_remote_openvla/vla_diagnostics.jsonl --summary "
+            "--markdown-out docs/assets/sample_ros2_remote_openvla/runtime_diagnostics_summary.md"
+        ),
+        caveat=(
+            "Time-series reduction of the real OpenVLA-7b (4-bit) ROS2 run (latency spread, "
+            "drop/clip peaks, worst-severity record); runtime-path evidence, not task success."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke plan",
         path="docs/assets/ros2_remote_smoke_plan.md",
         category="ROS2",

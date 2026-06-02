@@ -12,7 +12,9 @@ from vla_zoo.runtime.diagnostics import (
     SchemaVersionError,
     diagnostics_from_key_values,
     format_diagnostics_markdown,
+    format_diagnostics_summary_markdown,
     read_diagnostics_jsonl,
+    summarize_diagnostics,
     write_diagnostics_jsonl,
 )
 from vla_zoo.runtime.guard import ActionClipGuard, evaluate_watchdog
@@ -163,3 +165,51 @@ def test_diagnostics_from_key_values_parses_string_bools_and_blanks() -> None:
     assert restored.watchdog_ok is True
     assert restored.last_latency_ms is None
     assert restored == record
+
+
+def _seq_record(*, level: str, latency: float | None, dropped: int) -> RuntimeDiagnostics:
+    return RuntimeDiagnostics.from_parts(
+        model="smolvla",
+        status_text="ok" if level == "ok" else "waiting for instruction",
+        level=level,
+        clip_guard=ActionClipGuard(),
+        watchdog=evaluate_watchdog(image_age_sec=0.1, instruction_age_sec=0.1),
+        last_latency_ms=latency,
+        avg_latency_ms=latency,
+        dropped_frames=dropped,
+    )
+
+
+def test_summarize_diagnostics_reduces_latency_and_worst_level() -> None:
+    records = [
+        _seq_record(level="warn", latency=None, dropped=0),
+        _seq_record(level="ok", latency=100.0, dropped=5),
+        _seq_record(level="ok", latency=300.0, dropped=12),
+        _seq_record(level="ok", latency=200.0, dropped=12),
+    ]
+
+    summary = summarize_diagnostics(records)
+
+    assert summary.record_count == 4
+    assert summary.latency_ms_min == 100.0
+    assert summary.latency_ms_max == 300.0
+    assert summary.latency_ms_p50 == 200.0
+    assert summary.max_dropped_frames == 12
+    # the transient warn must surface even though the final record is ok
+    assert summary.worst_level == "warn"
+    assert summary.worst_index == 0
+
+
+def test_summarize_diagnostics_rejects_empty() -> None:
+    with pytest.raises(ValueError):
+        summarize_diagnostics([])
+
+
+def test_format_summary_markdown_is_runtime_centric() -> None:
+    summary = summarize_diagnostics([_seq_record(level="ok", latency=50.0, dropped=1)])
+
+    text = format_diagnostics_summary_markdown(summary)
+
+    assert "Runtime Diagnostics Summary" in text
+    assert DIAGNOSTICS_SCHEMA_VERSION in text
+    assert "not model task-success quality" in text

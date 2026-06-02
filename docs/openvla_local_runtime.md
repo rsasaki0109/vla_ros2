@@ -99,7 +99,10 @@ inference errors. The recorded result is checked in at
 [`sample_ros2_remote_openvla/remote_smoke_check.md`](assets/sample_ros2_remote_openvla/remote_smoke_check.md).
 The latest `vla-zoo-diagnostics/v1` snapshot reconstructed from that run's `/diagnostics`
 stream (`vla-zoo diag-report --from-ros-log .../vla_diagnostics.jsonl`) is at
-[`runtime_diagnostics_snapshot.md`](assets/sample_ros2_remote_openvla/runtime_diagnostics_snapshot.md).
+[`runtime_diagnostics_snapshot.md`](assets/sample_ros2_remote_openvla/runtime_diagnostics_snapshot.md),
+and the time-series reduction over the whole log (`--summary`: latency p50/max, drop/clip
+peaks, worst-severity record) is at
+[`runtime_diagnostics_summary.md`](assets/sample_ros2_remote_openvla/runtime_diagnostics_summary.md).
 See the [SmolVLA evidence page](smolvla_local_runtime.md) for the loopback-multicast note on
 why this uses the single-process harness on this host.
 

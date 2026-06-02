@@ -15,7 +15,7 @@ effects and no heavy dependencies, so it is unit-testable directly.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -304,6 +304,125 @@ def format_diagnostics_markdown(
             record.note
             or "Runtime-centric diagnostics. It reports latency, clip rate, and input "
             "staleness, not model task-success quality."
+        ),
+        "",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+@dataclass(frozen=True)
+class DiagnosticsSummary:
+    """A time-series reduction of a full diagnostics log into one runtime view."""
+
+    record_count: int
+    model: str
+    latency_ms_min: float | None
+    latency_ms_p50: float | None
+    latency_ms_max: float | None
+    max_dropped_frames: int
+    final_total_actions: int
+    peak_action_clip_rate: float
+    peak_element_clip_rate: float
+    worst_level: str
+    worst_status_text: str
+    worst_index: int
+    schema_version: str = DIAGNOSTICS_SCHEMA_VERSION
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema_version": self.schema_version,
+            "record_count": self.record_count,
+            "model": self.model,
+            "latency_ms_min": self.latency_ms_min,
+            "latency_ms_p50": self.latency_ms_p50,
+            "latency_ms_max": self.latency_ms_max,
+            "max_dropped_frames": self.max_dropped_frames,
+            "final_total_actions": self.final_total_actions,
+            "peak_action_clip_rate": self.peak_action_clip_rate,
+            "peak_element_clip_rate": self.peak_element_clip_rate,
+            "worst_level": self.worst_level,
+            "worst_status_text": self.worst_status_text,
+            "worst_index": self.worst_index,
+        }
+
+
+def _percentile(values: Sequence[float], fraction: float) -> float:
+    ordered = sorted(values)
+    index = int(fraction * (len(ordered) - 1))
+    return ordered[index]
+
+
+def _level_rank(level: str) -> int:
+    try:
+        return DIAGNOSTIC_LEVELS.index(level)
+    except ValueError:
+        return 0
+
+
+def summarize_diagnostics(records: Sequence[RuntimeDiagnostics]) -> DiagnosticsSummary:
+    """Reduce a diagnostics log to latency spread, clip-rate peaks, and the worst record.
+
+    Latency is aggregated over each record's ``last_latency_ms`` (``None`` values skipped).
+    The worst record is the highest ``level`` (ties resolved to the latest occurrence), so a
+    transient ``warn``/``error`` is never hidden by a final ``ok`` snapshot. It stays a
+    runtime-path view: latency, drops, clip rate, staleness — never task-success quality.
+    """
+
+    if not records:
+        msg = "cannot summarize an empty diagnostics log"
+        raise ValueError(msg)
+
+    latencies = [r.last_latency_ms for r in records if r.last_latency_ms is not None]
+    worst_index = max(
+        range(len(records)),
+        key=lambda i: (_level_rank(records[i].level), i),
+    )
+    worst = records[worst_index]
+
+    return DiagnosticsSummary(
+        record_count=len(records),
+        model=records[-1].model,
+        latency_ms_min=min(latencies) if latencies else None,
+        latency_ms_p50=_percentile(latencies, 0.5) if latencies else None,
+        latency_ms_max=max(latencies) if latencies else None,
+        max_dropped_frames=max(r.dropped_frames for r in records),
+        final_total_actions=records[-1].total_actions,
+        peak_action_clip_rate=max(r.action_clip_rate for r in records),
+        peak_element_clip_rate=max(r.element_clip_rate for r in records),
+        worst_level=worst.level,
+        worst_status_text=worst.status_text,
+        worst_index=worst_index,
+    )
+
+
+def format_diagnostics_summary_markdown(
+    summary: DiagnosticsSummary,
+    *,
+    title: str = "Runtime Diagnostics Summary",
+) -> str:
+    """Render a time-series diagnostics summary as Markdown."""
+
+    lines = [
+        f"# {title}",
+        "",
+        f"- Schema: `{summary.schema_version}`",
+        f"- Model: `{summary.model}`",
+        f"- Records: {summary.record_count}",
+        "",
+        "| Metric | Value |",
+        "|---|---|",
+        f"| Latency min / p50 / max | {_fmt(summary.latency_ms_min)} / "
+        f"{_fmt(summary.latency_ms_p50)} / {_fmt(summary.latency_ms_max, suffix=' ms')} |",
+        f"| Max dropped frames | {summary.max_dropped_frames} |",
+        f"| Final actions seen | {summary.final_total_actions} |",
+        f"| Peak action clip rate | {summary.peak_action_clip_rate:.2%} |",
+        f"| Peak element clip rate | {summary.peak_element_clip_rate:.2%} |",
+        f"| Worst level | `{summary.worst_level}` (record #{summary.worst_index}) |",
+        f"| Worst status | {summary.worst_status_text} |",
+        "",
+        (
+            "Runtime-centric summary over the full log. It reports latency spread, drop and "
+            "clip-rate peaks, and the worst-severity record, not model task-success quality."
         ),
         "",
     ]

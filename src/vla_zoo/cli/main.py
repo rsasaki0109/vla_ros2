@@ -1000,24 +1000,41 @@ def diag_report(
             help="Persist the (reconstructed) records as a native vla-zoo-diagnostics/v1 JSONL.",
         ),
     ] = None,
+    summary: Annotated[
+        bool,
+        typer.Option(
+            "--summary",
+            help="Aggregate the whole log into a time-series summary instead of one snapshot.",
+        ),
+    ] = False,
     markdown_out: Annotated[
         Path | None,
-        typer.Option("--markdown-out", help="Write the Markdown snapshot of the latest record."),
+        typer.Option("--markdown-out", help="Write the Markdown snapshot/summary."),
     ] = None,
     title: Annotated[
-        str,
-        typer.Option("--title", help="Snapshot title."),
-    ] = "Runtime Diagnostics Snapshot",
+        str | None,
+        typer.Option("--title", help="Report title."),
+    ] = None,
     json_output: Annotated[
         bool,
-        typer.Option("--json", help="Print all records as machine-readable JSON."),
+        typer.Option(
+            "--json",
+            help="Print machine-readable JSON (all records, or the summary with --summary).",
+        ),
     ] = False,
 ) -> None:
-    """Render a runtime diagnostics snapshot from a JSONL log (native or ROS2 /diagnostics)."""
+    """Render a runtime diagnostics snapshot or summary from a JSONL log.
+
+    The log may be a native vla-zoo-diagnostics/v1 file (--log) or a recorded ROS2
+    /diagnostics DiagnosticArray file (--from-ros-log). By default the latest record's
+    snapshot is rendered; --summary aggregates the whole log into a time-series view.
+    """
 
     from vla_zoo.runtime.diagnostics import (
         format_diagnostics_markdown,
+        format_diagnostics_summary_markdown,
         read_diagnostics_jsonl,
+        summarize_diagnostics,
         write_diagnostics_jsonl,
     )
 
@@ -1051,16 +1068,26 @@ def diag_report(
         write_diagnostics_jsonl(jsonl_out, records)
         typer.echo(f"JSONL written to {jsonl_out}")
 
-    latest = records[-1]
+    if summary:
+        reduced = summarize_diagnostics(records)
+        report_title = title or "Runtime Diagnostics Summary"
+        rendered = format_diagnostics_summary_markdown(reduced, title=report_title)
+        payload: object = reduced.to_dict()
+    else:
+        latest = records[-1]
+        report_title = title or "Runtime Diagnostics Snapshot"
+        rendered = format_diagnostics_markdown(latest, title=report_title)
+        payload = [record.to_dict() for record in records]
+
     if markdown_out is not None:
-        _write_text(markdown_out, format_diagnostics_markdown(latest, title=title))
+        _write_text(markdown_out, rendered)
         typer.echo(f"Markdown written to {markdown_out}")
     if json_output:
-        typer.echo(json.dumps([record.to_dict() for record in records], indent=2))
+        typer.echo(json.dumps(payload, indent=2))
     elif markdown_out is None and jsonl_out is None:
-        typer.echo(format_diagnostics_markdown(latest, title=title))
+        typer.echo(rendered)
     else:
-        typer.echo(f"{len(records)} record(s); latest level={latest.level}")
+        typer.echo(f"{len(records)} record(s) processed")
 
 
 @compare_app.command("adapters")
