@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import subprocess
+import time
+from contextlib import suppress
 from dataclasses import asdict
 from datetime import datetime, timezone
 from importlib.util import find_spec
@@ -27,10 +32,12 @@ demo_app = typer.Typer(help="Generate runnable demos.")
 compare_app = typer.Typer(help="Compare VLA adapters and runtime paths.")
 report_app = typer.Typer(help="Package runtime logs and report artifacts.")
 gpu_app = typer.Typer(help="Check CUDA runtime paths.")
+ros_app = typer.Typer(help="Run ROS2 smoke workflows and reports.")
 app.add_typer(demo_app, name="demo")
 app.add_typer(compare_app, name="compare")
 app.add_typer(report_app, name="report")
 app.add_typer(gpu_app, name="gpu")
+app.add_typer(ros_app, name="ros")
 
 
 def _adapter_status(name: str) -> str:
@@ -111,6 +118,50 @@ def _parse_optional_paths(value: str | None) -> list[Path]:
 def _write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _unlink_if_exists(path: Path) -> None:
+    with suppress(FileNotFoundError):
+        path.unlink()
+
+
+def _path_has_content(path: Path) -> bool:
+    try:
+        return path.stat().st_size > 0
+    except FileNotFoundError:
+        return False
+
+
+def _run_process_for_duration(
+    command: list[str],
+    *,
+    duration_sec: float,
+    log_path: Path,
+    env: dict[str, str],
+) -> tuple[int, bool]:
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("w", encoding="utf-8") as log_file:
+        process = subprocess.Popen(
+            command,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            env=env,
+        )
+        deadline = time.monotonic() + duration_sec
+        completed_early = False
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                completed_early = True
+                break
+            time.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
+        if not completed_early and process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+        return int(process.returncode or 0), completed_early
 
 
 def _load_json_manifest(path: Path) -> dict[str, Any]:
@@ -886,6 +937,156 @@ def report_bundle(
             bundle.write(path, _bundle_arcname("diagnostics", path, index))
 
     typer.echo(f"Report bundle written to {out}")
+
+
+@ros_app.command("smoke-report")
+def ros_smoke_report(
+    output_dir: Annotated[
+        Path,
+        typer.Option("--output-dir", "-o", help="Directory for JSONL logs and report artifacts."),
+    ] = Path("results/ros2_smoke"),
+    duration_sec: Annotated[
+        float,
+        typer.Option(
+            "--duration-sec",
+            help="How long to run smoke_record.launch.py before generating reports.",
+        ),
+    ] = 20.0,
+    skip_launch: Annotated[
+        bool,
+        typer.Option(
+            "--skip-launch",
+            help="Do not run ROS2; generate reports from existing JSONL logs in output-dir.",
+        ),
+    ] = False,
+    overwrite: Annotated[
+        bool,
+        typer.Option("--overwrite/--append", help="Remove previous logs before running ROS2."),
+    ] = True,
+    fastdds_udp: Annotated[
+        bool,
+        typer.Option(
+            "--fastdds-udp/--no-fastdds-udp",
+            help="Set FASTDDS_BUILTIN_TRANSPORTS=UDPv4 for the ROS2 launch subprocess.",
+        ),
+    ] = True,
+    instruction: Annotated[
+        str,
+        typer.Option("--instruction", help="Instruction passed to the smoke input node."),
+    ] = "pick up the red block",
+    task_id: Annotated[
+        str,
+        typer.Option("--task-id", help="Typed instruction task_id for the smoke run."),
+    ] = "ros2_smoke_pick_red_block",
+    status_log_name: Annotated[
+        str,
+        typer.Option("--status-log-name", help="Status JSONL filename inside output-dir."),
+    ] = "vla_status.jsonl",
+    diagnostics_log_name: Annotated[
+        str,
+        typer.Option(
+            "--diagnostics-log-name",
+            help="Diagnostics JSONL filename inside output-dir.",
+        ),
+    ] = "vla_diagnostics.jsonl",
+    dashboard_name: Annotated[
+        str,
+        typer.Option("--dashboard-name", help="Dashboard HTML filename inside output-dir."),
+    ] = "dashboard.html",
+    bundle_name: Annotated[
+        str,
+        typer.Option("--bundle-name", help="Zip report bundle filename inside output-dir."),
+    ] = "report_bundle.zip",
+    launch_log_name: Annotated[
+        str,
+        typer.Option("--launch-log-name", help="ROS2 launch log filename inside output-dir."),
+    ] = "launch.log",
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Dashboard/report title."),
+    ] = "vla_zoo ROS2 Smoke Report",
+) -> None:
+    """Run ROS2 smoke recording and build dashboard/report artifacts."""
+
+    if duration_sec <= 0 and not skip_launch:
+        raise typer.BadParameter("--duration-sec must be positive unless --skip-launch is used.")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    status_log = output_dir / status_log_name
+    diagnostics_log = output_dir / diagnostics_log_name
+    dashboard_out = output_dir / dashboard_name
+    bundle_out = output_dir / bundle_name
+    launch_log = output_dir / launch_log_name
+
+    if not skip_launch:
+        ros2_path = shutil.which("ros2")
+        if ros2_path is None:
+            typer.echo(
+                "ros2 was not found on PATH. Build/source the ROS2 workspace, "
+                "or use --skip-launch.",
+                err=True,
+            )
+            raise typer.Exit(1)
+        if overwrite:
+            for path in (status_log, diagnostics_log, dashboard_out, bundle_out, launch_log):
+                _unlink_if_exists(path)
+
+        env = os.environ.copy()
+        if fastdds_udp:
+            env["FASTDDS_BUILTIN_TRANSPORTS"] = "UDPv4"
+        command = [
+            ros2_path,
+            "launch",
+            "vla_zoo",
+            "smoke_record.launch.py",
+            f"output_dir:={output_dir}",
+            f"status_log_name:={status_log_name}",
+            f"diagnostics_log_name:={diagnostics_log_name}",
+            f"instruction:={instruction}",
+            f"task_id:={task_id}",
+        ]
+        typer.echo(f"Running: {' '.join(quote(part) for part in command)}")
+        returncode, completed_early = _run_process_for_duration(
+            command,
+            duration_sec=duration_sec,
+            log_path=launch_log,
+            env=env,
+        )
+        if completed_early and returncode != 0:
+            typer.echo(
+                f"ROS2 launch exited early with code {returncode}. See {launch_log}",
+                err=True,
+            )
+            raise typer.Exit(returncode)
+
+    diagnostics_arg = str(diagnostics_log) if diagnostics_log.exists() else None
+    if not _path_has_content(status_log):
+        typer.echo(
+            f"No status records were written to {status_log}. "
+            "Run longer, check ROS2 discovery, or inspect the launch log.",
+            err=True,
+        )
+        if launch_log.exists():
+            typer.echo(f"Launch log: {launch_log}", err=True)
+        raise typer.Exit(1)
+    if diagnostics_log.exists() and not _path_has_content(diagnostics_log):
+        typer.echo(f"Warning: diagnostics log is empty: {diagnostics_log}", err=True)
+
+    compare_dashboard(
+        results=None,
+        status_logs=str(status_log),
+        diagnostics_logs=diagnostics_arg,
+        out=dashboard_out,
+        title=title,
+    )
+    report_bundle(
+        results=None,
+        status_logs=str(status_log),
+        diagnostics_logs=diagnostics_arg,
+        out=bundle_out,
+        title=title,
+    )
+    typer.echo(f"ROS2 smoke report written to {output_dir}")
 
 
 @compare_app.command("pybullet")
