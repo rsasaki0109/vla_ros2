@@ -325,7 +325,18 @@ def test_cli_ros_remote_smoke_report_help() -> None:
     assert "--model" in result.output
     assert "--remote-url" in result.output
     assert "--skip-launch" in result.output
+    assert "--remote-check-name" in result.output
     assert "Publish typed action" in result.output
+
+
+def test_cli_ros_remote_smoke_check_help() -> None:
+    result = CliRunner().invoke(app, ["ros", "remote-smoke-check", "--help"])
+
+    assert result.exit_code == 0
+    assert "--model" in result.output
+    assert "--remote-url" in result.output
+    assert "--require-actions" in result.output
+    assert "--markdown-out" in result.output
 
 
 def test_cli_ros_action_trace(tmp_path: Path) -> None:
@@ -478,8 +489,24 @@ def test_cli_ros_smoke_report_skip_launch(tmp_path: Path) -> None:
 
 
 def test_cli_ros_remote_smoke_report_skip_launch(tmp_path: Path) -> None:
+    action_log = tmp_path / "vla_actions.jsonl"
     status_log = tmp_path / "vla_status.jsonl"
     diagnostics_log = tmp_path / "vla_diagnostics.jsonl"
+    action_log.write_text(
+        json.dumps(
+            {
+                "header": {"stamp": {"sec": 1, "nanosec": 0}},
+                "model_name": "openvla",
+                "adapter_name": "RemoteVLAClient",
+                "action_space": "eef_delta",
+                "data": [0.0] * 7,
+                "names": ["x", "y", "z", "roll", "pitch", "yaw", "gripper"],
+                "metadata": {"model": "openvla", "latency_ms": 42.0},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     status_log.write_text(
         json.dumps(
             {
@@ -537,7 +564,93 @@ def test_cli_ros_remote_smoke_report_skip_launch(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert (tmp_path / "dashboard.html").exists()
     assert (tmp_path / "report_bundle.zip").exists()
+    assert (tmp_path / "remote_smoke_check.json").exists()
+    assert (tmp_path / "remote_smoke_check.md").exists()
+    payload = json.loads((tmp_path / "remote_smoke_check.json").read_text(encoding="utf-8"))
+    assert payload["ok"]
+    assert payload["remote_action_count"] == 1
     assert "ROS2 remote smoke report written" in result.output
+
+
+def test_cli_ros_remote_smoke_check_writes_artifacts(tmp_path: Path) -> None:
+    (tmp_path / "vla_actions.jsonl").write_text(
+        json.dumps(
+            {
+                "model_name": "dummy",
+                "adapter_name": "RemoteVLAClient",
+                "action_space": "eef_delta",
+                "data": [0.0] * 7,
+                "names": [],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "vla_status.jsonl").write_text(
+        json.dumps(
+            {
+                "model_name": "dummy",
+                "adapter_name": "RemoteVLAClient",
+                "ready": True,
+                "dry_run": True,
+                "last_latency_ms": 12.0,
+                "status_text": "ready",
+                "metadata": {
+                    "runtime": "remote",
+                    "remote_url": "http://127.0.0.1:8766",
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "vla_diagnostics.jsonl").write_text(
+        json.dumps(
+            {
+                "status": [
+                    {
+                        "name": "vla_zoo/vla_runtime_node",
+                        "hardware_id": "dummy",
+                        "level": 0,
+                        "message": "ready",
+                        "values": [
+                            {"key": "runtime", "value": "remote"},
+                            {"key": "remote_url", "value": "http://127.0.0.1:8766"},
+                        ],
+                    }
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "check.json"
+    markdown_out = tmp_path / "check.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ros",
+            "remote-smoke-check",
+            "--output-dir",
+            str(tmp_path),
+            "--model",
+            "dummy",
+            "--remote-url",
+            "http://127.0.0.1:8766",
+            "--out",
+            str(out),
+            "--markdown-out",
+            str(markdown_out),
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"]
+    assert payload["remote_status_count"] == 1
+    assert "ROS2 Remote Runtime Smoke Check" in markdown_out.read_text(encoding="utf-8")
 
 
 def test_cli_compare_pybullet_help() -> None:

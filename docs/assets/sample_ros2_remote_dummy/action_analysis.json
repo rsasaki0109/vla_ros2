@@ -1,0 +1,76 @@
+{
+  "action_count": 69,
+  "duration_sec": 27.19996738433838,
+  "action_rate_hz": 2.5000029977666114,
+  "action_dim": 7,
+  "mean_magnitude": 0.0,
+  "max_magnitude": 0.0,
+  "mean_gap_sec": 0.39999952035791736,
+  "max_gap_sec": 0.4839756488800049,
+  "mean_delta_l1": 0.0,
+  "max_delta_l1": 0.0,
+  "zero_action_rate": 1.0,
+  "repeated_action_rate": 1.0,
+  "warnings": [
+    "mostly near-zero actions: 100%",
+    "mostly repeated actions: 100%"
+  ],
+  "dimensions": [
+    {
+      "index": 0,
+      "name": "x",
+      "minimum": 0.0,
+      "maximum": 0.0,
+      "mean": 0.0,
+      "last": 0.0
+    },
+    {
+      "index": 1,
+      "name": "y",
+      "minimum": 0.0,
+      "maximum": 0.0,
+      "mean": 0.0,
+      "last": 0.0
+    },
+    {
+      "index": 2,
+      "name": "z",
+      "minimum": 0.0,
+      "maximum": 0.0,
+      "mean": 0.0,
+      "last": 0.0
+    },
+    {
+      "index": 3,
+      "name": "roll",
+      "minimum": 0.0,
+      "maximum": 0.0,
+      "mean": 0.0,
+      "last": 0.0
+    },
+    {
+      "index": 4,
+      "name": "pitch",
+      "minimum": 0.0,
+      "maximum": 0.0,
+      "mean": 0.0,
+      "last": 0.0
+    },
+    {
+      "index": 5,
+      "name": "yaw",
+      "minimum": 0.0,
+      "maximum": 0.0,
+      "mean": 0.0,
+      "last": 0.0
+    },
+    {
+      "index": 6,
+      "name": "gripper",
+      "minimum": 0.0,
+      "maximum": 0.0,
+      "mean": 0.0,
+      "last": 0.0
+    }
+  ]
+}

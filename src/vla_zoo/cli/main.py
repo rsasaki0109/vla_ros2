@@ -1438,6 +1438,102 @@ def ros_remote_smoke_plan(
         typer.echo(markdown)
 
 
+@ros_app.command("remote-smoke-check")
+def ros_remote_smoke_check(
+    output_dir: Annotated[
+        Path,
+        typer.Option("--output-dir", "-o", help="Directory containing ROS2 remote JSONL logs."),
+    ] = Path("results/ros2_remote_smoke"),
+    model: Annotated[
+        str,
+        typer.Option("--model", "-m", help="Expected remote model name."),
+    ] = "openvla",
+    remote_url: Annotated[
+        str,
+        typer.Option("--remote-url", help="Expected remote vla-zoo server endpoint."),
+    ] = "http://gpu-box:8001",
+    action_log_name: Annotated[
+        str,
+        typer.Option("--action-log-name", help="Action JSONL filename inside output-dir."),
+    ] = "vla_actions.jsonl",
+    status_log_name: Annotated[
+        str,
+        typer.Option("--status-log-name", help="Status JSONL filename inside output-dir."),
+    ] = "vla_status.jsonl",
+    diagnostics_log_name: Annotated[
+        str,
+        typer.Option(
+            "--diagnostics-log-name",
+            help="Diagnostics JSONL filename inside output-dir.",
+        ),
+    ] = "vla_diagnostics.jsonl",
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write machine-readable check JSON."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write Markdown check report."),
+    ] = None,
+    require_actions: Annotated[
+        bool,
+        typer.Option("--require-actions/--allow-empty-actions", help="Require action records."),
+    ] = True,
+    require_diagnostics: Annotated[
+        bool,
+        typer.Option(
+            "--require-diagnostics/--allow-empty-diagnostics",
+            help="Require diagnostics records.",
+        ),
+    ] = True,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print JSON instead of Markdown."),
+    ] = False,
+    strict: Annotated[
+        bool,
+        typer.Option("--strict/--no-strict", help="Exit non-zero when checks fail."),
+    ] = True,
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Markdown report title."),
+    ] = "ROS2 Remote Runtime Smoke Check",
+) -> None:
+    """Validate ROS2 remote smoke logs for remote runtime evidence."""
+
+    from vla_zoo.runtime.ros_smoke import (
+        check_ros_remote_smoke,
+        format_ros_remote_smoke_check_markdown,
+    )
+
+    try:
+        check = check_ros_remote_smoke(
+            action_log=output_dir / action_log_name,
+            status_log=output_dir / status_log_name,
+            diagnostics_log=output_dir / diagnostics_log_name,
+            expected_model=model,
+            expected_remote_url=remote_url,
+            require_actions=require_actions,
+            require_diagnostics=require_diagnostics,
+        )
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    payload = json.dumps(check.to_dict(), indent=2)
+    markdown = format_ros_remote_smoke_check_markdown(check, title=title)
+    if out is not None:
+        _write_text(out, payload + "\n")
+    if markdown_out is not None:
+        _write_text(markdown_out, markdown)
+    if json_output:
+        typer.echo(payload)
+    else:
+        typer.echo(markdown)
+    if strict and not check.ok:
+        raise typer.Exit(1)
+
+
 @ros_app.command("remote-smoke-report")
 def ros_remote_smoke_report(
     model: Annotated[
@@ -1533,6 +1629,14 @@ def ros_remote_smoke_report(
             help="Action analysis Markdown filename inside output-dir.",
         ),
     ] = "action_analysis.md",
+    remote_check_name: Annotated[
+        str,
+        typer.Option("--remote-check-name", help="Remote smoke check JSON filename."),
+    ] = "remote_smoke_check.json",
+    remote_check_markdown_name: Annotated[
+        str,
+        typer.Option("--remote-check-markdown-name", help="Remote smoke check Markdown filename."),
+    ] = "remote_smoke_check.md",
     launch_log_name: Annotated[
         str,
         typer.Option("--launch-log-name", help="ROS2 launch log filename inside output-dir."),
@@ -1556,6 +1660,8 @@ def ros_remote_smoke_report(
     action_trace_out = output_dir / action_trace_name
     action_analysis_out = output_dir / action_analysis_name
     action_analysis_markdown_out = output_dir / action_analysis_markdown_name
+    remote_check_out = output_dir / remote_check_name
+    remote_check_markdown_out = output_dir / remote_check_markdown_name
     launch_log = output_dir / launch_log_name
 
     if not skip_launch:
@@ -1577,6 +1683,8 @@ def ros_remote_smoke_report(
                 action_trace_out,
                 action_analysis_out,
                 action_analysis_markdown_out,
+                remote_check_out,
+                remote_check_markdown_out,
                 launch_log,
             ):
                 _unlink_if_exists(path)
@@ -1627,6 +1735,21 @@ def ros_remote_smoke_report(
         launch_log=launch_log,
         title=title,
         label="ROS2 remote smoke report",
+    )
+    ros_remote_smoke_check(
+        output_dir=output_dir,
+        model=model,
+        remote_url=remote_url,
+        action_log_name=action_log_name,
+        status_log_name=status_log_name,
+        diagnostics_log_name=diagnostics_log_name,
+        out=remote_check_out,
+        markdown_out=remote_check_markdown_out,
+        require_actions=True,
+        require_diagnostics=True,
+        json_output=False,
+        strict=True,
+        title=f"{title}: Remote Runtime Check",
     )
 
 

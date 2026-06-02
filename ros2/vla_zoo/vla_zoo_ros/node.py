@@ -50,7 +50,7 @@ class VLARuntimeNode(Node):
         }
         if self.params.runtime == "remote":
             model_kwargs["remote_url"] = self.params.remote_url
-        if self.params.model_name == "dummy":
+        if self.params.model_name == "dummy" and self.params.runtime == "local":
             model_kwargs = {}
         self.model = load_model(self.params.model_name, runtime=self.params.runtime, **model_kwargs)
 
@@ -445,6 +445,7 @@ class VLARuntimeNode(Node):
                 status_text=self._status_text,
                 metadata={
                     "runtime": self.params.runtime,
+                    "remote_url": self.params.remote_url if self.params.runtime == "remote" else "",
                     "instruction_msg_type": self.params.instruction_msg_type,
                     "instruction_source": self._latest_instruction_source,
                     "task_id": self._latest_instruction_task_id,
@@ -487,6 +488,10 @@ class VLARuntimeNode(Node):
         status.values = [
             KeyValue(key="model_name", value=self.params.model_name),
             KeyValue(key="runtime", value=self.params.runtime),
+            KeyValue(
+                key="remote_url",
+                value=self.params.remote_url if self.params.runtime == "remote" else "",
+            ),
             KeyValue(key="instruction_msg_type", value=self.params.instruction_msg_type),
             KeyValue(key="instruction_source", value=self._latest_instruction_source),
             KeyValue(key="task_id", value=self._latest_instruction_task_id),
