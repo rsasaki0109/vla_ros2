@@ -1,5 +1,5 @@
 {
-  "count": 26,
+  "count": 27,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -129,6 +129,16 @@
       "kind": "generated",
       "source_command": "vla-zoo ros action-trace --action-log .../vla_actions.jsonl",
       "caveat": "Typed action messages only; core never commands motors.",
+      "exists": true
+    },
+    {
+      "title": "Jetson + remote GPU deployment guide",
+      "path": "docs/deployment.md",
+      "category": "ROS2",
+      "status": "manual",
+      "kind": "manual",
+      "source_command": null,
+      "caveat": "Topology + serving + guards + bridges; runtime-centric, no task-success claim.",
       "exists": true
     },
     {

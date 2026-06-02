@@ -576,7 +576,9 @@ Remaining/next useful tasks:
 - ros2_control bridge example. (DONE — pure mapping in `runtime/control_bridge.py`
   (joint_position/velocity -> JointTrajectory point) + dry-run-safe example
   `examples/ros2/ros2_control_bridge.py` that runs the clip+watchdog guards.)
-- Jetson + remote GPU deployment guide.
+- Jetson + remote GPU deployment guide. (DONE — `docs/deployment.md` ties the remote
+  serving path, ROS2 remote runtime, clip/watchdog guards, and bridge examples into one
+  Jetson + remote-GPU topology.)
 
 ### v0.5 ecosystem hub
 
@@ -676,33 +678,31 @@ Shell/tooling conventions in this environment:
 
 ## 13. Current Best Next Commit
 
-Section 7 (adapter hardening) and the v0.3 benchmark-credibility track are done, and the
-v0.4 robot-readiness track is well along: the pure clip + watchdog guards
-(`runtime/guard.py`), the dry-run-safe MoveIt Servo bridge (`runtime/servo_bridge.py` +
-example), and the dry-run-safe ros2_control bridge (`runtime/control_bridge.py` + example)
-are all in, with the ROS2 node delegating to the guards. The next best commit continues
-v0.4 with the deployment-guidance piece:
+Section 7 (adapter hardening), the v0.3 benchmark-credibility track, and most of the v0.4
+robot-readiness track are done: the pure clip + watchdog guards (`runtime/guard.py`), both
+hardware-bridge examples (`runtime/servo_bridge.py`, `runtime/control_bridge.py` + dry-run
+examples), and the Jetson + remote-GPU deployment guide (`docs/deployment.md`) are all in.
+The next best commit completes the v0.4 runtime-observability story:
 
 ```text
-add a Jetson + remote GPU deployment guide (v0.4)
+add a structured runtime diagnostics record schema (v0.4)
 ```
 
-Reason: the runtime, guards, and hardware-bridge examples exist, but there is no single
-guide for the realistic split deployment (lightweight robot-side runtime on a Jetson /
-robot computer, heavyweight VLA served from a remote GPU box). Write a `docs/deployment.md`
-that ties together the remote serving path, the ROS2 remote runtime, the clip/watchdog
-guards, and the bridge examples into one Jetson + remote-GPU topology, and surface it from
-the README / index / artifact index. Keep all claims runtime-centric (no task-success
-claims) and keep model downloads out of tests.
+Reason: the guards now produce clip-rate and watchdog status, but they are reported ad hoc.
+Add a pure, versioned diagnostics record (e.g. `vla-zoo-diagnostics/v1`) that merges the
+`ActionClipGuard` counters, the `WatchdogStatus`, and latency into one schema with a
+JSONL/Markdown surface (mirroring `benchmark/results.py`), and have the ROS2 node's
+`/diagnostics` payload build from it. Keep it pure and unit-tested, keep model downloads
+out of tests, and keep claims runtime-centric.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_control_bridge.py tests/test_servo_bridge.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_runtime_guard.py tests/test_control_bridge.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/deployment.md,docs/index.html,docs/ros2_integration.md \
+  --paths docs/safety.md,docs/index.html,docs/deployment.md \
   --strict
 ```
 

@@ -564,6 +564,7 @@ assert action.spec.action_space in {"eef_delta", "eef_pose", "joint_position", "
 | Architecture | [docs/architecture.md](docs/architecture.md) |
 | Adapter contract | [docs/adapter_contract.md](docs/adapter_contract.md) |
 | ROS2 integration | [docs/ros2_integration.md](docs/ros2_integration.md) |
+| Deployment (Jetson + remote GPU) | [docs/deployment.md](docs/deployment.md) |
 | Benchmark design | [docs/benchmark_design.md](docs/benchmark_design.md) |
 | Safety | [docs/safety.md](docs/safety.md) |
 | Comparisons | [docs/comparisons.md](docs/comparisons.md) |
