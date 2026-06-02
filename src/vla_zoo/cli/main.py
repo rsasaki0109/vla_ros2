@@ -329,6 +329,77 @@ def list_command() -> None:
 
 
 @app.command()
+def quickstart(
+    out_dir: Annotated[
+        Path,
+        typer.Option("--out-dir", help="Directory for the generated quickstart report."),
+    ] = Path("vla_zoo_quickstart"),
+    episodes: Annotated[
+        int,
+        typer.Option("--episodes", help="Smoke episodes to run per baseline adapter."),
+    ] = 5,
+    models: Annotated[
+        str | None,
+        typer.Option(
+            "--models",
+            help="Comma-separated baselines (default: dummy,scripted,random).",
+        ),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print the machine-readable report instead of a summary."),
+    ] = False,
+) -> None:
+    """Run a zero-dependency local smoke of the VLA runtime boundary in seconds.
+
+    Loads the pure-Python baselines (no GPU / weights / PyBullet), drives each through
+    ``predict()``, records latency + a real typed action, and writes an HTML/Markdown/JSON
+    report that links on to the recorded real-adapter evidence. Proves the plumbing works
+    locally; it is not a model-quality claim.
+    """
+
+    from vla_zoo.demo.quickstart import (
+        DEFAULT_QUICKSTART_MODELS,
+        format_quickstart_html,
+        format_quickstart_markdown,
+        run_quickstart,
+    )
+
+    chosen = tuple(_parse_optional_name_list(models)) or DEFAULT_QUICKSTART_MODELS
+    report = run_quickstart(chosen, episodes=episodes)
+
+    if json_output:
+        typer.echo(json.dumps(report.to_dict(), indent=2))
+        raise typer.Exit(0 if report.ok else 1)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    html_path = out_dir / "report.html"
+    md_path = out_dir / "report.md"
+    json_path = out_dir / "report.json"
+    _write_text(html_path, format_quickstart_html(report))
+    _write_text(md_path, format_quickstart_markdown(report))
+    _write_text(json_path, json.dumps(report.to_dict(), indent=2) + "\n")
+
+    typer.echo("vla_zoo runtime-boundary quickstart")
+    typer.echo(f"{'model':<10} {'space':<12} {'dim':>4} {'p50 ms':>10} {'rate Hz':>9}")
+    typer.echo(f"{'-' * 10} {'-' * 12} {'-' * 4} {'-' * 10} {'-' * 9}")
+    for row in report.rows:
+        p50 = "-" if row.latency_ms_p50 is None else f"{row.latency_ms_p50:.2f}"
+        rate = "-" if row.action_rate_hz is None else f"{row.action_rate_hz:.2f}"
+        flag = "" if row.ok else "  (error)"
+        typer.echo(
+            f"{row.model:<10} {row.action_space:<12} {row.action_dim:>4} "
+            f"{p50:>10} {rate:>9}{flag}"
+        )
+    status = "✅ runtime boundary works" if report.ok else "⚠️ some baselines failed"
+    typer.echo("")
+    typer.echo(status)
+    typer.echo(f"Open the report:  {html_path.resolve()}")
+    if not report.ok:
+        raise typer.Exit(1)
+
+
+@app.command()
 def info(model: str) -> None:
     """Show adapter metadata."""
 
