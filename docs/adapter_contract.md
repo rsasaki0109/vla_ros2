@@ -59,3 +59,11 @@ These fields are displayed by:
 ```bash
 vla-zoo compare methods
 ```
+
+Generate the per-adapter capability cards from the same registry metadata:
+
+```bash
+vla-zoo compare cards --out-dir docs/adapters
+```
+
+See [docs/adapters/README.md](adapters/README.md) for the current cards.

@@ -289,18 +289,12 @@ def list_command() -> None:
 def info(model: str) -> None:
     """Show adapter metadata."""
 
+    from vla_zoo.compare.cards import adapter_card_payload
+
     adapter = get_adapter_info(model)
     typer.echo(
         json.dumps(
-            {
-                "name": adapter.name,
-                "source": adapter.source,
-                "aliases": adapter.aliases,
-                "experimental": adapter.experimental,
-                "domain": adapter.domain,
-                "description": adapter.description,
-                "install_hint": adapter.install_hint,
-            },
+            adapter_card_payload(adapter, status=_adapter_status(adapter.name)),
             indent=2,
         )
     )
@@ -660,6 +654,50 @@ def compare_methods(
         typer.echo(f"JSON written to {out}")
     if markdown_out is not None:
         typer.echo(f"Markdown written to {markdown_out}")
+
+
+@compare_app.command("cards")
+def compare_cards(
+    models: Annotated[
+        str,
+        typer.Option(
+            "--models",
+            "-m",
+            help="Comma-separated adapters to generate cards for.",
+        ),
+    ] = "dummy,scripted,random,openvla,pi0,smolvla,groot",
+    out_dir: Annotated[
+        Path,
+        typer.Option("--out-dir", "-o", help="Directory for generated Markdown cards."),
+    ] = Path("docs/adapters"),
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print generated paths as JSON."),
+    ] = False,
+) -> None:
+    """Generate adapter capability cards from registry metadata."""
+
+    from vla_zoo.compare.cards import write_adapter_cards
+
+    paths = write_adapter_cards(
+        out_dir,
+        models=_parse_name_list(models),
+        status_provider=_adapter_status,
+    )
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {
+                    "out_dir": str(out_dir),
+                    "files": [str(path) for path in paths],
+                },
+                indent=2,
+            )
+        )
+        return
+    typer.echo(f"Adapter cards written to {out_dir}")
+    for path in paths:
+        typer.echo(f"- {path}")
 
 
 @compare_app.command("suite")

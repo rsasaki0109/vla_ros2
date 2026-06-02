@@ -37,6 +37,8 @@ _BUILTINS: dict[str, AdapterInfo] = {
         target="vla_zoo.adapters.dummy:DummyAdapter",
         description="Always-available zero-action adapter for tests and dry runs.",
         metadata={
+            "upstream_project": "vla_zoo",
+            "default_checkpoint": "none",
             "family": "dry-run baseline",
             "compare_role": "CI/runtime smoke sanity check",
             "input_requirements": (
@@ -54,6 +56,10 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "remote_runtime": "supported",
             "dependency_profile": "base install",
             "license_caveat": "none",
+            "verification": (
+                "Exercised by unit tests, CLI predict, ROS2 dry-run launch, and PyBullet "
+                "smoke reports."
+            ),
         },
     ),
     "random": AdapterInfo(
@@ -62,6 +68,8 @@ _BUILTINS: dict[str, AdapterInfo] = {
         aliases=("random-baseline",),
         description="Always-available seeded random-action baseline.",
         metadata={
+            "upstream_project": "vla_zoo",
+            "default_checkpoint": "none",
             "baseline": True,
             "family": "stochastic baseline",
             "compare_role": "action plumbing and visualization stress check",
@@ -80,6 +88,9 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "remote_runtime": "supported",
             "dependency_profile": "base install",
             "license_caveat": "none",
+            "verification": (
+                "Exercised in deterministic PyBullet comparison reports as a seeded baseline."
+            ),
         },
     ),
     "scripted": AdapterInfo(
@@ -88,6 +99,8 @@ _BUILTINS: dict[str, AdapterInfo] = {
         aliases=("heuristic", "rule-based"),
         description="Always-available phase-aware scripted baseline.",
         metadata={
+            "upstream_project": "vla_zoo",
+            "default_checkpoint": "none",
             "baseline": True,
             "family": "rule-based baseline",
             "compare_role": "upper-bound sanity check for the scripted smoke scene",
@@ -106,6 +119,10 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "remote_runtime": "supported",
             "dependency_profile": "base install",
             "license_caveat": "none",
+            "verification": (
+                "Exercised in deterministic PyBullet comparison reports as a scripted smoke "
+                "baseline."
+            ),
         },
     ),
     "openvla": AdapterInfo(
@@ -114,6 +131,8 @@ _BUILTINS: dict[str, AdapterInfo] = {
         description="OpenVLA Hugging Face adapter.",
         install_hint='pip install "vla_zoo[openvla]"',
         metadata={
+            "upstream_project": "OpenVLA",
+            "default_checkpoint": "openvla/openvla-7b",
             "family": "VLA foundation model",
             "compare_role": "single-image VLA reference adapter",
             "input_requirements": (
@@ -131,6 +150,10 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "remote_runtime": "recommended for robot-side ROS2",
             "dependency_profile": "torch, transformers, HF weights",
             "license_caveat": "external project and model license apply",
+            "verification": (
+                "Adapter scaffold and prompt path are documented. In the latest local run, "
+                "the CUDA prompt probe did not complete because free GPU memory was insufficient."
+            ),
         },
     ),
     "pi0": AdapterInfo(
@@ -141,6 +164,8 @@ _BUILTINS: dict[str, AdapterInfo] = {
         description="Remote-first pi0/openpi adapter with optional local LeRobot loading.",
         install_hint='pip install "vla_zoo[openpi]"',
         metadata={
+            "upstream_project": "openpi / LeRobot",
+            "default_checkpoint": "lerobot/pi0_base",
             "family": "pi-family VLA",
             "compare_role": "remote-first action-chunk VLA target",
             "input_requirements": (
@@ -158,6 +183,10 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "remote_runtime": "recommended",
             "dependency_profile": "LeRobot/openpi stack in serving environment",
             "license_caveat": "external project and checkpoint license apply",
+            "verification": (
+                "Remote-first adapter path is implemented. Local real-model action probe has "
+                "not completed in this repository; use a dedicated GPU serving environment."
+            ),
         },
     ),
     "smolvla": AdapterInfo(
@@ -168,6 +197,8 @@ _BUILTINS: dict[str, AdapterInfo] = {
         description="LeRobot SmolVLA adapter for compact local VLA inference.",
         install_hint='pip install "vla_zoo[smolvla]"',
         metadata={
+            "upstream_project": "LeRobot SmolVLA",
+            "default_checkpoint": "lerobot/smolvla_base",
             "family": "LeRobot policy",
             "compare_role": "multi-camera/state/action-chunk compact VLA target",
             "input_requirements": (
@@ -185,6 +216,11 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "remote_runtime": "recommended",
             "dependency_profile": "lerobot[smolvla], torch, HF weights",
             "license_caveat": "external project, dataset, and checkpoint licenses apply",
+            "verification": (
+                "Local CUDA inference-path probe completed with lerobot/smolvla_base, "
+                "including a PyBullet-rendered multi-camera/state observation path. "
+                "This is not a robot task-success claim."
+            ),
         },
     ),
     "groot": AdapterInfo(
@@ -196,6 +232,8 @@ _BUILTINS: dict[str, AdapterInfo] = {
         description="Experimental placeholder for Isaac GR00T-style adapters.",
         install_hint="Install Isaac GR00T dependencies in the serving environment.",
         metadata={
+            "upstream_project": "Isaac GR00T",
+            "default_checkpoint": "adapter-specific",
             "family": "humanoid/generalist foundation model",
             "compare_role": "experimental humanoid/generalist adapter target",
             "input_requirements": (
@@ -213,6 +251,10 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "remote_runtime": "recommended",
             "dependency_profile": "Isaac GR00T stack in serving environment",
             "license_caveat": "external NVIDIA project and model license apply",
+            "verification": (
+                "Experimental placeholder only; real GR00T inference is not verified in this "
+                "repository yet."
+            ),
         },
     ),
 }
