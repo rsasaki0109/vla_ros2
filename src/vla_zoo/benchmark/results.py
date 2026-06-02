@@ -129,6 +129,39 @@ class BenchmarkSummary:
             "note": self.note,
         }
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> BenchmarkSummary:
+        version = payload.get("schema_version")
+        if version != RESULT_SCHEMA_VERSION:
+            msg = f"Unsupported schema_version {version!r}; expected {RESULT_SCHEMA_VERSION!r}"
+            raise SchemaVersionError(msg)
+
+        def _opt_float(key: str) -> float | None:
+            value = payload.get(key)
+            return None if value is None else float(str(value))
+
+        success_rate = payload.get("success_rate")
+        return cls(
+            model=str(payload["model"]),
+            source=str(payload["source"]),
+            sample_count=int(str(payload.get("sample_count", 0))),
+            success_count=int(str(payload.get("success_count", 0))),
+            success_rate=None if success_rate is None else float(str(success_rate)),
+            latency_ms_p50=_opt_float("latency_ms_p50"),
+            latency_ms_p95=_opt_float("latency_ms_p95"),
+            latency_ms_mean=_opt_float("latency_ms_mean"),
+            action_rate_hz=_opt_float("action_rate_hz"),
+            exception_count=int(str(payload.get("exception_count", 0))),
+            note=None if payload.get("note") is None else str(payload["note"]),
+            schema_version=str(version),
+        )
+
+
+def read_summary_json(path: Path) -> BenchmarkSummary:
+    """Read and validate a benchmark summary JSON file."""
+
+    return BenchmarkSummary.from_dict(json.loads(path.read_text(encoding="utf-8")))
+
 
 def _percentile(values: Sequence[float], fraction: float) -> float:
     ordered = sorted(values)

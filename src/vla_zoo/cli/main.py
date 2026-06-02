@@ -851,6 +851,69 @@ def bench_replay(
     typer.echo(json.dumps(summary.to_dict(), indent=2))
 
 
+@app.command("bench-report")
+def bench_report(
+    summaries: Annotated[
+        str,
+        typer.Option(
+            "--summaries",
+            help="Comma-separated benchmark summary JSON files (vla-zoo-benchmark/v1).",
+        ),
+    ],
+    html_out: Annotated[
+        Path | None,
+        typer.Option("--html-out", help="Write the standalone HTML comparison report."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write the Markdown comparison report."),
+    ] = None,
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Report title."),
+    ] = "Benchmark Comparison",
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable JSON instead of a table."),
+    ] = False,
+) -> None:
+    """Render benchmark summaries into a comparison report (HTML + Markdown)."""
+
+    from vla_zoo.benchmark.report import (
+        format_benchmark_report_html,
+        format_benchmark_report_markdown,
+    )
+    from vla_zoo.benchmark.results import read_summary_json
+
+    loaded = []
+    for raw in _parse_name_list(summaries):
+        path = Path(raw)
+        if not path.is_file():
+            typer.echo(f"summary not found: {path}", err=True)
+            raise typer.Exit(1)
+        loaded.append(read_summary_json(path))
+
+    if not loaded:
+        typer.echo("no summaries provided", err=True)
+        raise typer.Exit(1)
+
+    if html_out is not None:
+        _write_text(html_out, format_benchmark_report_html(loaded, title=title))
+        typer.echo(f"HTML written to {html_out}")
+    if markdown_out is not None:
+        _write_text(markdown_out, format_benchmark_report_markdown(loaded, title=title))
+        typer.echo(f"Markdown written to {markdown_out}")
+    if json_output:
+        typer.echo(json.dumps([summary.to_dict() for summary in loaded], indent=2))
+    else:
+        typer.echo(f"{'model':<12} {'source':<22} {'p50 ms':>10} {'rate Hz':>10}")
+        typer.echo(f"{'-' * 12} {'-' * 22} {'-' * 10} {'-' * 10}")
+        for summary in loaded:
+            p50 = "-" if summary.latency_ms_p50 is None else f"{summary.latency_ms_p50:.2f}"
+            rate = "-" if summary.action_rate_hz is None else f"{summary.action_rate_hz:.2f}"
+            typer.echo(f"{summary.model:<12} {summary.source:<22} {p50:>10} {rate:>10}")
+
+
 @compare_app.command("adapters")
 def compare_adapters() -> None:
     """Compare registered adapter metadata and availability."""

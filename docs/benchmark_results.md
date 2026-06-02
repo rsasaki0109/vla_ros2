@@ -59,6 +59,23 @@ generated from the dummy remote ROS2 smoke log. It reports latency and a ~2.5 Hz
 rate for the recorded `dummy` stream; it is a runtime-throughput measurement, not a
 robot-skill result.
 
+## Comparison report (HTML / Markdown)
+
+`bench-report` renders one or more summary JSON files into a comparison table that sits
+alongside the evidence matrix and artifact index on the Pages surface:
+
+```bash
+vla-zoo bench-report \
+  --summaries docs/assets/sample_benchmark/ros2_replay_summary.json \
+  --html-out docs/assets/sample_benchmark/benchmark_report.html \
+  --markdown-out docs/assets/sample_benchmark/benchmark_report.md
+```
+
+See the generated
+[benchmark comparison report](assets/sample_benchmark/benchmark_report.html). Pass several
+`--summaries` to compare models/sources side by side; a blank success rate means that
+source made no task-success claim.
+
 ## What is still stubbed
 
 - Native rosbag2 (`.db3`/`.mcap`) decoding (gated on ROS2).

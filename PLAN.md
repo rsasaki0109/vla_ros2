@@ -541,11 +541,15 @@ Remaining/next useful tasks:
   `benchmark/results.py`.)
 - Latency and action-rate summary reports. (DONE — `BenchmarkSummary` +
   `vla-zoo bench --summary-md` / `vla-zoo bench-replay`.)
+- Benchmark summaries on the report/Pages surface. (DONE — `vla-zoo bench-report`
+  renders an HTML/Markdown comparison table; sample at
+  `docs/assets/sample_benchmark/benchmark_report.html`.)
 
-Status: the versioned JSONL result schema, the latency/action-rate summary, and the
-ROS bag replay stub (over vla_zoo JSONL action logs) are done, with a reproducible
-sample summary checked in at `docs/assets/sample_benchmark/`. Acceptance passed: 184
-tests, ruff/mypy clean, link-check 237 ok / 0 broken, git diff --check clean.
+Status: the versioned JSONL result schema, the latency/action-rate summary, the ROS bag
+replay stub (over vla_zoo JSONL action logs), and the benchmark comparison report on the
+Pages surface are done, with reproducible samples checked in at
+`docs/assets/sample_benchmark/`. Acceptance passed: 189 tests, ruff/mypy clean,
+link-check 240 ok / 0 broken, git diff --check clean.
 
 Remaining/next useful tasks:
 
@@ -662,30 +666,30 @@ Shell/tooling conventions in this environment:
 ## 13. Current Best Next Commit
 
 All of section 7 (adapter hardening) is complete, and the v0.3 benchmark-credibility
-track has started: the versioned JSONL result schema (`vla-zoo-benchmark/v1`), the
-latency/action-rate summary, and the ROS bag replay stub (over vla_zoo JSONL action
-logs) are now done. The next best commit continues v0.3:
+track is well underway: the versioned JSONL result schema (`vla-zoo-benchmark/v1`), the
+latency/action-rate summary, the ROS bag replay stub, and the `bench-report` comparison
+report on the Pages surface are all done. The next best commit continues v0.3 by closing
+the last credibility gap in the benchmark loop:
 
 ```text
-render benchmark summaries into the runtime dashboard / report surface (v0.3)
+turn the LIBERO / SimplerEnv placeholders into honest, dependency-gated smoke runners
 ```
 
-Reason: the JSONL result schema and summaries exist but are only reachable via the CLI
-and a checked-in sample. The next quality jump is surfacing benchmark latency/action-rate
-summaries in the existing HTML report/dashboard surface (alongside the evidence matrix and
-artifact index), and adding a small comparison view across models. Keep all claims
-runtime-centric (`success` stays `null` when no task-success claim is made) and keep
-model downloads out of tests. Native rosbag2 (.db3/.mcap) decoding and the LIBERO /
-SimplerEnv smoke runners remain explicit stubs until their deps and a recorded run exist.
+Reason: `benchmark/libero.py` and `benchmark/simpler.py` are still bare placeholders.
+Make them honest smoke runners that (a) declare their observation/action contract, (b)
+raise a clear MissingDependencyError when their upstream deps are absent (kept out of
+tests, like the heavy adapters), and (c) emit the existing `vla-zoo-benchmark/v1` result
+schema when run. Do not fabricate task-success numbers — `success` stays `null` until a
+real recorded run exists. Native rosbag2 (.db3/.mcap) decoding remains future work.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_benchmark_results.py tests/test_benchmark_replay.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_benchmark_results.py tests/test_benchmark_report.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/benchmark_results.md,docs/index.html,docs/assets/sample_benchmark/ros2_replay_summary.md \
+  --paths docs/benchmark_results.md,docs/index.html,docs/assets/sample_benchmark/benchmark_report.html \
   --strict
 ```
 
