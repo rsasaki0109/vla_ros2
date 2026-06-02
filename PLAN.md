@@ -841,29 +841,49 @@ unit-tested (including a `load_action_log` round-trip); the heavy local adapter 
 `--allow-local-heavy` so a plain `pytest` never downloads weights. Runtime-path claims only:
 this upgrades the *input* from synthetic noise to a real render, nothing about skill.
 
-With SmolVLA now having real-scene runtime evidence, the next best commit surfaces it where the
-honesty story is read — the VLA evidence matrix / runtime dashboard:
+The real-scene action probe is now surfaced where the honesty story is read — the VLA evidence
+matrix (DONE):
 
 ```text
-surface the real-scene action probe as a runtime-evidence cell in the VLA matrix (v0.4)
+surface the real-scene action probe as a runtime-evidence cell in the VLA matrix (v0.4)  [DONE]
 ```
 
-Reason: the probe artifact exists but is only linked from the SmolVLA doc; the evidence matrix
-(the central honest-claims surface) does not yet show a "real-scene runtime path" cell. Add a
-linkable cell/column that points at `runtime_action_probe.md` and keeps the
-`policy_quality=not_verified` framing explicit, so the matrix distinguishes synthetic-frame from
-real-scene runtime evidence without ever implying task success. Alternatives still open: an
-OpenVLA real-scene probe (needs pybullet inside the timm<1.0 openvla venv — env risk), or pi0
-unblock (version-matched checkpoint — rabbit-hole risk).
+What landed: the SmolVLA `pybullet_tasks` cell in `compare/evidence.py` now distinguishes the
+synthetic-frame runtime evidence (`local_runtime` / `gpu_inference`) from the recorded
+real-scene probe (21 queries, 6-DoF, latency p50 ~382 ms), linking
+`sample_pybullet_smolvla/runtime_action_probe.md`. The cell stays `partial` and
+`policy_quality` stays `not_verified` with an explicit "upgrades the input from synthetic noise
+to a real render, makes no task-success claim" note; `next_step` records that the remaining gap
+is task-success / policy quality. The three checked-in matrix artifacts
+(`docs/assets/vla_model_evidence_matrix.{json,md,html}`) were regenerated and the new link is
+covered by `report link-check`. Existing evidence tests still pass (status assertions unchanged).
+
+The honest-evidence surface for SmolVLA is now saturated (contract → local/GPU → remote →
+ROS2 → real-scene PyBullet probe, all verified; policy_quality explicitly unclaimed). The next
+best commit broadens the real-scene runtime evidence to a second heavy adapter:
+
+```text
+record an OpenVLA real-scene action probe on PyBullet frames (no policy-quality claim) (v0.4)
+```
+
+Reason: only SmolVLA has a real-scene runtime probe; OpenVLA's `pybullet_tasks` cell is still
+`planned`. Reuse `vla-zoo demo action-probe --model openvla --allow-local-heavy` to drive the
+verified local 4-bit OpenVLA-7b on real renders and record the action stream, then flip its
+matrix cell from `planned` to a recorded real-scene probe. Env risk: the probe needs PyBullet
+*inside* the timm<1.0 openvla venv (`/tmp/openvla_venv`) — confirm pybullet is importable there
+first; if not, install it into that venv or treat this as blocked and document why. Keep model
+downloads out of tests and `policy_quality` `not_verified`. Alternative still open: pi0 unblock
+(version-matched checkpoint — rabbit-hole risk).
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_demo_action_probe.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_evidence.py tests/test_demo_action_probe.py \
+  tests/test_cli.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/safety.md,docs/index.html,docs/deployment.md,docs/smolvla_local_runtime.md \
+  --paths docs/assets/vla_model_evidence_matrix.md,docs/smolvla_local_runtime.md \
   --strict
 ```
 

@@ -454,8 +454,12 @@
         },
         "pybullet_tasks": {
           "status": "partial",
-          "summary": "Rendered multi-camera plus state observation path was probed; not a task-success benchmark.",
+          "summary": "Recorded a real-scene action probe: SmolVLA driven on real PyBullet-rendered frames (21 queries, 6-DoF, latency p50 ~382 ms with a fresh encode per query), exercising the real image preprocessing path that synthetic-frame probes skip. Runtime path on real renders, not a task-success benchmark.",
           "links": [
+            {
+              "label": "real-scene action probe",
+              "href": "sample_pybullet_smolvla/runtime_action_probe.md"
+            },
             {
               "label": "SmolVLA PyBullet report",
               "href": "sample_task_verification/smolvla_pybullet_report.html"
@@ -464,11 +468,11 @@
         },
         "policy_quality": {
           "status": "not_verified",
-          "summary": "SmolVLA base still needs robot/task-specific fine-tuning and calibration.",
+          "summary": "SmolVLA base still needs robot/task-specific fine-tuning and calibration. The real-scene action probe upgrades the input from synthetic noise to a real render but makes no task-success or policy-quality claim.",
           "links": []
         }
       },
-      "next_step": "Local GPU, remote /v1/predict, and a ROS2 remote trace are all verified; next, broaden to task-level probes on real scene frames.",
+      "next_step": "Local GPU, remote /v1/predict, a ROS2 remote trace, and a real-scene PyBullet action probe are all verified; the remaining gap is task-success / policy quality, which stays unclaimed without a fine-tuned checkpoint and graded benchmark.",
       "caveat": "Local CUDA inference-path probe completed with lerobot/smolvla_base, including a PyBullet-rendered multi-camera/state observation path. This is not a robot task-success claim."
     },
     {
