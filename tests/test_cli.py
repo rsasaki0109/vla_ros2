@@ -29,6 +29,17 @@ def test_model_load_kwargs_threads_quantization_flags() -> None:
     assert quant["load_in_4bit"] is True
     assert quant["pretrained"] == "openvla/openvla-7b"
     assert "load_in_8bit" not in quant
+    assert "dtype" not in quant  # only added when requested
+
+    # serve --dtype must thread through to the LeRobot adapter load_model(..., dtype=...)
+    lerobot = _model_load_kwargs(
+        pretrained="lerobot/pi0_base",
+        device="cuda",
+        dtype="bfloat16",
+        unnorm_key=None,
+    )
+    assert lerobot["dtype"] == "bfloat16"
+    assert lerobot["pretrained"] == "lerobot/pi0_base"
 
 
 def test_cli_list() -> None:

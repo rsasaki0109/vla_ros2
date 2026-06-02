@@ -958,22 +958,38 @@ PaliGemma tokenizer) is summarized with a link to the compatibility probe. All f
 against `--help` before documenting; the new internal links pass `report link-check --strict`.
 Docs-only, runtime-centric, no policy-quality claim.
 
-The natural follow-up — and a real gap surfaced while writing the above — is that `serve` cannot
-serve pi0/SmolVLA in bf16 (it has `--load-in-4bit` for OpenVLA but no `dtype` passthrough), so the
-documented deployment split is incomplete for the LeRobot adapters. The next best commit closes
-that gap in code:
+The "serve cannot pass dtype" follow-up turned out to be a doc error, not a code gap — corrected (DONE):
 
 ```text
-add a serve --dtype passthrough so LeRobot adapters (pi0/smolvla) can be served in bf16 on a 16 GB box (v0.4)
+correct the deployment.md dtype-serve note: vla-zoo serve --dtype already threads through (v0.4)  [DONE]
 ```
 
-Reason: the deployment guide now tells a deployer to fit pi0_base with `dtype=bfloat16`, but the
-recommended serving path (`vla-zoo serve`) can't actually accept it — only the local
-`load_model`/`demo action-probe` paths can. Wiring a `--dtype` option through `serve` to the
-adapter `load_model(..., dtype=...)` call (mirroring how `--load-in-4bit` already threads through)
-makes the documented 16 GB serving split real for the LeRobot adapters. Keep it unit-testable at
-the CLI-wiring level (assert the kwarg threads through, no heavy load), surface it in
-`deployment.md`/`pi0_remote.md`, and keep `policy_quality` `not_verified`.
+What landed: inspecting the code before writing the planned `serve --dtype` passthrough showed it
+**already exists** — `serve` exposes `--dtype` (verified in `--help`) and threads it through
+`_model_load_kwargs` → `run_server` → `create_app` → `load_model(runtime="local", dtype=...)` to the
+LeRobot adapter (the live `load_model("pi0", dtype="bfloat16")` path already accepts it, raising the
+gated-tokenizer `AdapterError` rather than a `TypeError`). The previous commit's deployment.md note
+("serve does not expose a `dtype` flag yet") was therefore wrong; this commit corrects the table and
+prose to show `vla-zoo serve --model pi0 --pretrained lerobot/pi0_base --dtype bfloat16` and
+strengthens `test_model_load_kwargs_threads_quantization_flags` to lock the `dtype` threading. No
+new feature; an honest correction backed by a test.
+
+With the dtype-serve path confirmed in code, the remaining honesty gap is evidence: the path is
+asserted by a unit test and code-reading, but there is no recorded artifact of a LeRobot adapter
+actually **served in bf16**. The next best commit closes that with a real run on the one LeRobot
+adapter that loads locally (SmolVLA; pi0 stays gated):
+
+```text
+record a remote probe against vla-zoo serve --model smolvla --dtype bfloat16 (dtype-serve evidence) (v0.4)
+```
+
+Reason: the repo's discipline is that runtime claims are backed by recorded artifacts, not just
+code. SmolVLA loads locally and is small (~1 GB), so `vla-zoo serve --model smolvla --dtype bfloat16`
++ a health-first `remote-probe` produces a real, checked-in record that the `--dtype` serving path
+returns a typed action end-to-end — upgrading the dtype-serve claim from "unit-tested wiring" to
+"recorded runtime path." Run the server in `.venv-smolvla`, record under
+`docs/assets/sample_task_verification/`, add an artifact-index entry, and keep `policy_quality`
+`not_verified` (a served typed action is not a task-success claim).
 
 Acceptance:
 
