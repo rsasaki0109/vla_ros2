@@ -1648,6 +1648,103 @@ def compare_leaderboard(
             typer.echo(f"{rank:>5} {entry.model:<10} {entry.status:<10} {p50:>10} {mem:>8}")
 
 
+@compare_app.command("roofline")
+def compare_roofline(
+    from_log: Annotated[
+        str | None,
+        typer.Option(
+            "--from-log",
+            help="Comma-separated vla_actions.jsonl logs to source measured p50 latencies.",
+        ),
+    ] = None,
+    summaries: Annotated[
+        str | None,
+        typer.Option("--summaries", help="Comma-separated benchmark summary JSONs (measured p50)."),
+    ] = None,
+    hardware: Annotated[
+        str,
+        typer.Option("--hardware", help="Hardware profile key (see --list-hardware)."),
+    ] = "rtx_4070_ti_super",
+    list_hardware: Annotated[
+        bool,
+        typer.Option("--list-hardware", help="List the available hardware profiles and exit."),
+    ] = False,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write the roofline comparison JSON."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write the roofline comparison Markdown."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable JSON instead of a table."),
+    ] = False,
+) -> None:
+    """Contrast the analytical roofline latency floor with recorded probe latencies.
+
+    Computes each known model's single-forward, batch-1 memory-bound hardware lower bound
+    (VLA-Perf style) on the chosen GPU and joins it with the recorded p50 from
+    ``--from-log`` / ``--summaries``, reporting the headroom (measured/floor) and the
+    10-100 ms real-time band. The floor is an analytical lower bound, not an achievable
+    latency, and makes no policy-quality claim.
+    """
+
+    from vla_zoo.compare.roofline import (
+        HARDWARE_PROFILES,
+        build_roofline_report,
+        format_roofline_markdown,
+    )
+
+    if list_hardware:
+        for key, profile in HARDWARE_PROFILES.items():
+            typer.echo(
+                f"{key:<20} {profile.memory_bandwidth_gbps:>7g} GB/s  "
+                f"{profile.peak_tflops_fp16:>6g} TFLOPS  {profile.note}"
+            )
+        return
+
+    hw = HARDWARE_PROFILES.get(hardware)
+    if hw is None:
+        keys = ", ".join(HARDWARE_PROFILES)
+        typer.echo(f"unknown hardware profile '{hardware}' (choose from: {keys})", err=True)
+        raise typer.Exit(1)
+
+    from vla_zoo.benchmark.replay import summarize_action_log
+    from vla_zoo.benchmark.results import read_summary_json
+
+    measured: dict[str, float | None] = {}
+    for raw in _parse_optional_name_list(summaries):
+        path = Path(raw)
+        if not path.is_file():
+            typer.echo(f"summary not found: {path}", err=True)
+            raise typer.Exit(1)
+        summary = read_summary_json(path)
+        measured[summary.model] = summary.latency_ms_p50
+    for raw in _parse_optional_name_list(from_log):
+        path = Path(raw)
+        if not path.is_file():
+            typer.echo(f"action log not found: {path}", err=True)
+            raise typer.Exit(1)
+        summary = summarize_action_log(path)
+        measured[summary.model] = summary.latency_ms_p50
+
+    report = build_roofline_report(measured, hardware=hw)
+    payload = report.to_dict()
+
+    if out is not None:
+        _write_text(out, json.dumps(payload, indent=2) + "\n")
+        typer.echo(f"JSON written to {out}")
+    if markdown_out is not None:
+        _write_text(markdown_out, format_roofline_markdown(report))
+        typer.echo(f"Markdown written to {markdown_out}")
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(format_roofline_markdown(report))
+
+
 @compare_app.command("cards")
 def compare_cards(
     models: Annotated[

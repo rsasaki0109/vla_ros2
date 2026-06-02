@@ -1151,3 +1151,45 @@ def test_cli_demo_rtc_gif_help_lists_options() -> None:
     assert result.exit_code == 0
     assert "--horizon" in result.output
     assert "--delay" in result.output
+
+
+def test_cli_compare_roofline_help_lists_options() -> None:
+    result = CliRunner().invoke(app, ["compare", "roofline", "--help"])
+
+    assert result.exit_code == 0
+    assert "--from-log" in result.output
+    assert "--hardware" in result.output
+
+
+def test_cli_compare_roofline_list_hardware() -> None:
+    result = CliRunner().invoke(app, ["compare", "roofline", "--list-hardware"])
+
+    assert result.exit_code == 0
+    assert "rtx_4070_ti_super" in result.output
+    assert "GB/s" in result.output
+
+
+def test_cli_compare_roofline_rejects_unknown_hardware() -> None:
+    result = CliRunner().invoke(app, ["compare", "roofline", "--hardware", "nope"])
+
+    assert result.exit_code == 1
+    assert "unknown hardware profile" in result.output
+
+
+def test_cli_compare_roofline_from_log_reports_bands() -> None:
+    result = CliRunner().invoke(
+        app,
+        [
+            "compare",
+            "roofline",
+            "--from-log",
+            "docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "vla-zoo-roofline/v1"
+    models = {c["model"]: c for c in payload["comparisons"]}
+    assert models["smolvla"]["measured_p50_ms"] is not None

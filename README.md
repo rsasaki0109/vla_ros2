@@ -26,6 +26,7 @@ Live demo and reports: https://rsasaki0109.github.io/vla_zoo/
 | What to inspect | Link |
 |---|---|
 | VLA runtime leaderboard | [latency / throughput / memory, ranked](https://rsasaki0109.github.io/vla_zoo/assets/leaderboard/vla_runtime_leaderboard.html) |
+| Roofline floor vs measured | [analytical latency floor vs recorded probes](docs/assets/roofline/vla_roofline.md) |
 | Runtime truth by model | [VLA evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html) |
 | PyBullet simulation GIFs | [GIF gallery](https://rsasaki0109.github.io/vla_zoo/assets/gif_suite/) |
 | Runtime comparison dashboard | [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
@@ -76,6 +77,22 @@ sampler — a runtime scheduling property, not a policy-quality or task-success 
 ```bash
 vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4   # numbers
 vla-zoo demo rtc-gif --out rtc.gif                               # the animation above
+```
+
+### Roofline floor vs measured latency
+
+How much of the recorded latency is the hardware, and how much is overhead? `vla-zoo
+compare roofline` computes each model's single-forward, batch-1 memory-bound floor
+(`weight_bytes / bandwidth`, [VLA-Perf](https://arxiv.org/abs/2602.18397) style) and joins
+it with the recorded p50. On the GPU the probes ran on, SmolVLA sits **~285×**
+and OpenVLA **~383×** above their hardware floors — i.e. the latency is dominated by
+multi-step decode and Python/framework overhead, not the GPU. The floor is an analytical
+lower bound, not an achievable target; the gap is optimization headroom, never a
+policy-quality claim ([recorded run](docs/assets/roofline/vla_roofline.md)).
+
+```bash
+vla-zoo compare roofline --list-hardware
+vla-zoo compare roofline --from-log smolvla.jsonl,openvla.jsonl --hardware rtx_4070_ti_super
 ```
 
 ## Why vla_zoo?
