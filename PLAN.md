@@ -535,8 +535,9 @@ Remaining/next useful tasks:
 
 - ROS bag replay benchmark stub -> working loader. (DONE for JSONL action logs;
   native rosbag2 .db3/.mcap decoding is still future work, gated on ROS2.)
-- LIBERO smoke runner when deps are installed. (still a stub)
-- SimplerEnv runner. (still a stub)
+- LIBERO smoke runner when deps are installed. (DONE — dependency-gated honest runner
+  in `benchmark/libero.py`; emits the schema, raises MissingDependencyError without deps.)
+- SimplerEnv runner. (DONE — dependency-gated honest runner in `benchmark/simpler.py`.)
 - JSONL benchmark result schema. (DONE — `vla-zoo-benchmark/v1` in
   `benchmark/results.py`.)
 - Latency and action-rate summary reports. (DONE — `BenchmarkSummary` +
@@ -545,17 +546,21 @@ Remaining/next useful tasks:
   renders an HTML/Markdown comparison table; sample at
   `docs/assets/sample_benchmark/benchmark_report.html`.)
 
+- LIBERO / SimplerEnv honest dependency-gated smoke runners. (DONE — `benchmark/libero.py`
+  and `benchmark/simpler.py` declare their contract, gate on upstream deps, and emit the
+  schema via an env-agnostic loop; `vla-zoo bench --benchmark libero|simpler`.)
+
 Status: the versioned JSONL result schema, the latency/action-rate summary, the ROS bag
-replay stub (over vla_zoo JSONL action logs), and the benchmark comparison report on the
-Pages surface are done, with reproducible samples checked in at
-`docs/assets/sample_benchmark/`. Acceptance passed: 189 tests, ruff/mypy clean,
-link-check 240 ok / 0 broken, git diff --check clean.
+replay stub (over vla_zoo JSONL action logs), the benchmark comparison report on the Pages
+surface, and the dependency-gated LIBERO / SimplerEnv smoke runners are all done.
+Acceptance passed: 195 tests, ruff/mypy clean, link-check 240 ok / 0 broken, git diff
+--check clean.
 
 Remaining/next useful tasks:
 
 - Native rosbag2 (.db3/.mcap) decoding behind the ROS2 stack.
-- Turn the LIBERO / SimplerEnv placeholders into smoke runners once their deps and a
-  recorded run exist.
+- Wire the real LIBERO / SimplerEnv environment loops once their upstream stacks and a
+  recorded run exist (the dependency-gated runners and the env-agnostic loop are ready).
 
 ### v0.4 robot readiness
 
@@ -666,30 +671,31 @@ Shell/tooling conventions in this environment:
 ## 13. Current Best Next Commit
 
 All of section 7 (adapter hardening) is complete, and the v0.3 benchmark-credibility
-track is well underway: the versioned JSONL result schema (`vla-zoo-benchmark/v1`), the
-latency/action-rate summary, the ROS bag replay stub, and the `bench-report` comparison
-report on the Pages surface are all done. The next best commit continues v0.3 by closing
-the last credibility gap in the benchmark loop:
+track is essentially done: the versioned JSONL result schema (`vla-zoo-benchmark/v1`), the
+latency/action-rate summary, the ROS bag replay stub, the `bench-report` comparison report
+on the Pages surface, and the dependency-gated LIBERO / SimplerEnv smoke runners are all
+in. The next best commit starts the v0.4 robot-readiness track with a safety-first piece:
 
 ```text
-turn the LIBERO / SimplerEnv placeholders into honest, dependency-gated smoke runners
+add an action-clipping + watchdog runtime guard (v0.4 start)
 ```
 
-Reason: `benchmark/libero.py` and `benchmark/simpler.py` are still bare placeholders.
-Make them honest smoke runners that (a) declare their observation/action contract, (b)
-raise a clear MissingDependencyError when their upstream deps are absent (kept out of
-tests, like the heavy adapters), and (c) emit the existing `vla-zoo-benchmark/v1` result
-schema when run. Do not fabricate task-success numbers — `success` stays `null` until a
-real recorded run exists. Native rosbag2 (.db3/.mcap) decoding remains future work.
+Reason: the core publishes actions only, but robot readiness needs an explicit, tested
+safety layer before any hardware bridge. Add a small action-clipping guard (clamp to the
+adapter's declared action `low`/`high` and report a clip rate) and a staleness watchdog
+(flag stale image/instruction inputs), both pure and unit-tested, surfaced through the
+existing diagnostics/JSONL path. Keep the core action-only (no actuation), keep model
+downloads out of tests, and keep claims runtime-centric. Native rosbag2 decoding and the
+real LIBERO/SimplerEnv env loops remain future work.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_benchmark_results.py tests/test_benchmark_report.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_benchmark_external.py tests/test_benchmark_results.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/benchmark_results.md,docs/index.html,docs/assets/sample_benchmark/benchmark_report.html \
+  --paths docs/benchmark_results.md,docs/index.html,docs/safety.md \
   --strict
 ```
 

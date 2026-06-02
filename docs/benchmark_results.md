@@ -76,9 +76,28 @@ See the generated
 `--summaries` to compare models/sources side by side; a blank success rate means that
 source made no task-success claim.
 
+## LIBERO / SimplerEnv smoke runners (dependency-gated)
+
+LIBERO and SimplerEnv are now honest, dependency-gated smoke runners rather than bare
+placeholders. Each declares its observation/action contract and emits the
+`vla-zoo-benchmark/v1` schema, but building the upstream environment requires that
+benchmark's own stack. With the dependency absent, the runner raises a clear
+`MissingDependencyError`; it never fabricates task-success numbers.
+
+```bash
+# raises a clear MissingDependencyError until the upstream stack is installed
+vla-zoo bench --benchmark libero --model dummy --summary-md out/libero_summary.md
+vla-zoo bench --benchmark simpler --model dummy --summary-md out/simpler_summary.md
+```
+
+The schema-emitting episode loop is env-agnostic, so it is exercised in tests via an
+injected fake env; the real-dependency path stays gated until a recorded run exists.
+
 ## What is still stubbed
 
 - Native rosbag2 (`.db3`/`.mcap`) decoding (gated on ROS2).
-- LIBERO / SimplerEnv smoke runners (gated on their dependencies).
+- The real LIBERO / SimplerEnv environment loops (gated on their upstream stacks and a
+  recorded run).
 
-These stay explicit stubs until their dependencies and a recorded run exist.
+These stay explicit, dependency-gated stubs until their dependencies and a recorded run
+exist.

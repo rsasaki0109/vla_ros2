@@ -82,22 +82,22 @@ def run_smoke_benchmark(model: BaseVLA, *, episodes: int = 3, seed: int = 0) -> 
     return SimpleBenchmarkRunner().run(model, SmokeBenchmarkEnv(), episodes=episodes, seed=seed)
 
 
-def run_smoke_episode_records(
+def run_env_episode_records(
     model: BaseVLA,
+    env: BenchmarkEnv,
     *,
+    source: str,
     model_name: str,
     episodes: int = 3,
-    seed: int = 0,
 ) -> tuple[list[EpisodeRecord], float | None]:
-    """Run the smoke benchmark and return per-episode schema records + action rate.
+    """Run ``episodes`` against any benchmark env and emit versioned schema records.
 
-    This mirrors :class:`SimpleBenchmarkRunner` but emits the versioned
-    :class:`~vla_zoo.benchmark.results.EpisodeRecord` schema so results can be written
-    as JSONL and summarized. The returned action rate is wall-clock based.
+    The loop is env-agnostic (it only uses the ``reset``/``step`` protocol), so it can
+    drive the smoke env, an injected fake, or a real external benchmark env. The action
+    rate is wall-clock based. Per-episode exceptions are recorded as error rows rather
+    than raised, so one failing episode does not abort the run.
     """
 
-    del seed
-    env = SmokeBenchmarkEnv()
     records: list[EpisodeRecord] = []
     total_latency_s = 0.0
     for episode in range(episodes):
@@ -120,7 +120,7 @@ def run_smoke_episode_records(
         records.append(
             EpisodeRecord(
                 model=model_name,
-                source=SMOKE_SOURCE,
+                source=source,
                 index=episode,
                 task_id=str(episode),
                 success=success,
@@ -131,3 +131,22 @@ def run_smoke_episode_records(
         )
     action_rate_hz = (episodes / total_latency_s) if total_latency_s > 0 else None
     return records, action_rate_hz
+
+
+def run_smoke_episode_records(
+    model: BaseVLA,
+    *,
+    model_name: str,
+    episodes: int = 3,
+    seed: int = 0,
+) -> tuple[list[EpisodeRecord], float | None]:
+    """Run the smoke benchmark and return per-episode schema records + action rate."""
+
+    del seed
+    return run_env_episode_records(
+        model,
+        SmokeBenchmarkEnv(),
+        source=SMOKE_SOURCE,
+        model_name=model_name,
+        episodes=episodes,
+    )
