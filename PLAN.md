@@ -1104,21 +1104,42 @@ run_count 1). 5 new unit tests cover multi-run best/median/worst, the action-rat
 metric-less group, the Markdown section, and the `groups` payload. `success_rate` stays honest;
 ranking is latency/throughput, not skill.
 
-The aggregate has Markdown + JSON but, unlike `bench-report`, no standalone HTML — so it cannot sit
-on the Pages surface as a self-contained page the way the comparison report does. The next best
-commit closes that surface gap:
+The ranked aggregate is now a first-class HTML Pages artifact (DONE):
 
 ```text
-add standalone HTML rendering for the ranked benchmark aggregate (v0.5)
+add standalone HTML rendering for the ranked benchmark aggregate (v0.5)  [DONE]
 ```
 
-Reason: `bench-report` renders HTML (`format_benchmark_report_html`) so its comparison table is a
-first-class Pages artifact; the ranked aggregate (with its per-model roll-up) deserves the same so
-it is linkable/embeddable rather than Markdown-only. Add `format_aggregate_html` mirroring the
-existing report HTML template (ranked table + per-model roll-up section), wire a `--html-out` option
-into `bench-aggregate`, record the example `runtime_probe_aggregate.html`, add an artifact-index
-entry + Pages-index link, and keep the runtime-centric disclaimer. Pure/unit-tested renderer; keep
-`success_rate` honest.
+What landed: `format_aggregate_html` renders the ranked table plus the per-model roll-up section as
+a standalone page (mirroring `bench-report`'s HTML template), and `bench-aggregate` gained a
+`--html-out` option. The example `runtime_probe_aggregate.html` is recorded, with an artifact-index
+entry (count 50 → 51) and the Pages-index tile re-pointed at the HTML (richer than the Markdown). A
+unit test covers the ranked table, the roll-up section, and the runtime-centric disclaimer.
+`success_rate` stays honest; ranking is latency/throughput, not skill.
+
+The `bench-aggregate` surface (rank + roll-up, Markdown/JSON/HTML, recorded example, Pages tile) is
+now complete and symmetric with `bench-report`. This is a good point to **pause for direction**
+rather than auto-pick another increment: the v0.4 honesty arc and the v0.5 benchmark-aggregate
+capability are both closed and consistent. Reasonable next directions, for the user to choose:
+
+1. `bench-aggregate` reads only pre-computed summary JSONs; a `--from-log` mode that replays raw
+   `vla_actions.jsonl` action logs into summaries first would let it rank recorded logs directly
+   (extends runtime/benchmark surface).
+2. A genuinely new runtime capability (e.g. a new adapter, a new ROS2 surface) rather than more
+   benchmark plumbing.
+3. Stop here — the repo is in a strong, internally consistent state.
+
+Recommended pointer if continuing incrementally:
+
+```text
+add a bench-aggregate --from-log mode that replays vla_actions.jsonl logs into ranked summaries (v0.5)
+```
+
+Reason: it removes the manual `bench-replay`→`bench-aggregate` two-step for the common case, turning
+recorded action logs directly into a ranked table, and reuses the existing `load_action_log` /
+`frames_to_records` / `summarize_records` path. Keep it pure where possible, keep `success_rate`
+`None` for replayed logs, and add a recorded example. Confirm the direction with the user before
+starting, since the obvious-increment streak has ended.
 
 Acceptance:
 
