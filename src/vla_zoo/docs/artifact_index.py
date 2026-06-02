@@ -124,6 +124,38 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Machine-readable vla-zoo-leaderboard/v1 artifact; no task-success claim.",
     ),
     ArtifactEntry(
+        title="OpenVLA commanded EEF trajectory (animated GIF)",
+        path="docs/assets/trajectory/openvla_trajectory.gif",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo demo trajectory-gif "
+            "--action-log docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl "
+            "--out docs/assets/trajectory/openvla_trajectory.gif"
+        ),
+        caveat=(
+            "Integrates OpenVLA's recorded eef_delta stream open-loop (action units, not "
+            "metric). Shows what the policy commanded; not a task-success or real-EEF claim."
+        ),
+    ),
+    ArtifactEntry(
+        title="SmolVLA commanded EEF trajectory (animated GIF)",
+        path="docs/assets/trajectory/smolvla_trajectory.gif",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo demo trajectory-gif "
+            "--action-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl "
+            "--out docs/assets/trajectory/smolvla_trajectory.gif"
+        ),
+        caveat=(
+            "Integrates SmolVLA's recorded action stream open-loop (action units, not "
+            "metric). Shows what the policy commanded; not a task-success or real-EEF claim."
+        ),
+    ),
+    ArtifactEntry(
         title="Quickstart terminal demo (animated GIF)",
         path="docs/assets/quickstart/quickstart_demo.gif",
         category="simulation",
