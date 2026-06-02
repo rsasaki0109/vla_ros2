@@ -55,7 +55,7 @@ current verification is runtime-centric and intentionally explicit about what
 did and did not run.
 
 The most direct status page is the
-[VLA model evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.md):
+[VLA model evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html):
 it separates adapter contract, GPU inference, remote serving, ROS2 remote logs,
 PyBullet traces, and policy-quality claims for each model family.
 
@@ -81,7 +81,7 @@ Sample artifacts:
 | Pillar | Artifacts |
 |---|---|
 | Visual demos | [Action Playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html), [Local+remote playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground_with_remote.html), [Action Playground verification](docs/reports/model_comparison.md), [PyBullet GIF gallery](docs/assets/gif_suite/index.html), [GIF QA](docs/assets/gif_suite/gif_check.md), [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
-| Adapter/runtime truth | [VLA evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.md), [Adapter cards](docs/adapters/README.md), [external adapter status](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html), [robot compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md) |
+| Adapter/runtime truth | [VLA evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html), [Adapter cards](docs/adapters/README.md), [external adapter status](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html), [robot compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md) |
 | ROS2 / remote deployment | [Remote runtime smoke](docs/reports/remote_runtime_smoke.md), [ROS2 remote dummy evidence](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros2_remote_dummy/remote_smoke_check.md), [ROS2 remote smoke plan](https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md), [ROS2 dashboard](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html) |
 | Heavy VLA probes | [GPU server plan](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md), [OpenVLA prompt probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md), [pi0 compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md), [SmolVLA GPU probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md) |
 
@@ -335,7 +335,7 @@ Live artifacts:
   local baseline traces plus a temporary HTTP dummy server smoke trace
 - Action Playground verification: https://rsasaki0109.github.io/vla_zoo/reports/model_comparison.md
   9/9 recorded PyBullet runtime traces checked for frames, GIF links, and adapter errors
-- VLA evidence matrix: https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.md
+- VLA evidence matrix: https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html
   contract, GPU, remote server, ROS2 remote, PyBullet, and policy-quality evidence by model
 - Remote runtime smoke: https://rsasaki0109.github.io/vla_zoo/reports/remote_runtime_smoke.md
   3/3 remote dummy PyBullet traces over `/v1/predict` with 24 HTTP predictions
@@ -356,7 +356,8 @@ vla-zoo compare adapters
 vla-zoo compare methods --markdown-out results/vla_method_profiles.md
 vla-zoo compare evidence \
   --models dummy,scripted,random,openvla,pi0,smolvla,groot \
-  --markdown-out results/vla_model_evidence_matrix.md
+  --markdown-out results/vla_model_evidence_matrix.md \
+  --html-out results/vla_model_evidence_matrix.html
 vla-zoo compare compatibility \
   --robot-profile single-camera-eef \
   --models openvla,pi0,smolvla,groot \

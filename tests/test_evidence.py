@@ -3,6 +3,7 @@ from __future__ import annotations
 from vla_zoo.compare.evidence import (
     build_evidence_matrix,
     evidence_matrix_payload,
+    format_evidence_matrix_html,
     format_evidence_matrix_markdown,
 )
 
@@ -33,3 +34,15 @@ def test_evidence_matrix_deduplicates_aliases() -> None:
     records = build_evidence_matrix(["pi0", "openpi", "pi05"])
 
     assert [record.model for record in records] == ["pi0"]
+
+
+def test_evidence_matrix_html_renders_status_and_links() -> None:
+    records = build_evidence_matrix(["openvla", "smolvla"])
+
+    html = format_evidence_matrix_html(records)
+
+    assert "<!doctype html>" in html
+    assert "This is not a model-quality leaderboard" in html
+    assert "status-verified" in html
+    assert "SmolVLA GPU probe" in html
+    assert "OpenVLA prompt probe" in html

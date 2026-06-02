@@ -711,13 +711,17 @@ def compare_evidence(
         Path | None,
         typer.Option("--markdown-out", help="Write Markdown evidence matrix."),
     ] = None,
+    html_out: Annotated[
+        Path | None,
+        typer.Option("--html-out", help="Write standalone HTML evidence matrix."),
+    ] = None,
     json_output: Annotated[
         bool,
         typer.Option("--json", help="Print machine-readable JSON."),
     ] = False,
     title: Annotated[
         str,
-        typer.Option("--title", help="Markdown report title."),
+        typer.Option("--title", help="Report title."),
     ] = "VLA Model Evidence Matrix",
 ) -> None:
     """Report which VLA runtime paths have checked-in evidence."""
@@ -725,6 +729,7 @@ def compare_evidence(
     from vla_zoo.compare.evidence import (
         build_evidence_matrix,
         evidence_matrix_payload,
+        format_evidence_matrix_html,
         format_evidence_matrix_markdown,
     )
 
@@ -735,10 +740,13 @@ def compare_evidence(
     payload = evidence_matrix_payload(records)
     json_payload = json.dumps(payload, indent=2)
     markdown = format_evidence_matrix_markdown(records, title=title)
+    html = format_evidence_matrix_html(records, title=title)
     if out is not None:
         _write_text(out, f"{json_payload}\n")
     if markdown_out is not None:
         _write_text(markdown_out, markdown)
+    if html_out is not None:
+        _write_text(html_out, html)
     if json_output:
         typer.echo(json_payload)
     else:
@@ -757,6 +765,8 @@ def compare_evidence(
         typer.echo(f"JSON written to {out}")
     if markdown_out is not None:
         typer.echo(f"Markdown written to {markdown_out}")
+    if html_out is not None:
+        typer.echo(f"HTML written to {html_out}")
 
 
 @compare_app.command("cards")

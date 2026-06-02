@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
+from html import escape
 from typing import Literal
 
 from vla_zoo.core.registry import AdapterInfo, get_adapter_info
@@ -471,6 +472,22 @@ def _links_markdown(links: Sequence[EvidenceLink]) -> str:
     return ", ".join(f"[{link.label}]({link.href})" for link in links)
 
 
+def _links_html(links: Sequence[EvidenceLink]) -> str:
+    if not links:
+        return '<span class="muted">No checked-in artifact yet</span>'
+    return " ".join(
+        f'<a href="{escape(link.href, quote=True)}">{escape(link.label)}</a>' for link in links
+    )
+
+
+def _status_counts(records: Sequence[ModelEvidence]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for record in records:
+        for cell in record.evidence.values():
+            counts[cell.status] = counts.get(cell.status, 0) + 1
+    return counts
+
+
 def format_evidence_matrix_markdown(
     records: Sequence[ModelEvidence],
     *,
@@ -548,3 +565,282 @@ def format_evidence_matrix_markdown(
         ]
     )
     return "\n".join(lines) + "\n"
+
+
+def format_evidence_matrix_html(
+    records: Sequence[ModelEvidence],
+    *,
+    title: str = "VLA Model Evidence Matrix",
+) -> str:
+    """Render a standalone Pages-friendly evidence report."""
+
+    counts = _status_counts(records)
+    status_order: tuple[EvidenceStatus, ...] = (
+        "verified",
+        "partial",
+        "planned",
+        "blocked",
+        "not_verified",
+        "not_applicable",
+    )
+    summary_cards = "\n".join(
+        (
+            f'<div class="summary-card status-{status}">'
+            f"<span>{escape(status.replace('_', ' '))}</span>"
+            f"<strong>{counts.get(status, 0)}</strong>"
+            "</div>"
+        )
+        for status in status_order
+    )
+    model_cards = []
+    for record in records:
+        cell_rows = []
+        for key in EVIDENCE_COLUMNS:
+            cell = record.evidence[key]
+            cell_rows.append(
+                "<tr>"
+                f"<th>{escape(COLUMN_LABELS[key])}</th>"
+                f'<td><span class="badge status-{cell.status}">'
+                f"{escape(cell.status.replace('_', ' '))}</span></td>"
+                f"<td>{escape(cell.summary)}</td>"
+                f"<td>{_links_html(cell.links)}</td>"
+                "</tr>"
+            )
+        model_cards.append(
+            '<section class="model-card">'
+            '<div class="model-head">'
+            "<div>"
+            f"<h2>{escape(record.model)}</h2>"
+            f"<p>{escape(record.family)} · {escape(record.upstream_project)}</p>"
+            "</div>"
+            f'<span class="adapter-status">{escape(record.adapter_status)}</span>'
+            "</div>"
+            '<div class="model-meta">'
+            f"<p><strong>Next step</strong><br>{escape(record.next_step)}</p>"
+            f"<p><strong>Caveat</strong><br>{escape(record.caveat)}</p>"
+            "</div>"
+            '<table class="evidence-table">'
+            "<thead><tr><th>Cell</th><th>Status</th><th>Meaning</th><th>Artifact</th></tr></thead>"
+            f"<tbody>{''.join(cell_rows)}</tbody>"
+            "</table>"
+            "</section>"
+        )
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{escape(title)}</title>
+  <style>
+    :root {{
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #dbe3ef;
+      --panel: #ffffff;
+      --bg: #f6f8fb;
+      --verified: #0f766e;
+      --partial: #b45309;
+      --planned: #2563eb;
+      --blocked: #b91c1c;
+      --not-verified: #475569;
+      --not-applicable: #6b7280;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }}
+    header {{
+      background: #0f172a;
+      color: white;
+      padding: 34px 24px 28px;
+    }}
+    header .wrap, main {{
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+    }}
+    h1 {{
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 46px);
+      letter-spacing: 0;
+    }}
+    h2 {{
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0;
+    }}
+    p {{ margin: 0; }}
+    a {{ color: #0369a1; font-weight: 700; text-decoration: none; }}
+    a:hover {{ text-decoration: underline; }}
+    .lede {{
+      max-width: 820px;
+      color: #cbd5e1;
+      font-size: 17px;
+    }}
+    main {{ padding: 22px 0 42px; }}
+    .notice {{
+      border: 1px solid #facc15;
+      background: #fefce8;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      color: #713f12;
+    }}
+    .summary {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin: 0 0 20px;
+    }}
+    .summary-card {{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left-width: 5px;
+      border-radius: 8px;
+      padding: 12px;
+    }}
+    .summary-card span {{
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+    }}
+    .summary-card strong {{
+      display: block;
+      margin-top: 4px;
+      font-size: 30px;
+    }}
+    .model-card {{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin-top: 16px;
+      overflow: hidden;
+    }}
+    .model-head {{
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }}
+    .model-head p, .muted {{
+      color: var(--muted);
+    }}
+    .adapter-status {{
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }}
+    .model-meta {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+      padding: 14px 18px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--line);
+    }}
+    .model-meta p {{
+      color: #334155;
+      font-size: 14px;
+    }}
+    .evidence-table {{
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }}
+    th, td {{
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }}
+    th {{
+      width: 150px;
+      color: #334155;
+      font-size: 14px;
+    }}
+    thead th {{
+      background: #eef4f8;
+      color: #0f172a;
+    }}
+    td:nth-child(2) {{ width: 135px; }}
+    td:nth-child(4) {{ width: 190px; }}
+    .badge {{
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }}
+    .status-verified {{ border-left-color: var(--verified); }}
+    .status-partial {{ border-left-color: var(--partial); }}
+    .status-planned {{ border-left-color: var(--planned); }}
+    .status-blocked {{ border-left-color: var(--blocked); }}
+    .status-not_verified {{ border-left-color: var(--not-verified); }}
+    .status-not_applicable {{ border-left-color: var(--not-applicable); }}
+    .badge.status-verified {{ background: var(--verified); }}
+    .badge.status-partial {{ background: var(--partial); }}
+    .badge.status-planned {{ background: var(--planned); }}
+    .badge.status-blocked {{ background: var(--blocked); }}
+    .badge.status-not_verified {{ background: var(--not-verified); }}
+    .badge.status-not_applicable {{ background: var(--not-applicable); }}
+    .reading-rules {{
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }}
+    @media (max-width: 760px) {{
+      .model-head {{ display: block; }}
+      .adapter-status {{ display: inline-block; margin-top: 10px; }}
+      .evidence-table, thead, tbody, tr, th, td {{ display: block; width: 100%; }}
+      thead {{ display: none; }}
+      tr {{ border-bottom: 1px solid var(--line); }}
+      th, td {{ border-bottom: 0; padding: 8px 14px; }}
+      th {{ padding-top: 14px; }}
+      td:nth-child(2), td:nth-child(4) {{ width: 100%; }}
+    }}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>{escape(title)}</h1>
+      <p class="lede">
+        Runtime evidence for VLA adapter contracts, GPU inference, remote serving,
+        ROS2 remote paths, PyBullet traces, and policy-quality claims.
+      </p>
+    </div>
+  </header>
+  <main>
+    <div class="notice">
+      This is not a model-quality leaderboard. Verified means this repository contains
+      a checked-in runtime artifact, deterministic test, or recorded report for that cell.
+    </div>
+    <section class="summary" aria-label="Status summary">
+      {summary_cards}
+    </section>
+    {''.join(model_cards)}
+    <p class="reading-rules">
+      Reading rules: partial means evidence is incomplete; planned means scaffolding or
+      commands exist but a checked-in run is missing; blocked means dependency, memory,
+      or stack limits prevented completion; not verified means no claim is made.
+    </p>
+  </main>
+</body>
+</html>
+"""
