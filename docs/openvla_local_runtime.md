@@ -59,6 +59,28 @@ PYTHONPATH=src /tmp/openvla_venv/bin/python scripts/measure_openvla_runtime.py \
 
 The capture script is [`scripts/measure_openvla_runtime.py`](../scripts/measure_openvla_runtime.py).
 
+## Remote serving (verified end-to-end)
+
+The same 4-bit path also runs behind the real FastAPI server, which is the recommended
+deployment split (heavy model on a GPU box, lightweight client on the robot — see
+[deployment](deployment.md)). The `serve` command now exposes `--load-in-4bit` so the 7B
+model fits a 16 GB card on the server side too:
+
+```bash
+# server (GPU box), in the OpenVLA venv (timm<1.0)
+HF_HUB_OFFLINE=1 vla-zoo serve --model openvla --pretrained openvla/openvla-7b \
+    --device cuda:0 --unnorm-key bridge_orig --load-in-4bit --host 127.0.0.1 --port 8012
+
+# client (robot side): health-first probe records one /v1/predict response
+vla-zoo remote-probe --model openvla --remote-url http://127.0.0.1:8012 \
+    --out docs/assets/sample_task_verification/openvla_remote_probe.json \
+    --markdown-out docs/assets/sample_task_verification/openvla_remote_probe.md --strict
+```
+
+The health check returned `ready: true` and `/v1/predict` returned a typed 7-DoF action; the
+recorded result is checked in at
+[`openvla_remote_probe.md`](assets/sample_task_verification/openvla_remote_probe.md).
+
 ## Scope and limitations
 
 - The input is a synthetic random frame. This verifies the **runtime path** (load →

@@ -6,7 +6,29 @@ from zipfile import ZipFile
 
 from typer.testing import CliRunner
 
-from vla_zoo.cli.main import _load_json_manifest, _manifest_int, _manifest_targets, app
+from vla_zoo.cli.main import (
+    _load_json_manifest,
+    _manifest_int,
+    _manifest_targets,
+    _model_load_kwargs,
+    app,
+)
+
+
+def test_model_load_kwargs_threads_quantization_flags() -> None:
+    base = _model_load_kwargs(pretrained=None, device="cuda:0", dtype=None, unnorm_key=None)
+    assert "load_in_4bit" not in base  # only added when requested
+
+    quant = _model_load_kwargs(
+        pretrained="openvla/openvla-7b",
+        device="cuda:0",
+        dtype=None,
+        unnorm_key="bridge_orig",
+        load_in_4bit=True,
+    )
+    assert quant["load_in_4bit"] is True
+    assert quant["pretrained"] == "openvla/openvla-7b"
+    assert "load_in_8bit" not in quant
 
 
 def test_cli_list() -> None:

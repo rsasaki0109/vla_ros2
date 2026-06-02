@@ -185,13 +185,16 @@ def _openvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
             (_link("local runtime evidence", "../openvla_local_runtime.md"),),
         ),
         "remote_server": _cell(
-            "planned",
-            "Health-first remote probe (vla-zoo remote-probe) is reproducible and verified "
-            "against the dummy server; a recorded OpenVLA /v1/predict run on a GPU box is "
-            "still needed.",
+            "verified",
+            "A real `vla-zoo serve --model openvla --load-in-4bit` server passed a "
+            "health-first probe and returned a typed 7-DoF action over HTTP /v1/predict "
+            "(recorded end-to-end on a 16 GB GPU).",
             (
+                _link(
+                    "OpenVLA remote probe",
+                    "sample_task_verification/openvla_remote_probe.md",
+                ),
                 _link("OpenVLA remote path", "../openvla_remote.md"),
-                _link("remote probe tool sample", "sample_task_verification/remote_probe_dummy.md"),
             ),
         ),
         "ros2_remote": _cell(
@@ -428,8 +431,8 @@ def _next_step(info: AdapterInfo) -> str:
         return "Keep using this baseline for simulation/report regression checks."
     if info.name == "openvla":
         return (
-            "Local 4-bit GPU inference is now verified; next, record remote-server and "
-            "ROS2 remote action logs, then add task-level probes."
+            "Local 4-bit GPU inference and a real remote /v1/predict are both verified; "
+            "next, record a ROS2 remote action log, then add task-level probes."
         )
     if info.name == "pi0":
         return (

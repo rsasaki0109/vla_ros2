@@ -1,5 +1,5 @@
 {
-  "count": 32,
+  "count": 33,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -319,6 +319,16 @@
       "kind": "checked",
       "source_command": "vla-zoo serve --model smolvla --pretrained lerobot/smolvla_base --device cuda && vla-zoo remote-probe --model smolvla --remote-url http://127.0.0.1:PORT",
       "caveat": "Real SmolVLA server returned a typed 6-DoF action over HTTP; runtime-path evidence, not task success.",
+      "exists": true
+    },
+    {
+      "title": "OpenVLA remote /v1/predict probe",
+      "path": "docs/assets/sample_task_verification/openvla_remote_probe.md",
+      "category": "GPU probes",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo serve --model openvla --pretrained openvla/openvla-7b --device cuda:0 --load-in-4bit && vla-zoo remote-probe --model openvla --remote-url http://127.0.0.1:PORT",
+      "caveat": "Real OpenVLA-7b 4-bit server returned a typed 7-DoF action over HTTP; runtime-path evidence, not task success.",
       "exists": true
     },
     {

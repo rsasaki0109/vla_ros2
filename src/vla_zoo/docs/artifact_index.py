@@ -413,6 +413,22 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="OpenVLA remote /v1/predict probe",
+        path="docs/assets/sample_task_verification/openvla_remote_probe.md",
+        category="GPU probes",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo serve --model openvla --pretrained openvla/openvla-7b --device cuda:0 "
+            "--load-in-4bit && vla-zoo remote-probe --model openvla "
+            "--remote-url http://127.0.0.1:PORT"
+        ),
+        caveat=(
+            "Real OpenVLA-7b 4-bit server returned a typed 7-DoF action over HTTP; "
+            "runtime-path evidence, not task success."
+        ),
+    ),
+    ArtifactEntry(
         title="pi0 compatibility probe",
         path="docs/assets/sample_task_verification/pi0_compatibility_probe.md",
         category="GPU probes",
