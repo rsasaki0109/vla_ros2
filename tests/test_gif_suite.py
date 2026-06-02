@@ -218,8 +218,11 @@ def test_gif_check_markdown_and_html_report(tmp_path: Path) -> None:
     html = format_gif_report_html(report)
 
     assert "PyBullet GIF Check" in markdown
+    assert "does not validate VLA model quality" in markdown
     assert "demo.gif" in markdown
     assert "vla_zoo GIF Gallery" in html
+    assert "What This Proves" in html
+    assert "What This Does Not Prove" in html
     assert '<img src="demo.gif"' in html
 
 

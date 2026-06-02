@@ -73,18 +73,12 @@ vla-zoo compare tasks \
 
 Sample artifacts:
 
-- Multi-task baseline report: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/baseline_tasks.html
-- External adapter status: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html
-- Adapter capability cards: [docs/adapters/README.md](docs/adapters/README.md)
-- PyBullet GIF gallery: [docs/assets/gif_suite/index.html](docs/assets/gif_suite/index.html)
-- PyBullet GIF QA report: [docs/assets/gif_suite/gif_check.md](docs/assets/gif_suite/gif_check.md)
-- Robot compatibility report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md
-- GPU server plan: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
-- ROS2 remote smoke plan: https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md
-- OpenVLA prompt probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md
-- pi0 compatibility probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md
-- SmolVLA GPU probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md
-- SmolVLA PyBullet probe: https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_pybullet_report.html
+| Pillar | Artifacts |
+|---|---|
+| Visual demos | [PyBullet GIF gallery](docs/assets/gif_suite/index.html), [GIF QA](docs/assets/gif_suite/gif_check.md), [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
+| Adapter/runtime truth | [Adapter cards](docs/adapters/README.md), [external adapter status](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html), [robot compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md) |
+| ROS2 deployment | [ROS2 remote smoke plan](https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md), [ROS2 dashboard](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html) |
+| Heavy VLA probes | [GPU server plan](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md), [OpenVLA prompt probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_prompt_probe.md), [pi0 compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md), [SmolVLA GPU probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_gpu_probe.md) |
 
 ## Quickstart
 
@@ -271,6 +265,13 @@ and `random`.
 | pick red block | ![dummy pick_red_block PyBullet simulation](docs/assets/gif_suite/simulation_pick_red_block_dummy.gif) | ![scripted pick_red_block PyBullet simulation](docs/assets/gif_suite/simulation_pick_red_block_scripted.gif) | ![random pick_red_block PyBullet simulation](docs/assets/gif_suite/simulation_pick_red_block_random.gif) |
 | move left | ![dummy move_red_block_left PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_left_dummy.gif) | ![scripted move_red_block_left PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_left_scripted.gif) | ![random move_red_block_left PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_left_random.gif) |
 | move right | ![dummy move_red_block_right PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_right_dummy.gif) | ![scripted move_red_block_right PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_right_scripted.gif) | ![random move_red_block_right PyBullet simulation](docs/assets/gif_suite/simulation_move_red_block_right_random.gif) |
+
+| What the GIFs prove | What they do not prove |
+|---|---|
+| PyBullet is actually simulated and rendered | Real robot task success |
+| Adapters receive rendered RGB observations and simulation state | Zero-shot VLA policy quality |
+| The runtime calls `adapter.predict()` and records `VLAAction` traces | OpenVLA/pi0/SmolVLA benchmark performance |
+| GIFs, manifests, QA reports, and dashboards are reproducible | Hardware safety or calibrated robot deployment |
 
 ```bash
 vla-zoo demo gif-suite \

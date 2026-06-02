@@ -580,6 +580,10 @@ def format_gif_check_markdown(report: GifSuiteCheckReport) -> str:
         f"- status: {'ok' if report.ok else 'failed'}",
         f"- assets: {len(report.assets)}",
         "",
+        "This QA report checks that generated GIFs exist, decode, have enough frames, "
+        "use the expected resolution, are not low-variance blank files, and match the "
+        "manifest. It does not validate VLA model quality or real robot behavior.",
+        "",
         "| GIF | Status | Frames | Resolution | Size | Issues |",
         "|---|---|---:|---|---:|---|",
     ]
@@ -644,6 +648,10 @@ def format_gif_report_html(
     main {{ padding: 28px min(6vw, 72px) 48px; }}
     .summary {{ display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }}
     .pill {{ border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff; }}
+    .truth {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px; margin: 22px 0; }}
+    .truth-card {{ background: #fff; border: 1px solid #dbe3ef; border-radius: 8px;
+      padding: 16px; }}
     .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px; }}
     .card {{ background: #fff; border: 1px solid #dbe3ef; border-radius: 8px; padding: 14px; }}
@@ -668,6 +676,26 @@ def format_gif_report_html(
       <div class="pill">status: <strong>{'ok' if report.ok else 'failed'}</strong></div>
       <div class="pill">assets: <strong>{len(report.assets)}</strong></div>
       <div class="pill">manifest: <code>{escape(Path(report.manifest).name)}</code></div>
+    </section>
+    <section class="truth">
+      <div class="truth-card">
+        <h2>What This Proves</h2>
+        <ul>
+          <li>PyBullet is actually simulated and rendered.</li>
+          <li>Adapters receive rendered RGB observations and simulation state.</li>
+          <li>The runtime calls adapter.predict() and records VLAAction traces.</li>
+          <li>GIFs, manifests, and QA reports are reproducible.</li>
+        </ul>
+      </div>
+      <div class="truth-card">
+        <h2>What This Does Not Prove</h2>
+        <ul>
+          <li>Real robot task success.</li>
+          <li>Zero-shot VLA policy quality.</li>
+          <li>OpenVLA/pi0/SmolVLA benchmark performance.</li>
+          <li>Hardware safety or calibrated robot deployment.</li>
+        </ul>
+      </div>
     </section>
     {f'<section><h2>Suite Issues</h2><ul>{suite_issues}</ul></section>' if suite_issues else ''}
     <section class="grid">
