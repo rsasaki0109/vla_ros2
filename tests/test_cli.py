@@ -62,6 +62,13 @@ def test_cli_demo_action_probe_blocks_local_heavy_without_flag() -> None:
     assert "allow-local-heavy" in result.output
 
 
+def test_cli_demo_action_probe_blocks_pi0_local_heavy_without_flag() -> None:
+    # pi0_base is a ~3B local checkpoint; gate it behind --allow-local-heavy too
+    result = CliRunner().invoke(app, ["demo", "action-probe", "--model", "pi0"])
+    assert result.exit_code == 1
+    assert "allow-local-heavy" in result.output
+
+
 def test_parse_adapter_kwargs_coerces_types() -> None:
     from vla_zoo.cli.main import _parse_adapter_kwargs
 

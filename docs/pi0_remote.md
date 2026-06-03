@@ -17,16 +17,21 @@ found, with LeRobot `0.5.1`:
 
 | Checkpoint | Result |
 |---|---|
-| `lerobot/pi0` | Config decoding failed: the checkpoint config includes fields not accepted by the installed `PI0Config`. |
-| `lerobot/pi0_base` | Heavy local load did not complete in the probe window; treated as uncleared, not verified. |
+| `lerobot/pi0` | Config decoding fails (`draccus.DecodingError`): the checkpoint config carries old-schema fields the installed `PI0Config` rejects. Permanently blocked under LeRobot 0.5.1. |
+| `lerobot/pi0_base` | **Version-matched**: config decodes cleanly (`PI0Config`, 32D, `n_action_steps=50`). bf16 fits a 16 GB GPU (~8.9 GB). Local inference is blocked only by the gated `google/paligemma-3b-pt-224` tokenizer (license acceptance + token required). |
 
 Guidance:
 
-- Pin LeRobot/openpi to the version that matches your checkpoint, in its **own**
+- `lerobot/pi0_base` is the version-matched default for local loading; pin
+  LeRobot/openpi to the version that matches your checkpoint, in its **own**
   environment (do not mix it into the base `vla_zoo` install).
-- `lerobot/pi0` is `(6,)` and `lerobot/pi0_base` is `(32,)`; pi0 emits action
-  chunks, so expect `VLAActionChunk` on the client.
-- Treat config-decode errors as a version mismatch first, not an adapter bug.
+- `lerobot/pi0_base` is `(32,)`; pi0 emits action chunks, so expect
+  `VLAActionChunk` on the client.
+- Heavy float32 checkpoints OOM on a 16 GB card — pass `dtype="bfloat16"`
+  (`--adapter-kwarg dtype=bfloat16`) to halve the footprint.
+- Treat config-decode errors as a version mismatch first, not an adapter bug; the
+  pi0 processor also needs the gated `google/paligemma-3b-pt-224` tokenizer, so
+  accept its license and supply an HF token for local inference.
 
 ```bash
 # dedicated serving environment only

@@ -902,23 +902,45 @@ summaries and the side-by-side comparison — each keeping the "runtime path, no
 framing. All new links are covered by `report link-check` (39/39). Docs-only change; no code or
 schema touched.
 
-With the real-scene runtime evidence track fully built and discoverable (probe → matrix →
-comparison → front page), the one consistently-deferred blocked cell is pi0. The next best commit
-resolves it one way or the other:
+The pi0 local-load block was time-boxed and resolved into a precise, reproducible boundary (DONE):
 
 ```text
-resolve the pi0 local-load block: version-matched checkpoint or a documented hard block (v0.4)
+resolve the pi0 local-load block: version-matched checkpoint or a documented hard block (v0.4)  [DONE]
 ```
 
-Reason: pi0 is the only adapter whose `local_runtime` is `blocked` — the cached `lerobot/pi0`
-checkpoint carries `PI0Config` fields (`resize_imgs_with_padding`, `adapt_to_pi_aloha`,
-`num_steps`, …) that LeRobot 0.5.1 rejects (`draccus.DecodingError`). Time-box an attempt to
-load a version-matched checkpoint (or pin a compatible LeRobot) in the `.venv-smolvla` env; if it
-loads, record a real-scene action probe like the other two and flip the matrix cells. If it stays
-blocked, upgrade `pi0_compatibility_probe.md` with the exact version matrix tried and the precise
-failure so the `blocked` status is backed by reproducible evidence rather than a stale note —
-that documented hard block is itself an honest deliverable. Keep model downloads out of tests and
-`policy_quality` `not_verified`.
+What landed: the block decomposed into two distinct findings. (1) The old `lerobot/pi0` config
+schema is permanently rejected by LeRobot 0.5.1 (`draccus.DecodingError` on 8 named fields).
+(2) `lerobot/pi0_base` is the **version-matched** checkpoint — it decodes cleanly (`PI0Config`,
+32D action, `n_action_steps=50`), and its bf16 model fits a 16 GB GPU (~8.9 GB constructed),
+verified by building the policy on the local 4070 Ti SUPER. The float32 config OOMs on 16 GB, so
+the SmolVLA/pi0 adapter gained a `dtype` override (`--adapter-kwarg dtype=bfloat16`) that builds
+the config with a pinned compute dtype. The pi0 adapter now defaults local loading to
+`lerobot/pi0_base` (action spec `(32,)`), and `pi0` joined `HEAVY_LOCAL_MODELS` so the probe is
+gated behind `--allow-local-heavy`. The *remaining* block is not a version/config/memory issue: pi0's
+processor requires the **gated** `google/paligemma-3b-pt-224` tokenizer (`GatedRepoError 401`,
+manual license acceptance + token). `pi0_compatibility_probe.md` was rewritten with the full
+version matrix and reproduce commands; `pi0_remote.md`, `smolvla_local_runtime.md`, and the
+regenerated evidence matrix (`local_runtime` cell + `next_step`) now carry this precise boundary.
+The `local_runtime` cell stays `blocked` and `policy_quality` stays `not_verified`; no model
+weights are downloaded in tests.
+
+With pi0 reduced to a license-gated boundary, the next best commit makes that boundary fail loudly
+instead of silently. Today `load_model("pi0", enable_local=True)` (or the action-probe) constructs a
+**random-weight** model and only crashes later when the gated tokenizer/processor cannot be built —
+the "Returning model without loading pretrained weights" path is silent. The next commit adds a
+preflight that detects the missing weights / gated-tokenizer condition and raises a clear,
+actionable error (accept the PaliGemma license, supply a token) before any inference:
+
+```text
+add a pi0 local-load preflight that fails loudly on missing weights / the gated PaliGemma tokenizer (v0.4)
+```
+
+Reason: an adapter that silently loads random weights is a correctness/honesty hazard — a caller
+could record actions from an un-initialized model and not know it. A preflight that turns the
+silent `GatedRepoError`/no-weights path into one explicit, documented failure (pointing at the
+license + token fix) is a small, testable robustness deliverable that closes the loop opened by
+this pi0 investigation. Keep it unit-testable without heavy deps (assert the guard's message/branch,
+not a real load) and keep `policy_quality` `not_verified`.
 
 Acceptance:
 

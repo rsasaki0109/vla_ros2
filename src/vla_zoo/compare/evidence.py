@@ -241,9 +241,12 @@ def _pi0_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         "contract": _registry_contract(info),
         "local_runtime": _cell(
             "blocked",
-            "Local load fails on a concrete config-schema mismatch: the cached lerobot/pi0 "
-            "checkpoint carries PI0Config fields (resize_imgs_with_padding, adapt_to_pi_aloha, "
-            "num_steps, ...) that LeRobot 0.5.1 rejects. Needs a version-matched checkpoint.",
+            "Version-matched checkpoint resolved (lerobot/pi0_base decodes cleanly under "
+            "LeRobot 0.5.1 as a 32D PI0Config, and the bf16 model fits a 16 GB GPU at ~8.9 GB), "
+            "but local inference stays blocked on a license gate: the pi0 processor requires "
+            "the gated google/paligemma-3b-pt-224 tokenizer (GatedRepoError 401, manual license "
+            "acceptance + token). The older lerobot/pi0 config schema is permanently rejected by "
+            "LeRobot 0.5.1. See the compatibility probe for the full version matrix.",
             (
                 _link(
                     "pi0 compatibility note",
@@ -467,8 +470,11 @@ def _next_step(info: AdapterInfo) -> str:
         )
     if info.name == "pi0":
         return (
-            "Stand up a dedicated pi0/openpi server and record /v1/predict plus ROS2 "
-            "remote logs."
+            "The version-matched checkpoint (lerobot/pi0_base) and bf16-fits-16GB question are "
+            "settled; the live block is the gated google/paligemma-3b-pt-224 tokenizer. Either "
+            "accept its license and supply an HF token to record a local real-scene action "
+            "probe like the other two adapters, or stand up a dedicated pi0/openpi server and "
+            "record /v1/predict plus ROS2 remote logs."
         )
     if info.name == "smolvla":
         return (

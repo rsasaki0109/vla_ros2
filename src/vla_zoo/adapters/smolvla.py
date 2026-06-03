@@ -75,6 +75,7 @@ class SmolVLAAdapter(VLAAdapter):
         cache_dir: str | None = None,
         force_download: bool = False,
         strict: bool = False,
+        dtype: str | None = None,
         preprocessor_overrides: Mapping[str, Any] | None = None,
         action_spec: ActionSpec | None = None,
         **kwargs: Any,
@@ -87,6 +88,25 @@ class SmolVLAAdapter(VLAAdapter):
         self.return_action_chunk = bool(return_action_chunk)
         self.fill_missing_images = bool(fill_missing_images)
         self.zero_state_if_missing = bool(zero_state_if_missing)
+
+        # Optionally pin the checkpoint compute dtype. Heavy checkpoints (e.g.
+        # lerobot/pi0_base, a ~3B PaliGemma + action expert) default to float32 in
+        # their config.json, which does not fit a 16 GB consumer GPU; building the
+        # config with dtype="bfloat16" halves the footprint so the full model loads
+        # locally. Only applied when the caller did not pass an explicit config.
+        if dtype is not None and "config" not in kwargs:
+            from lerobot.configs.policies import PreTrainedConfig
+
+            config = PreTrainedConfig.from_pretrained(
+                pretrained,
+                force_download=force_download,
+                cache_dir=cache_dir,
+                local_files_only=local_files_only,
+                revision=revision,
+            )
+            config.dtype = dtype
+            config.device = str(self.device)
+            kwargs["config"] = config
 
         self.policy = policy_cls.from_pretrained(
             pretrained,
