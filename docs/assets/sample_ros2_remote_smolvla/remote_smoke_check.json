@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "expected_model": "smolvla",
+  "expected_remote_url": "http://127.0.0.1:8013",
+  "status_count": 106,
+  "action_count": 14,
+  "diagnostics_count": 106,
+  "ready_count": 14,
+  "dry_run_count": 106,
+  "remote_status_count": 106,
+  "remote_diagnostics_count": 106,
+  "remote_action_count": 14,
+  "inference_error_count": 0,
+  "diagnostic_error_count": 0,
+  "model_names": [
+    "smolvla"
+  ],
+  "adapter_names": [
+    "RemoteVLAClient"
+  ],
+  "action_spaces": [
+    "custom"
+  ],
+  "mean_latency_ms": 914.2774289688974,
+  "max_latency_ms": 5193.7509765625,
+  "issues": [],
+  "schema": "vla_zoo.ros_remote_smoke_check.v1"
+}

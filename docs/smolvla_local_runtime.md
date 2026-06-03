@@ -66,6 +66,29 @@ recorded result is checked in at
 [`smolvla_remote_probe.md`](assets/sample_task_verification/smolvla_remote_probe.md). This is
 the first real-model (non-dummy) remote `/v1/predict` recording in the repo.
 
+## ROS2 remote trace (verified end-to-end)
+
+The real `VLARuntimeNode` was also driven in `runtime=remote` mode against the live SmolVLA
+server, recording its `/vla/action`, `/vla/status`, and `/diagnostics` streams:
+
+```bash
+# server in the LeRobot venv (as above), then, with the ROS2 overlay sourced:
+python3 scripts/record_ros2_remote_trace.py --model smolvla \
+    --remote-url http://127.0.0.1:8013 --output-dir results/ros2_remote_smolvla
+vla-zoo ros remote-smoke-check --output-dir results/ros2_remote_smolvla --model smolvla \
+    --remote-url http://127.0.0.1:8013
+```
+
+The check passed with 14 `RemoteVLAClient` actions and 106 status/diagnostics records, 0
+inference errors. The recorded result is checked in at
+[`sample_ros2_remote_smolvla/remote_smoke_check.md`](assets/sample_ros2_remote_smolvla/remote_smoke_check.md).
+
+> **Loopback note:** the standard flow is the 3-process `smoke_record.launch.py`, which
+> needs cross-process DDS discovery (multicast). If `ip link show lo` shows no `MULTICAST`
+> flag, cross-process discovery fails; `scripts/record_ros2_remote_trace.py` runs the same
+> real node, input, and recorder in one process to sidestep that, recording the identical
+> node → RemoteVLAClient → server path.
+
 ## pi0 status
 
 The same script targets pi0 with `--model pi0`, but local pi0 loading currently fails on a

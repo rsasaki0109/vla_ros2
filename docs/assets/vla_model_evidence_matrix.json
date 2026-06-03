@@ -435,9 +435,13 @@
           ]
         },
         "ros2_remote": {
-          "status": "planned",
-          "summary": "ROS2 remote launch can target a SmolVLA server; checked-in action logs are still needed.",
+          "status": "verified",
+          "summary": "The real VLARuntimeNode ran in remote mode against a live SmolVLA server: recorded 14 RemoteVLAClient actions + 106 status/diagnostics with 0 inference errors (vla-zoo ros remote-smoke-check passed).",
           "links": [
+            {
+              "label": "ROS2 remote smoke check",
+              "href": "sample_ros2_remote_smolvla/remote_smoke_check.md"
+            },
             {
               "label": "ROS2 remote plan",
               "href": "ros2_remote_smoke_plan.md"
@@ -460,7 +464,7 @@
           "links": []
         }
       },
-      "next_step": "Local GPU inference and a real remote /v1/predict are both verified; next, record a ROS2 remote trace against the server, then broaden task probes.",
+      "next_step": "Local GPU, remote /v1/predict, and a ROS2 remote trace are all verified; next, broaden to task-level probes on real scene frames.",
       "caveat": "Local CUDA inference-path probe completed with lerobot/smolvla_base, including a PyBullet-rendered multi-camera/state observation path. This is not a robot task-success claim."
     },
     {

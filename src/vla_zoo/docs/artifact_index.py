@@ -233,6 +233,22 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="ROS2 remote dummy runtime evidence; launch stays dry-run safe by default.",
     ),
     ArtifactEntry(
+        title="ROS2 remote smoke check (SmolVLA)",
+        path="docs/assets/sample_ros2_remote_smolvla/remote_smoke_check.md",
+        category="ROS2",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "python3 scripts/record_ros2_remote_trace.py --model smolvla && vla-zoo ros "
+            "remote-smoke-check --output-dir docs/assets/sample_ros2_remote_smolvla "
+            "--model smolvla"
+        ),
+        caveat=(
+            "Real SmolVLA server driven through the ROS2 runtime node (RemoteVLAClient); "
+            "runtime-path evidence, not task success."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke plan",
         path="docs/assets/ros2_remote_smoke_plan.md",
         category="ROS2",

@@ -7,6 +7,10 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     params_file = LaunchConfiguration("params_file")
+    model_name = LaunchConfiguration("model_name")
+    runtime = LaunchConfiguration("runtime")
+    remote_url = LaunchConfiguration("remote_url")
+    instruction_msg_type = LaunchConfiguration("instruction_msg_type")
     image_topic = LaunchConfiguration("image_topic")
     instruction_topic = LaunchConfiguration("instruction_topic")
     joint_state_topic = LaunchConfiguration("joint_state_topic")
@@ -29,6 +33,10 @@ def generate_launch_description():
                     [FindPackageShare("vla_zoo"), "config", "dummy.yaml"]
                 ),
             ),
+            DeclareLaunchArgument("model_name", default_value="dummy"),
+            DeclareLaunchArgument("runtime", default_value="local"),
+            DeclareLaunchArgument("remote_url", default_value="http://127.0.0.1:8000"),
+            DeclareLaunchArgument("instruction_msg_type", default_value="vla_instruction"),
             DeclareLaunchArgument("image_topic", default_value="/camera/image_raw"),
             DeclareLaunchArgument("instruction_topic", default_value="/vla/instruction"),
             DeclareLaunchArgument("joint_state_topic", default_value="/joint_states"),
@@ -55,10 +63,11 @@ def generate_launch_description():
                 parameters=[
                     params_file,
                     {
-                        "model_name": "dummy",
-                        "runtime": "local",
+                        "model_name": model_name,
+                        "runtime": runtime,
+                        "remote_url": remote_url,
                         "dry_run": dry_run,
-                        "instruction_msg_type": "vla_instruction",
+                        "instruction_msg_type": instruction_msg_type,
                         "image_topic": image_topic,
                         "instruction_topic": instruction_topic,
                         "joint_state_topic": joint_state_topic,

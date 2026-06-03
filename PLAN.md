@@ -440,6 +440,16 @@ end-to-end (`docs/assets/sample_task_verification/smolvla_remote_probe.{md,json}
 the first real-model (non-dummy) remote `/v1/predict` recording in the repo, so the SmolVLA
 `remote_server` cell is now `verified`.
 
+ROS2 remote (verified): the real `VLARuntimeNode` was driven in `runtime=remote` mode
+against the live SmolVLA server, recording 14 `RemoteVLAClient` actions + 106
+status/diagnostics with 0 inference errors (`vla-zoo ros remote-smoke-check` passed,
+`docs/assets/sample_ros2_remote_smolvla/`). The SmolVLA `ros2_remote` cell is now
+`verified`. Note: this host's loopback has no `MULTICAST` flag, so cross-process DDS
+discovery (the 3-process `smoke_record.launch.py`) does not work; `smoke_record.launch.py`
+gained `model_name`/`runtime`/`remote_url` args for multicast-capable hosts, and
+`scripts/record_ros2_remote_trace.py` runs the same real node/input/recorder in one process
+to record the identical node -> RemoteVLAClient -> server path without that dependency.
+
 
 
 Status: `vla-zoo smolvla-remote-plan` generates a reproducible isolated-env bring-up

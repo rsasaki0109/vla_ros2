@@ -301,10 +301,17 @@ def _smolvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
             ),
         ),
         "ros2_remote": _cell(
-            "planned",
-            "ROS2 remote launch can target a SmolVLA server; checked-in action logs are "
-            "still needed.",
-            (_link("ROS2 remote plan", "ros2_remote_smoke_plan.md"),),
+            "verified",
+            "The real VLARuntimeNode ran in remote mode against a live SmolVLA server: "
+            "recorded 14 RemoteVLAClient actions + 106 status/diagnostics with 0 inference "
+            "errors (vla-zoo ros remote-smoke-check passed).",
+            (
+                _link(
+                    "ROS2 remote smoke check",
+                    "sample_ros2_remote_smolvla/remote_smoke_check.md",
+                ),
+                _link("ROS2 remote plan", "ros2_remote_smoke_plan.md"),
+            ),
         ),
         "pybullet_tasks": _cell(
             "partial",
@@ -441,8 +448,8 @@ def _next_step(info: AdapterInfo) -> str:
         )
     if info.name == "smolvla":
         return (
-            "Local GPU inference and a real remote /v1/predict are both verified; next, "
-            "record a ROS2 remote trace against the server, then broaden task probes."
+            "Local GPU, remote /v1/predict, and a ROS2 remote trace are all verified; "
+            "next, broaden to task-level probes on real scene frames."
         )
     if info.name == "groot":
         return (
