@@ -875,31 +875,45 @@ with artifact-index entries and a `docs/openvla_local_runtime.md` section. The O
 `policy_quality` stays `not_verified`. The three matrix artifacts were regenerated. Runtime-path
 claims only.
 
-Both heavy adapters now have the full honest surface (contract → local/GPU → remote → ROS2 →
-real-scene PyBullet probe, all verified; policy_quality explicitly unclaimed). The next best
-commit makes the two real-scene probes directly comparable:
+The two real-scene probes are now directly comparable (DONE):
 
 ```text
-render a real-scene runtime comparison report from the SmolVLA + OpenVLA action probes (v0.4)
+render a real-scene runtime comparison report from the SmolVLA + OpenVLA action probes (v0.4)  [DONE]
 ```
 
-Reason: both probes are canonical `vla_actions.jsonl` logs, so `bench-replay` reduces each to a
-`vla-zoo-benchmark/v1` latency/action-rate summary (`success=None`) and `bench-report` renders an
-HTML/Markdown comparison — surfacing the two real-scene runtime profiles side by side
-(SmolVLA p50 ~382 ms vs OpenVLA p50 ~2.0 s) without any task-success claim. Wire the two probe
-logs through `bench-replay --summary-out` then `bench-report --summaries`, check in the
-comparison artifact, and add an artifact-index entry. Keep model downloads out of tests.
+What landed: `bench-replay` gained `--source` / `--note` overrides (default to the ROS
+replay-stub values) so a non-ROS log is labeled honestly; `frames_to_records` takes a `source`
+kwarg. Each probe log was replayed with `--source pybullet-action-probe` into a
+`vla-zoo-benchmark/v1` summary (`success=None`), and `bench-report` rendered the side-by-side
+comparison at `docs/assets/sample_pybullet_compare/runtime_probe_comparison.{html,md}`
+(SmolVLA p50 ~382 ms vs OpenVLA-7b 4-bit p50 ~2.0 s, blank success rate). Artifact-index entries
+were added and both runtime docs link the comparison. The `--source` override is unit-tested;
+no task-success claim anywhere.
+
+The real-scene runtime evidence track is now saturated (both adapters probed + a side-by-side
+comparison, all linked from the docs). The next best commit makes the evidence discoverable from
+the front page:
+
+```text
+surface the real-scene action probes + comparison on the GitHub Pages index (v0.4)
+```
+
+Reason: `docs/index.html` is the project's front page, but the real-scene probes and their
+comparison are only reachable from the per-model runtime docs and the artifact index. Add a
+linkable card/section to `docs/index.html` (and any generated index) pointing at
+`runtime_probe_comparison.html` and the two `runtime_action_probe.md` artifacts, keeping the
+"real-scene runtime path, not task success" framing explicit. Verify with `report link-check`.
 Alternative still open: pi0 unblock (version-matched checkpoint — rabbit-hole risk).
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_evidence.py tests/test_demo_action_probe.py \
-  tests/test_cli.py tests/test_benchmark_replay.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_cli.py tests/test_benchmark_replay.py \
+  tests/test_docs_index.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/assets/vla_model_evidence_matrix.md,docs/openvla_local_runtime.md,docs/smolvla_local_runtime.md \
+  --paths docs/index.html,docs/assets/sample_pybullet_compare/runtime_probe_comparison.md \
   --strict
 ```
 

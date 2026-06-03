@@ -128,7 +128,9 @@ canonical `vla_actions.jsonl` log
 replays through `vla-zoo bench-replay` (`success=None`). This upgrades only the **input** — from
 synthetic noise to a real scene render — and is still **not** a task-success or policy-quality
 claim (`policy_quality=not_verified`). The probe needs PyBullet *inside* the timm<1.0 OpenVLA
-venv (`/tmp/openvla_venv`).
+venv (`/tmp/openvla_venv`). The SmolVLA and OpenVLA probes are compared side by side (latency /
+action rate, no task-success claim) at
+[`runtime_probe_comparison.md`](assets/sample_pybullet_compare/runtime_probe_comparison.md).
 
 ## Scope and limitations
 

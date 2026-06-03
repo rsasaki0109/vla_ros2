@@ -1,0 +1,14 @@
+{
+  "schema_version": "vla-zoo-benchmark/v1",
+  "model": "openvla",
+  "source": "pybullet-action-probe",
+  "sample_count": 21,
+  "success_count": 0,
+  "success_rate": null,
+  "latency_ms_p50": 1996.7553580645472,
+  "latency_ms_p95": 3675.923877162859,
+  "latency_ms_mean": 2185.3731792708413,
+  "action_rate_hz": 1.0666666666666667,
+  "exception_count": 0,
+  "note": "Real-scene action probe replay: latency/action-rate from a recorded vla_actions.jsonl driven on real PyBullet-rendered frames. No task-success or policy-quality claim."
+}

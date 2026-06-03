@@ -118,7 +118,9 @@ replays through `vla-zoo bench-replay` (which records `success=None`). This upgr
 **input** — from synthetic noise to a real scene render. It is still **not** a task-success
 or policy-quality claim (`policy_quality=not_verified`); the chunk-per-query latency (p50
 ~382 ms) is higher than the cached-queue `select_action` steady state because each query
-forces a fresh encode.
+forces a fresh encode. The SmolVLA and OpenVLA probes are compared side by side (latency /
+action rate, no task-success claim) at
+[`runtime_probe_comparison.md`](assets/sample_pybullet_compare/runtime_probe_comparison.md).
 
 ## pi0 status
 
