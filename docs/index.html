@@ -328,7 +328,7 @@
         </div>
         <div class="tile">
           <h3>Jetson + remote GPU deployment</h3>
-          <p>Lightweight robot-side runtime plus remote GPU serving, with guards and bridge examples tied together.</p>
+          <p>Lightweight robot-side runtime plus remote GPU serving, with guards, bridge examples, and the measured 16 GB-fit knobs (OpenVLA 4-bit, SmolVLA/pi0 <code>--dtype bfloat16</code>) tied together.</p>
           <a href="deployment.md">Deployment guide</a>
         </div>
       </div>
@@ -518,8 +518,13 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre
         </div>
         <div class="tile">
           <h3>pi0 compatibility</h3>
-          <p>Version and checkpoint notes for the remote-first pi0/openpi adapter path.</p>
+          <p>Version matrix for pi0: pi0_base is version-matched (bf16 fits 16 GB), local inference gated on the PaliGemma tokenizer.</p>
           <a href="assets/sample_task_verification/pi0_compatibility_probe.md">Open notes</a>
+        </div>
+        <div class="tile">
+          <h3>SmolVLA bf16 serve probe</h3>
+          <p>A SmolVLA server launched with <code>--dtype bfloat16</code> returned a typed 6-DoF action over HTTP. Verifies the serve --dtype path; not task success.</p>
+          <a href="assets/sample_task_verification/smolvla_dtype_serve_probe.md">Open probe</a>
         </div>
         <div class="tile">
           <h3>SmolVLA PyBullet probe</h3>
