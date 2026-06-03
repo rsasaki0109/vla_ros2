@@ -78,7 +78,51 @@ class ArtifactIndex:
         }
 
 
+_LEADERBOARD_CMD = (
+    "vla-zoo compare leaderboard --from-log "
+    "docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,"
+    "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --metric latency_ms_p50"
+)
+
 DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
+    ArtifactEntry(
+        title="VLA runtime leaderboard (HTML)",
+        path="docs/assets/leaderboard/vla_runtime_leaderboard.html",
+        category="model evidence",
+        status="verified",
+        kind="generated",
+        source_command=(
+            f"{_LEADERBOARD_CMD} "
+            "--html-out docs/assets/leaderboard/vla_runtime_leaderboard.html"
+        ),
+        caveat=(
+            "Shareable runtime ranking (latency/throughput + measured memory); SmolVLA #1, "
+            "OpenVLA #2, pi0/groot shown as honest blocked rows. Not a task-success claim."
+        ),
+    ),
+    ArtifactEntry(
+        title="VLA runtime leaderboard (Markdown)",
+        path="docs/assets/leaderboard/vla_runtime_leaderboard.md",
+        category="model evidence",
+        status="verified",
+        kind="generated",
+        source_command=(
+            f"{_LEADERBOARD_CMD} "
+            "--markdown-out docs/assets/leaderboard/vla_runtime_leaderboard.md"
+        ),
+        caveat="Runtime path only; ranking is latency/throughput, not skill.",
+    ),
+    ArtifactEntry(
+        title="VLA runtime leaderboard (JSON)",
+        path="docs/assets/leaderboard/vla_runtime_leaderboard.json",
+        category="model evidence",
+        status="verified",
+        kind="generated",
+        source_command=(
+            f"{_LEADERBOARD_CMD} --out docs/assets/leaderboard/vla_runtime_leaderboard.json"
+        ),
+        caveat="Machine-readable vla-zoo-leaderboard/v1 artifact; no task-success claim.",
+    ),
     ArtifactEntry(
         title="VLA model evidence matrix (HTML)",
         path="docs/assets/vla_model_evidence_matrix.html",

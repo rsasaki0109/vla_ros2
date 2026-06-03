@@ -1358,6 +1358,121 @@ def compare_evidence(
         typer.echo(f"HTML written to {html_out}")
 
 
+@compare_app.command("leaderboard")
+def compare_leaderboard(
+    summaries: Annotated[
+        str | None,
+        typer.Option(
+            "--summaries",
+            help="Comma-separated benchmark summary JSON files (vla-zoo-benchmark/v1).",
+        ),
+    ] = None,
+    from_log: Annotated[
+        str | None,
+        typer.Option(
+            "--from-log",
+            help="Comma-separated vla_actions.jsonl logs to replay into summaries first.",
+        ),
+    ] = None,
+    metric: Annotated[
+        str,
+        typer.Option(
+            "--metric",
+            help="Ranking metric (latency_ms_p50/p95/mean or action_rate_hz).",
+        ),
+    ] = "latency_ms_p50",
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write the machine-readable leaderboard JSON."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write the leaderboard Markdown table."),
+    ] = None,
+    html_out: Annotated[
+        Path | None,
+        typer.Option("--html-out", help="Write the standalone HTML leaderboard."),
+    ] = None,
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Leaderboard title."),
+    ] = "VLA Runtime Leaderboard",
+    no_blocked: Annotated[
+        bool,
+        typer.Option("--no-blocked", help="Omit blocked adapters that have no measured runtime."),
+    ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable JSON instead of a table."),
+    ] = False,
+) -> None:
+    """Rank adapters into a shareable runtime leaderboard (latency / throughput + memory).
+
+    Measured inputs are pre-computed summary JSONs (``--summaries``) and/or raw
+    ``vla_actions.jsonl`` logs replayed on the fly (``--from-log``); each ranked row is
+    joined with its recorded runtime profile (memory, evidence status, probe link).
+    Blocked adapters with no measured runtime are listed honestly (disable with
+    ``--no-blocked``). Ranking is by a runtime metric, never by task-success quality.
+    """
+
+    from vla_zoo.benchmark.replay import summarize_action_log
+    from vla_zoo.benchmark.results import read_summary_json
+    from vla_zoo.compare.leaderboard import (
+        build_leaderboard,
+        format_leaderboard_html,
+        format_leaderboard_markdown,
+    )
+
+    loaded = []
+    for raw in _parse_optional_name_list(summaries):
+        path = Path(raw)
+        if not path.is_file():
+            typer.echo(f"summary not found: {path}", err=True)
+            raise typer.Exit(1)
+        loaded.append(read_summary_json(path))
+
+    for raw in _parse_optional_name_list(from_log):
+        path = Path(raw)
+        if not path.is_file():
+            typer.echo(f"action log not found: {path}", err=True)
+            raise typer.Exit(1)
+        loaded.append(summarize_action_log(path))
+
+    try:
+        board = build_leaderboard(loaded, metric=metric, include_blocked=not no_blocked)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    if board.count == 0:
+        typer.echo(
+            "no adapters to rank (provide --summaries/--from-log or keep blocked rows)",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    if out is not None:
+        _write_text(out, json.dumps(board.to_dict(), indent=2) + "\n")
+        typer.echo(f"JSON written to {out}")
+    if markdown_out is not None:
+        _write_text(markdown_out, format_leaderboard_markdown(board, title=title))
+        typer.echo(f"Markdown written to {markdown_out}")
+    if html_out is not None:
+        _write_text(html_out, format_leaderboard_html(board, title=title))
+        typer.echo(f"HTML written to {html_out}")
+    if json_output:
+        typer.echo(json.dumps(board.to_dict(), indent=2))
+    else:
+        typer.echo(f"VLA runtime leaderboard — ranked by {board.metric} ({board.count} adapters)")
+        typer.echo(f"{'rank':>5} {'model':<10} {'status':<10} {'p50 ms':>10} {'mem GB':>8}")
+        typer.echo(f"{'-' * 5} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 8}")
+        for entry in board.entries:
+            rank = "-" if entry.rank is None else str(entry.rank)
+            p50 = "-" if entry.latency_ms_p50 is None else f"{entry.latency_ms_p50:.1f}"
+            mem = "-" if entry.memory_gb is None else f"{entry.memory_gb:.2f}"
+            typer.echo(f"{rank:>5} {entry.model:<10} {entry.status:<10} {p50:>10} {mem:>8}")
+
+
 @compare_app.command("cards")
 def compare_cards(
     models: Annotated[

@@ -1135,27 +1135,51 @@ OpenVLA #2 ~1997 ms) with three artifact-index entries (count 51 → 54). Tested
 unit tests + four CLI tests (rank-by-log, combined summaries+logs, no-input error, missing-file
 error); 274 → 281 tests. `success_rate` stays honest; ranking is latency/throughput, not skill.
 
-The `bench-aggregate` surface (rank + roll-up, Markdown/JSON/HTML, pre-computed summaries **and**
-raw-log replay, recorded examples, Pages tile) is now complete and symmetric with `bench-report`.
-This is again a good point to **pause for direction** rather than auto-pick another increment: the
-v0.4 honesty arc and the v0.5 benchmark-aggregate capability are both closed and consistent.
-Reasonable next directions, for the user to choose:
+## v0.6 — star-growth / shareability track
 
-1. Surface the replayed-log aggregate on the Pages index (`docs/index.html` tile) so the one-step
-   `--from-log` story is visible where the rest of the evidence is read (small, presentation-only).
-2. A genuinely new runtime capability (e.g. a new adapter, a new ROS2 surface) rather than more
-   benchmark plumbing.
-3. Stop here — the repo is in a strong, internally consistent state.
+The user steered toward **growing GitHub stars** through development. The first move is a
+shareable, honest **VLA runtime leaderboard** (DONE):
 
-No recommended auto-increment: the obvious-increment streak has ended; confirm the direction with
-the user before starting.
+```text
+add a compare leaderboard: rank adapters by runtime metric + memory into a shareable page (v0.6)  [DONE]
+```
+
+What landed: new pure module `compare/leaderboard.py` (`vla-zoo-leaderboard/v1`) that joins ranked
+benchmark summaries (via `rank_summaries`) with a curated `RUNTIME_PROFILES` table of *recorded*
+metadata — measured memory footprint, runtime-evidence status, and a probe link per adapter — into
+one scannable artifact. `build_leaderboard` ranks measured adapters and appends adapters with no
+measured runtime as honest unranked `blocked` rows (no fabricated latency); `--no-blocked` drops
+them. Renders Markdown (🥇🥈🥉 medals) + JSON + a polished dark-theme standalone HTML (status badges,
+memory column, honesty banner). CLI `compare leaderboard` takes `--summaries`/`--from-log` (reuses
+`summarize_action_log`), `--metric`, `--out/--markdown-out/--html-out`, `--no-blocked`. Recorded
+example built from the two real probe logs at
+`docs/assets/leaderboard/vla_runtime_leaderboard.{json,md,html}` (SmolVLA #1 ~382 ms / 0.97 GB,
+OpenVLA #2 ~1997 ms / 4.6 GB, pi0 & groot blocked rows) with three artifact-index entries
+(count 54 → 57). Surfaced as the **primary** Pages hero button + a top tile, and added to the
+README "Open First" table. Tested: 10 module tests + 3 CLI tests (281 → 294). Every number is
+sourced from a checked-in artifact; ranking is latency/throughput, never task-success.
+
+This is a good point to **pause for direction**. Other high-leverage star-growth moves identified
+(for the user to choose):
+
+1. **Frictionless quickstart** — a `vla-zoo quickstart` one-command demo (no GPU/weights) that
+   emits a local dashboard/GIF, plus fixing the bare-install gap (the `vla-zoo` entry point needs
+   `typer`, but `typer` is only in the optional `[cli]` extra — `pip install vla_zoo && vla-zoo`
+   currently ImportErrors). Biggest time-to-wow lever.
+2. **PyPI publish** so `pip install vla_zoo` actually works (the package is not yet on PyPI).
+3. **README hero + a 60-second animated demo** (asciinema/GIF of the leaderboard or quickstart).
+4. A genuinely new runtime capability (new adapter / new ROS2 surface).
+
+No auto-increment: confirm the direction with the user before starting.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_benchmark_replay.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_leaderboard.py tests/test_cli.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
+  --paths docs/index.html,README.md --strict
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report index --json
 ```
 

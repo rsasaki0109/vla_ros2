@@ -20,6 +20,7 @@ Live demo and reports: https://rsasaki0109.github.io/vla_zoo/
 
 | What to inspect | Link |
 |---|---|
+| VLA runtime leaderboard | [latency / throughput / memory, ranked](https://rsasaki0109.github.io/vla_zoo/assets/leaderboard/vla_runtime_leaderboard.html) |
 | Runtime truth by model | [VLA evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html) |
 | PyBullet simulation GIFs | [GIF gallery](https://rsasaki0109.github.io/vla_zoo/assets/gif_suite/) |
 | Runtime comparison dashboard | [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |

@@ -995,6 +995,53 @@ def test_bench_aggregate_from_log_missing_file_errors(tmp_path: Path) -> None:
     assert "action log not found" in result.output
 
 
+def test_compare_leaderboard_from_log_ranks_and_lists_blocked(tmp_path: Path) -> None:
+    fast = tmp_path / "fast.jsonl"
+    _write_action_log(fast, model="smolvla", latencies=[10.0, 12.0, 11.0])
+
+    result = CliRunner().invoke(
+        app, ["compare", "leaderboard", "--from-log", str(fast), "--json"]
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    by_model = {e["model"]: e for e in payload["entries"]}
+    assert by_model["smolvla"]["rank"] == 1
+    # blocked adapters are surfaced honestly with no fabricated latency
+    assert by_model["pi0"]["rank"] is None
+    assert by_model["pi0"]["latency_ms_p50"] is None
+    assert by_model["pi0"]["status"] == "blocked"
+
+
+def test_compare_leaderboard_no_blocked_drops_unmeasured(tmp_path: Path) -> None:
+    fast = tmp_path / "fast.jsonl"
+    _write_action_log(fast, model="smolvla", latencies=[10.0, 12.0])
+
+    result = CliRunner().invoke(
+        app,
+        ["compare", "leaderboard", "--from-log", str(fast), "--no-blocked", "--json"],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert {e["model"] for e in payload["entries"]} == {"smolvla"}
+
+
+def test_compare_leaderboard_html_out(tmp_path: Path) -> None:
+    fast = tmp_path / "fast.jsonl"
+    _write_action_log(fast, model="smolvla", latencies=[10.0])
+    out = tmp_path / "board.html"
+
+    result = CliRunner().invoke(
+        app, ["compare", "leaderboard", "--from-log", str(fast), "--html-out", str(out)]
+    )
+
+    assert result.exit_code == 0, result.output
+    rendered = out.read_text(encoding="utf-8")
+    assert "VLA Runtime Leaderboard" in rendered
+    assert "badge" in rendered
+
+
 def test_diag_report_requires_exactly_one_input() -> None:
     assert CliRunner().invoke(app, ["diag-report"]).exit_code == 1
 
