@@ -910,6 +910,91 @@ def test_diag_report_reconstructs_from_ros_log(tmp_path: Path) -> None:
     assert records[-1].watchdog_ok is True
 
 
+def _write_action_log(path: Path, *, model: str, latencies: list[float]) -> None:
+    lines = []
+    for index, latency in enumerate(latencies):
+        record = {
+            "header": {"stamp": {"sec": index, "nanosec": 0}, "frame_id": "world"},
+            "model_name": model,
+            "action_space": "eef_delta",
+            "data": [0.1, 0.2, 0.3, 0.0, 0.0, 0.0, 1.0],
+            "names": [],
+            "metadata": {"latency_ms": latency},
+        }
+        lines.append(json.dumps(record))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def test_bench_aggregate_from_log_ranks_replayed_logs(tmp_path: Path) -> None:
+    fast = tmp_path / "fast.jsonl"
+    slow = tmp_path / "slow.jsonl"
+    _write_action_log(fast, model="smolvla", latencies=[10.0, 12.0, 11.0])
+    _write_action_log(slow, model="openvla", latencies=[100.0, 120.0, 110.0])
+
+    result = CliRunner().invoke(
+        app,
+        ["bench-aggregate", "--from-log", f"{slow},{fast}", "--json"],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    # the faster log ranks first even though it was passed second
+    assert payload["ranked"][0]["summary"]["model"] == "smolvla"
+    assert payload["ranked"][0]["rank"] == 1
+    # a replayed log never invents a task-success claim
+    assert all(e["summary"]["success_rate"] is None for e in payload["ranked"])
+
+
+def test_bench_aggregate_combines_summaries_and_logs(tmp_path: Path) -> None:
+    log = tmp_path / "probe.jsonl"
+    _write_action_log(log, model="smolvla", latencies=[10.0, 12.0])
+
+    summary_json = tmp_path / "remote.json"
+    summary_json.write_text(
+        json.dumps(
+            {
+                "schema_version": "vla-zoo-benchmark/v1",
+                "model": "openvla",
+                "source": "remote-server",
+                "sample_count": 5,
+                "success_count": 0,
+                "success_rate": None,
+                "latency_ms_p50": 2000.0,
+                "latency_ms_p95": 2500.0,
+                "latency_ms_mean": 2100.0,
+                "action_rate_hz": 0.5,
+                "exception_count": 0,
+                "note": None,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        app,
+        ["bench-aggregate", "--summaries", str(summary_json), "--from-log", str(log), "--json"],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["count"] == 2
+    assert payload["ranked"][0]["summary"]["model"] == "smolvla"
+
+
+def test_bench_aggregate_requires_an_input() -> None:
+    result = CliRunner().invoke(app, ["bench-aggregate"])
+    assert result.exit_code == 1
+    assert "no inputs provided" in result.output
+
+
+def test_bench_aggregate_from_log_missing_file_errors(tmp_path: Path) -> None:
+    result = CliRunner().invoke(
+        app, ["bench-aggregate", "--from-log", str(tmp_path / "nope.jsonl")]
+    )
+    assert result.exit_code == 1
+    assert "action log not found" in result.output
+
+
 def test_diag_report_requires_exactly_one_input() -> None:
     assert CliRunner().invoke(app, ["diag-report"]).exit_code == 1
 

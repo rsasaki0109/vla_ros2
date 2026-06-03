@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Replayed Action-Log Aggregate (Ranked)</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb; --panel: #ffffff; --text: #172033; --muted: #64748b;
+      --line: #d8e2ee; --accent: #0f6f9f; --head: #eef4fb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 48px; }
+    h1 { margin: 0 0 4px; font-size: clamp(26px, 4vw, 40px); }
+    h2 { margin: 22px 0 0; font-size: 18px; color: var(--accent); }
+    p { color: var(--muted); line-height: 1.55; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 14px; padding: 18px 20px; margin-top: 18px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px; }
+    th, td {
+      text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    th { background: var(--head); color: var(--accent); font-weight: 600; }
+    td:first-child, th:first-child { font-weight: 600; }
+    tbody tr:last-child td { border-bottom: none; }
+    .note { margin-top: 16px; font-size: 13px; }
+    code { background: #eef2f7; padding: 1px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Replayed Action-Log Aggregate (Ranked)</h1>
+    <p>Schema <code>vla-zoo-benchmark-aggregate/v1</code> · ranked by <code>latency_ms_p50</code> (lower is better)</p>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Rank</th><th>Model</th><th>Source</th><th>Samples</th><th>Success rate</th><th>Latency p50 (ms)</th><th>Latency p95 (ms)</th><th>Latency mean (ms)</th><th>Action rate (Hz)</th><th>Exceptions</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>smolvla</td><td>ros2-action-replay</td><td>21</td><td>-</td><td>381.92</td><td>571.64</td><td>436.77</td><td>1.07</td><td>0</td></tr>
+          <tr><td>2</td><td>openvla</td><td>ros2-action-replay</td><td>21</td><td>-</td><td>1996.76</td><td>3675.92</td><td>2185.37</td><td>1.07</td><td>0</td></tr>
+        </tbody>
+      </table>
+<h2>Per-model roll-up</h2><p>Best is the lowest <code>latency_ms_p50</code> across each model's runs.</p><table><thead><tr><th>Model</th><th>Runs</th><th>Best</th><th>Median</th><th>Worst</th></tr></thead><tbody>
+          <tr><td>smolvla</td><td>1</td><td>381.92</td><td>381.92</td><td>381.92</td></tr>
+          <tr><td>openvla</td><td>1</td><td>1996.76</td><td>1996.76</td><td>1996.76</td></tr>
+        </tbody></table>
+      <p class="note">Runtime-centric aggregate. Rank is by the selected latency / action-rate metric, not by robot task-success quality. A blank success rate means the source made no task-success claim (for example, replayed action logs).</p>
+    </div>
+  </main>
+</body>
+</html>

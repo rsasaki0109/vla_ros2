@@ -8,6 +8,7 @@ from vla_zoo.benchmark.replay import (
     frames_to_records,
     load_action_log,
     replay_action_rate_hz,
+    summarize_action_log,
 )
 from vla_zoo.benchmark.results import RESULT_SCHEMA_VERSION
 
@@ -58,6 +59,33 @@ def test_frames_to_records_honors_source_override() -> None:
     assert all(r.source == "pybullet-action-probe" for r in records)
     # the override does not invent a task-success claim
     assert all(r.success is None for r in records)
+
+
+def test_summarize_action_log_makes_no_success_claim() -> None:
+    summary = summarize_action_log(SAMPLE_LOG)
+
+    assert summary.model == "dummy"
+    assert summary.source == REPLAY_SOURCE
+    assert summary.sample_count > 0
+    assert summary.success_rate is None  # a replayed log is not a task-success claim
+    assert summary.latency_ms_p50 is not None
+    assert summary.action_rate_hz is not None
+    assert summary.note == ROSBAG_REPLAY_NOTE
+
+
+def test_summarize_action_log_honors_overrides() -> None:
+    summary = summarize_action_log(SAMPLE_LOG, source="pybullet-action-probe", note="custom")
+
+    assert summary.source == "pybullet-action-probe"
+    assert summary.note == "custom"
+    assert summary.success_rate is None
+
+
+def test_replayed_log_aggregate_artifact_exists() -> None:
+    base = REPO_ROOT / "docs" / "assets" / "sample_pybullet_compare"
+    assert (base / "replayed_log_aggregate.json").is_file()
+    assert (base / "replayed_log_aggregate.md").is_file()
+    assert (base / "replayed_log_aggregate.html").is_file()
 
 
 def test_realscene_probe_comparison_artifact_exists() -> None:

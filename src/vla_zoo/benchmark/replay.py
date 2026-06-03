@@ -18,7 +18,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from vla_zoo.benchmark.results import EpisodeRecord
+from vla_zoo.benchmark.results import BenchmarkSummary, EpisodeRecord, summarize_records
 
 #: A single, reusable note describing exactly what this stub does and does not do.
 ROSBAG_REPLAY_NOTE = (
@@ -131,3 +131,26 @@ def frames_to_records(
         )
         for frame in frames
     ]
+
+
+def summarize_action_log(
+    path: Path,
+    *,
+    source: str | None = None,
+    note: str | None = None,
+) -> BenchmarkSummary:
+    """Replay one ``vla_actions.jsonl`` log directly into a :class:`BenchmarkSummary`.
+
+    This is the pure ``load_action_log`` → ``frames_to_records`` → ``summarize_records``
+    chain used by ``bench-replay``, packaged so a caller (e.g. ``bench-aggregate
+    --from-log``) can turn a recorded action log into a rankable summary in one step.
+    ``success_rate`` stays ``None``: a replayed action stream is not a task-success claim.
+    """
+
+    frames = load_action_log(path)
+    records = frames_to_records(frames, source=source or REPLAY_SOURCE)
+    return summarize_records(
+        records,
+        action_rate_hz=replay_action_rate_hz(frames),
+        note=note or ROSBAG_REPLAY_NOTE,
+    )

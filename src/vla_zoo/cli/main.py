@@ -970,12 +970,22 @@ def bench_report(
 @app.command("bench-aggregate")
 def bench_aggregate(
     summaries: Annotated[
-        str,
+        str | None,
         typer.Option(
             "--summaries",
             help="Comma-separated benchmark summary JSON files (vla-zoo-benchmark/v1).",
         ),
-    ],
+    ] = None,
+    from_log: Annotated[
+        str | None,
+        typer.Option(
+            "--from-log",
+            help=(
+                "Comma-separated vla_actions.jsonl action logs to replay into summaries "
+                "first (success_rate stays None). Combined with any --summaries inputs."
+            ),
+        ),
+    ] = None,
     metric: Annotated[
         str,
         typer.Option(
@@ -1004,25 +1014,38 @@ def bench_aggregate(
         typer.Option("--json", help="Print machine-readable JSON instead of a table."),
     ] = False,
 ) -> None:
-    """Merge several benchmark summaries into one table ranked by a runtime metric."""
+    """Merge several benchmark summaries into one table ranked by a runtime metric.
+
+    Inputs can be pre-computed ``vla-zoo-benchmark/v1`` summary JSONs (``--summaries``)
+    and/or raw ``vla_actions.jsonl`` action logs replayed on the fly (``--from-log``); the
+    two sources are combined before ranking. Replayed logs keep ``success_rate`` ``None``.
+    """
 
     from vla_zoo.benchmark.aggregate import (
         format_aggregate_html,
         format_aggregate_markdown,
         rank_summaries,
     )
+    from vla_zoo.benchmark.replay import summarize_action_log
     from vla_zoo.benchmark.results import read_summary_json
 
     loaded = []
-    for raw in _parse_name_list(summaries):
+    for raw in _parse_optional_name_list(summaries):
         path = Path(raw)
         if not path.is_file():
             typer.echo(f"summary not found: {path}", err=True)
             raise typer.Exit(1)
         loaded.append(read_summary_json(path))
 
+    for raw in _parse_optional_name_list(from_log):
+        path = Path(raw)
+        if not path.is_file():
+            typer.echo(f"action log not found: {path}", err=True)
+            raise typer.Exit(1)
+        loaded.append(summarize_action_log(path))
+
     if not loaded:
-        typer.echo("no summaries provided", err=True)
+        typer.echo("no inputs provided (use --summaries and/or --from-log)", err=True)
         raise typer.Exit(1)
 
     try:
