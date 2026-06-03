@@ -453,6 +453,24 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="Real-scene probe ranked aggregate (HTML)",
+        path="docs/assets/sample_pybullet_compare/runtime_probe_aggregate.html",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo bench-aggregate --summaries "
+            "docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,"
+            "docs/assets/sample_pybullet_compare/openvla_probe_summary.json "
+            "--metric latency_ms_p50 "
+            "--html-out docs/assets/sample_pybullet_compare/runtime_probe_aggregate.html"
+        ),
+        caveat=(
+            "Standalone HTML of the ranked aggregate + per-model roll-up; runtime path "
+            "only, ranking is not a task-success claim."
+        ),
+    ),
+    ArtifactEntry(
         title="Real-scene probe ranked aggregate (Markdown)",
         path="docs/assets/sample_pybullet_compare/runtime_probe_aggregate.md",
         category="simulation",

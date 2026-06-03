@@ -4,6 +4,7 @@ import pytest
 
 from vla_zoo.benchmark.aggregate import (
     AGGREGATE_SCHEMA_VERSION,
+    format_aggregate_html,
     format_aggregate_markdown,
     rank_summaries,
 )
@@ -167,3 +168,20 @@ def test_groups_in_aggregate_to_dict() -> None:
     payload = report.to_dict()
     assert payload["groups"][0]["model"] == "a"
     assert payload["groups"][0]["run_count"] == 1
+
+
+def test_html_renders_ranked_table_and_rollup() -> None:
+    report = rank_summaries(
+        [
+            _summary("smolvla", p50=300.0),
+            _summary("smolvla", p50=500.0),
+            _summary("openvla", p50=2000.0),
+        ],
+        metric="latency_ms_p50",
+    )
+    html = format_aggregate_html(report)
+    assert "<!doctype html>" in html
+    assert "ranked by <code>latency_ms_p50</code>" in html
+    assert "Per-model roll-up" in html
+    assert "smolvla" in html and "openvla" in html
+    assert "not by robot task-success quality" in html

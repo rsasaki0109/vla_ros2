@@ -991,6 +991,10 @@ def bench_aggregate(
         Path | None,
         typer.Option("--markdown-out", help="Write the ranked Markdown table."),
     ] = None,
+    html_out: Annotated[
+        Path | None,
+        typer.Option("--html-out", help="Write the standalone HTML ranked aggregate."),
+    ] = None,
     title: Annotated[
         str,
         typer.Option("--title", help="Report title."),
@@ -1003,6 +1007,7 @@ def bench_aggregate(
     """Merge several benchmark summaries into one table ranked by a runtime metric."""
 
     from vla_zoo.benchmark.aggregate import (
+        format_aggregate_html,
         format_aggregate_markdown,
         rank_summaries,
     )
@@ -1032,6 +1037,9 @@ def bench_aggregate(
     if markdown_out is not None:
         _write_text(markdown_out, format_aggregate_markdown(report, title=title))
         typer.echo(f"Markdown written to {markdown_out}")
+    if html_out is not None:
+        _write_text(html_out, format_aggregate_html(report, title=title))
+        typer.echo(f"HTML written to {html_out}")
     if json_output:
         typer.echo(json.dumps(report.to_dict(), indent=2))
     else:
