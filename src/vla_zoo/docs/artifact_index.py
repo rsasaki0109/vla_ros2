@@ -138,6 +138,33 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Machine-readable measured runtime profile (RTX 4070 Ti SUPER, 4-bit).",
     ),
     ArtifactEntry(
+        title="SmolVLA local runtime evidence",
+        path="docs/smolvla_local_runtime.md",
+        category="model evidence",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "PYTHONPATH=src python3 scripts/measure_lerobot_runtime.py "
+            "--model smolvla --out docs/assets/smolvla_local_runtime.json"
+        ),
+        caveat=(
+            "Measured load/VRAM/latency for lerobot/smolvla_base on a synthetic frame; "
+            "a runtime-path claim, not task success."
+        ),
+    ),
+    ArtifactEntry(
+        title="SmolVLA local runtime measurements (JSON)",
+        path="docs/assets/smolvla_local_runtime.json",
+        category="model evidence",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "PYTHONPATH=src python3 scripts/measure_lerobot_runtime.py "
+            "--model smolvla --out docs/assets/smolvla_local_runtime.json"
+        ),
+        caveat="Machine-readable measured runtime profile (RTX 4070 Ti SUPER, ~0.97 GB).",
+    ),
+    ArtifactEntry(
         title="PyBullet GIF gallery",
         path="docs/assets/gif_suite/index.html",
         category="simulation",

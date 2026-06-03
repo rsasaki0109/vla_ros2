@@ -46,5 +46,5 @@ def test_evidence_matrix_html_renders_status_and_links() -> None:
     assert "<!doctype html>" in html
     assert "This is not a model-quality leaderboard" in html
     assert "status-verified" in html
-    assert "SmolVLA GPU probe" in html
+    # Both OpenVLA and SmolVLA now link their measured local-runtime evidence pages.
     assert "local runtime evidence" in html

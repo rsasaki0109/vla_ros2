@@ -223,8 +223,9 @@ def _pi0_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         "contract": _registry_contract(info),
         "local_runtime": _cell(
             "blocked",
-            "Local inference is opt-in because checkpoint/config compatibility varies by "
-            "LeRobot version.",
+            "Local load fails on a concrete config-schema mismatch: the cached lerobot/pi0 "
+            "checkpoint carries PI0Config fields (resize_imgs_with_padding, adapt_to_pi_aloha, "
+            "num_steps, ...) that LeRobot 0.5.1 rejects. Needs a version-matched checkpoint.",
             (
                 _link(
                     "pi0 compatibility note",
@@ -274,13 +275,15 @@ def _smolvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         "contract": _registry_contract(info),
         "local_runtime": _cell(
             "verified",
-            "LeRobot SmolVLA adapter returned a typed action through load_model('smolvla').",
-            (_link("SmolVLA GPU probe", "sample_task_verification/smolvla_gpu_probe.md"),),
+            "lerobot/smolvla_base loaded and predicted a 6-DoF action through "
+            "load_model('smolvla') on a local RTX 4070 Ti SUPER, with measured load/VRAM/latency.",
+            (_link("local runtime evidence", "../smolvla_local_runtime.md"),),
         ),
         "gpu_inference": _cell(
             "verified",
-            "CUDA inference-path probe completed with lerobot/smolvla_base.",
-            (_link("SmolVLA GPU probe", "sample_task_verification/smolvla_gpu_probe.md"),),
+            "CUDA inference measured at ~0.97 GB peak VRAM and ~60-133 ms steady latency "
+            "(real-time capable). Captured via scripts/measure_lerobot_runtime.py.",
+            (_link("local runtime evidence", "../smolvla_local_runtime.md"),),
         ),
         "remote_server": _cell(
             "planned",
@@ -431,7 +434,10 @@ def _next_step(info: AdapterInfo) -> str:
             "remote logs."
         )
     if info.name == "smolvla":
-        return "Record SmolVLA remote-server and ROS2 remote traces, then broaden task probes."
+        return (
+            "Local GPU inference is verified (~0.97 GB, ~60-130 ms); next, record "
+            "remote-server and ROS2 remote traces, then broaden task probes."
+        )
     if info.name == "groot":
         return (
             "Replace the placeholder with a real GR00T serving adapter before claiming "

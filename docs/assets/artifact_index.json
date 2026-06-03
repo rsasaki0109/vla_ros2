@@ -1,5 +1,5 @@
 {
-  "count": 29,
+  "count": 31,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -59,6 +59,26 @@
       "kind": "checked",
       "source_command": "PYTHONPATH=src python3 scripts/measure_openvla_runtime.py --out docs/assets/openvla_local_runtime.json",
       "caveat": "Machine-readable measured runtime profile (RTX 4070 Ti SUPER, 4-bit).",
+      "exists": true
+    },
+    {
+      "title": "SmolVLA local runtime evidence",
+      "path": "docs/smolvla_local_runtime.md",
+      "category": "model evidence",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "PYTHONPATH=src python3 scripts/measure_lerobot_runtime.py --model smolvla --out docs/assets/smolvla_local_runtime.json",
+      "caveat": "Measured load/VRAM/latency for lerobot/smolvla_base on a synthetic frame; a runtime-path claim, not task success.",
+      "exists": true
+    },
+    {
+      "title": "SmolVLA local runtime measurements (JSON)",
+      "path": "docs/assets/smolvla_local_runtime.json",
+      "category": "model evidence",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "PYTHONPATH=src python3 scripts/measure_lerobot_runtime.py --model smolvla --out docs/assets/smolvla_local_runtime.json",
+      "caveat": "Machine-readable measured runtime profile (RTX 4070 Ti SUPER, ~0.97 GB).",
       "exists": true
     },
     {
