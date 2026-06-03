@@ -1131,3 +1131,23 @@ def test_cli_rtc_sim_help_lists_options() -> None:
     assert "--horizon" in result.output
     assert "--delay" in result.output
     assert "--action-log" in result.output
+
+
+def test_cli_demo_rtc_gif_renders(tmp_path) -> None:
+    out = tmp_path / "rtc.gif"
+    result = CliRunner().invoke(
+        app,
+        ["demo", "rtc-gif", "--out", str(out), "--chunks", "5", "--width", "560"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert out.is_file()
+    assert "reduction" in result.output
+
+
+def test_cli_demo_rtc_gif_help_lists_options() -> None:
+    result = CliRunner().invoke(app, ["demo", "rtc-gif", "--help"])
+
+    assert result.exit_code == 0
+    assert "--horizon" in result.output
+    assert "--delay" in result.output

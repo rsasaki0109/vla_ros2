@@ -1308,15 +1308,32 @@ module tests + 3 CLI tests (316 → 329). It is a **pure simulation of the sched
 — no diffusion/flow policy, no gradient-guided sampler — and makes no policy-quality or
 task-success claim: continuity is a runtime scheduling property.
 
+The RTC continuity is now also *visible* (DONE — recommended next, "osusumete"):
+
+```text
+add vla-zoo demo rtc-gif: animate the naive vs RTC-freeze emitted control streams (v0.7)  [DONE]
+```
+
+What landed: new pure module `demo/rtc_chunking_gif.py` reusing the trajectory renderer's
+palette/font helpers. `render_rtc_chunking_gif(report, ...)` stacks the two emitted control
+streams (naive async on top, RTC freeze below) as time-series on a shared scale, with dashed
+chunk-boundary markers, each action dim colour-coded, the head dot tracking the revealed
+tick, and per-panel mean-boundary-jump readouts — so the naive panel's snaps and the freeze
+panel's continuity are immediately visible. CLI `demo rtc-gif` (mirrors `rtc-sim`'s synthetic
+knobs: `--out/--chunks/--horizon/--execute/--delay/--dims/--mode-strength/--seed/--width`).
+Recorded `docs/assets/rtc_sim/rtc_scheduler_sim.gif` (111 frames, 760×408, 76.3% reduction)
+embedded in the README RTC section and the Pages "What Works Now" tile; 1 artifact-index
+entry (count 66 → 67). Tested: 3 module tests (animated render, <2-tick guard, recorded-GIF
+validity) + 2 CLI tests (329 → 334). Pure simulation of the scheduling layer; runtime
+property, not a policy-quality claim.
+
 Remaining v0.7 candidates (pause for direction before each):
 
 1. **Predicted-vs-measured latency** on the leaderboard (VLA-Perf roofline), validated
    against the recorded SmolVLA/OpenVLA probes; add a 10/100 Hz real-time band.
-2. **RTC continuity GIF**: animate the naive vs freeze emitted control stream so the
-   boundary jump is visible (reuses the trajectory PIL renderer).
-3. **`chunks_from_action_log` driven artifact** + a real-log RTC view.
-4. Update GR00T note to **N1.7**; scope an X-VLA server-client adapter.
-5. **PyPI publish** + release workflow (metadata already install-correct).
+2. **`chunks_from_action_log` driven artifact** + a real-log RTC view.
+3. Update GR00T note to **N1.7**; scope an X-VLA server-client adapter.
+4. **PyPI publish** + release workflow (metadata already install-correct).
 
 Acceptance (this feature):
 
