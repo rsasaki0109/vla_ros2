@@ -421,16 +421,16 @@
           ]
         },
         "remote_server": {
-          "status": "planned",
-          "summary": "Isolated-env server plan is reproducible (vla-zoo smolvla-remote-plan); a recorded SmolVLA /v1/predict response is still needed.",
+          "status": "verified",
+          "summary": "A real `vla-zoo serve --model smolvla` server passed a health-first probe and returned a typed 6-DoF action over HTTP /v1/predict (recorded end-to-end).",
           "links": [
+            {
+              "label": "SmolVLA remote probe",
+              "href": "sample_task_verification/smolvla_remote_probe.md"
+            },
             {
               "label": "SmolVLA remote plan",
               "href": "smolvla_remote_smoke_plan.md"
-            },
-            {
-              "label": "env isolation",
-              "href": "../smolvla_remote.md"
             }
           ]
         },
@@ -460,7 +460,7 @@
           "links": []
         }
       },
-      "next_step": "Local GPU inference is verified (~0.97 GB, ~60-130 ms); next, record remote-server and ROS2 remote traces, then broaden task probes.",
+      "next_step": "Local GPU inference and a real remote /v1/predict are both verified; next, record a ROS2 remote trace against the server, then broaden task probes.",
       "caveat": "Local CUDA inference-path probe completed with lerobot/smolvla_base, including a PyBullet-rendered multi-camera/state observation path. This is not a robot task-success claim."
     },
     {

@@ -398,6 +398,21 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Verifies the health-first remote probe tool; not an OpenVLA claim.",
     ),
     ArtifactEntry(
+        title="SmolVLA remote /v1/predict probe",
+        path="docs/assets/sample_task_verification/smolvla_remote_probe.md",
+        category="GPU probes",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo serve --model smolvla --pretrained lerobot/smolvla_base --device cuda "
+            "&& vla-zoo remote-probe --model smolvla --remote-url http://127.0.0.1:PORT"
+        ),
+        caveat=(
+            "Real SmolVLA server returned a typed 6-DoF action over HTTP; runtime-path "
+            "evidence, not task success."
+        ),
+    ),
+    ArtifactEntry(
         title="pi0 compatibility probe",
         path="docs/assets/sample_task_verification/pi0_compatibility_probe.md",
         category="GPU probes",

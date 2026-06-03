@@ -45,6 +45,27 @@ PYTHONPATH=src /tmp/lerobot_venv/bin/python scripts/measure_lerobot_runtime.py \
 
 The capture script is [`scripts/measure_lerobot_runtime.py`](../scripts/measure_lerobot_runtime.py).
 
+## Remote serving (verified end-to-end)
+
+The same checkpoint was also served through the real FastAPI server and exercised over HTTP,
+which is the recommended deployment split (see [deployment](deployment.md)):
+
+```bash
+# server (GPU box / this machine), in the LeRobot venv
+HF_HUB_OFFLINE=1 vla-zoo serve --model smolvla --pretrained lerobot/smolvla_base \
+    --device cuda --host 127.0.0.1 --port 8011
+
+# client (robot side): health-first probe records one /v1/predict response
+vla-zoo remote-probe --model smolvla --remote-url http://127.0.0.1:8011 \
+    --out docs/assets/sample_task_verification/smolvla_remote_probe.json \
+    --markdown-out docs/assets/sample_task_verification/smolvla_remote_probe.md --strict
+```
+
+The health check returned `ready: true` and `/v1/predict` returned a typed 6-DoF action; the
+recorded result is checked in at
+[`smolvla_remote_probe.md`](assets/sample_task_verification/smolvla_remote_probe.md). This is
+the first real-model (non-dummy) remote `/v1/predict` recording in the repo.
+
 ## pi0 status
 
 The same script targets pi0 with `--model pi0`, but local pi0 loading currently fails on a
