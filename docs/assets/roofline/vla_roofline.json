@@ -1,0 +1,48 @@
+{
+  "schema_version": "vla-zoo-roofline/v1",
+  "hardware": {
+    "name": "RTX 4070 Ti SUPER",
+    "peak_tflops_fp16": 88.0,
+    "memory_bandwidth_gbps": 672.0,
+    "note": "Local card the recorded probes ran on (16 GB)."
+  },
+  "comparisons": [
+    {
+      "model": "smolvla",
+      "hardware": "RTX 4070 Ti SUPER",
+      "weight_gb": 0.9,
+      "memory_bound_ms": 1.3392857142857142,
+      "compute_bound_ms": 0.010227272727272727,
+      "forward_floor_ms": 1.3392857142857142,
+      "bound_by": "memory",
+      "measured_p50_ms": 381.9219139404595,
+      "headroom_x": 285.1683624088764,
+      "realtime_band": "usable (sub-second)"
+    },
+    {
+      "model": "openvla",
+      "hardware": "RTX 4070 Ti SUPER",
+      "weight_gb": 3.5,
+      "memory_bound_ms": 5.208333333333333,
+      "compute_bound_ms": 0.1590909090909091,
+      "forward_floor_ms": 5.208333333333333,
+      "bound_by": "memory",
+      "measured_p50_ms": 1996.7553580645472,
+      "headroom_x": 383.37702874839306,
+      "realtime_band": "slow (>1 s)"
+    },
+    {
+      "model": "pi0",
+      "hardware": "RTX 4070 Ti SUPER",
+      "weight_gb": 6.6,
+      "memory_bound_ms": 9.821428571428571,
+      "compute_bound_ms": 0.075,
+      "forward_floor_ms": 9.821428571428571,
+      "bound_by": "memory",
+      "measured_p50_ms": null,
+      "headroom_x": null,
+      "realtime_band": "unknown"
+    }
+  ],
+  "note": "First-order roofline floor (VLA-Perf style): the single-forward memory-bound hardware lower bound weight_bytes/bandwidth at batch 1. NOT an achievable latency -- recorded p50 also pays for multi-step decode + framework overhead, so measured/floor is optimization headroom. Hardware peaks are nominal vendor specs. No policy-quality claim."
+}

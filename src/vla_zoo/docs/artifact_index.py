@@ -84,6 +84,12 @@ _LEADERBOARD_CMD = (
     "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --metric latency_ms_p50"
 )
 
+_ROOFLINE_CMD = (
+    "vla-zoo compare roofline --from-log "
+    "docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,"
+    "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --hardware rtx_4070_ti_super"
+)
+
 DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
     ArtifactEntry(
         title="VLA runtime leaderboard (HTML)",
@@ -122,6 +128,30 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
             f"{_LEADERBOARD_CMD} --out docs/assets/leaderboard/vla_runtime_leaderboard.json"
         ),
         caveat="Machine-readable vla-zoo-leaderboard/v1 artifact; no task-success claim.",
+    ),
+    ArtifactEntry(
+        title="VLA roofline floor vs recorded latency (Markdown)",
+        path="docs/assets/roofline/vla_roofline.md",
+        category="model evidence",
+        status="verified",
+        kind="generated",
+        source_command=(
+            f"{_ROOFLINE_CMD} --markdown-out docs/assets/roofline/vla_roofline.md"
+        ),
+        caveat=(
+            "First-order analytical floor (VLA-Perf style) vs recorded p50: SmolVLA runs "
+            "~285× and OpenVLA ~383× above the hardware memory floor — the gap is decode + "
+            "framework overhead, not the GPU. Estimate, not a measurement; no skill claim."
+        ),
+    ),
+    ArtifactEntry(
+        title="VLA roofline floor vs recorded latency (JSON)",
+        path="docs/assets/roofline/vla_roofline.json",
+        category="model evidence",
+        status="verified",
+        kind="generated",
+        source_command=f"{_ROOFLINE_CMD} --out docs/assets/roofline/vla_roofline.json",
+        caveat="Machine-readable vla-zoo-roofline/v1 artifact; analytical floor, not measured.",
     ),
     ArtifactEntry(
         title="VLA trajectory race (OpenVLA vs SmolVLA, animated GIF)",

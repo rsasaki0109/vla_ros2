@@ -1,5 +1,5 @@
 {
-  "count": 67,
+  "count": 69,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -39,6 +39,26 @@
       "kind": "generated",
       "source_command": "vla-zoo compare leaderboard --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --metric latency_ms_p50 --out docs/assets/leaderboard/vla_runtime_leaderboard.json",
       "caveat": "Machine-readable vla-zoo-leaderboard/v1 artifact; no task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "VLA roofline floor vs recorded latency (Markdown)",
+      "path": "docs/assets/roofline/vla_roofline.md",
+      "category": "model evidence",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo compare roofline --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --hardware rtx_4070_ti_super --markdown-out docs/assets/roofline/vla_roofline.md",
+      "caveat": "First-order analytical floor (VLA-Perf style) vs recorded p50: SmolVLA runs ~285\u00d7 and OpenVLA ~383\u00d7 above the hardware memory floor \u2014 the gap is decode + framework overhead, not the GPU. Estimate, not a measurement; no skill claim.",
+      "exists": true
+    },
+    {
+      "title": "VLA roofline floor vs recorded latency (JSON)",
+      "path": "docs/assets/roofline/vla_roofline.json",
+      "category": "model evidence",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo compare roofline --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --hardware rtx_4070_ti_super --out docs/assets/roofline/vla_roofline.json",
+      "caveat": "Machine-readable vla-zoo-roofline/v1 artifact; analytical floor, not measured.",
       "exists": true
     },
     {

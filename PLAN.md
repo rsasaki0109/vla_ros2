@@ -1327,10 +1327,31 @@ entry (count 66 → 67). Tested: 3 module tests (animated render, <2-tick guard,
 validity) + 2 CLI tests (329 → 334). Pure simulation of the scheduling layer; runtime
 property, not a policy-quality claim.
 
+The analytical-vs-measured latency view is in (DONE — "tudukeru"):
+
+```text
+add vla-zoo compare roofline: VLA-Perf-style latency floor vs recorded probes + real-time band (v0.7)  [DONE]
+```
+
+What landed: new pure module `compare/roofline.py` (`vla-zoo-roofline/v1`). It computes each
+model's **single-forward, batch-1 memory-bound roofline floor** (`weight_bytes / bandwidth`,
+VLA-Perf style, arXiv:2602.18397) from declared params × dtype on a chosen `HardwareProfile`
+(presets: RTX 4070 Ti SUPER / 4090 / Jetson AGX Orin / A100, nominal vendor specs), and joins
+it with the **recorded** p50 from the real probe logs, reporting headroom (measured/floor) and
+the 10-100 ms real-time band. `MODEL_PROFILES` declares smolvla (0.45B bf16), openvla (7B nf4),
+pi0 (3.3B bf16, latency blocked). CLI `compare roofline` (`--from-log`/`--summaries` source
+measured p50 like `compare leaderboard`, `--hardware`, `--list-hardware`, `--out/--markdown-out/
+--json`). Recorded artifact `docs/assets/roofline/vla_roofline.{json,md}` surfaces the honest
+finding: on the 4070 Ti SUPER, **SmolVLA runs ~285× and OpenVLA ~383× above the hardware memory
+floor** — the latency is decode + framework overhead, not the GPU; pi0 shows its floor with an
+unknown band (blocked). Surfaced in the README "Open First" table + a new RTC-adjacent section,
+and a Pages "Roofline floor vs measured" tile; 2 artifact-index entries (count 67 → 69). Tested:
+8 module tests + 4 CLI tests (334 → 346). The floor is a first-order analytical lower bound, not
+a measurement or an achievable target, and makes no policy-quality claim.
+
 Remaining v0.7 candidates (pause for direction before each):
 
-1. **Predicted-vs-measured latency** on the leaderboard (VLA-Perf roofline), validated
-   against the recorded SmolVLA/OpenVLA probes; add a 10/100 Hz real-time band.
+1. **HTML roofline page** + fold the real-time band / headroom into the leaderboard itself.
 2. **`chunks_from_action_log` driven artifact** + a real-log RTC view.
 3. Update GR00T note to **N1.7**; scope an X-VLA server-client adapter.
 4. **PyPI publish** + release workflow (metadata already install-correct).
