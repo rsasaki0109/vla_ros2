@@ -66,6 +66,12 @@ recorded result is checked in at
 [`smolvla_remote_probe.md`](assets/sample_task_verification/smolvla_remote_probe.md). This is
 the first real-model (non-dummy) remote `/v1/predict` recording in the repo.
 
+The same server also runs in **bf16** via `vla-zoo serve --dtype bfloat16` (the LeRobot
+`dtype` override; SmolVLA params load as `torch.bfloat16`), recorded end-to-end at
+[`smolvla_dtype_serve_probe.md`](assets/sample_task_verification/smolvla_dtype_serve_probe.md).
+This verifies the `serve --dtype` path returns a typed action; see
+[deployment](deployment.md) for the 16 GB-fit knobs.
+
 ## ROS2 remote trace (verified end-to-end)
 
 The real `VLARuntimeNode` was also driven in `runtime=remote` mode against the live SmolVLA

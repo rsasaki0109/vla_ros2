@@ -633,6 +633,23 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="SmolVLA bf16 dtype-serve remote probe",
+        path="docs/assets/sample_task_verification/smolvla_dtype_serve_probe.md",
+        category="GPU probes",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo serve --model smolvla --pretrained lerobot/smolvla_base --device cuda "
+            "--dtype bfloat16 && vla-zoo remote-probe --model smolvla "
+            "--remote-url http://127.0.0.1:PORT --strict"
+        ),
+        caveat=(
+            "Verifies the serve --dtype path: a bf16-loaded SmolVLA server (params confirmed "
+            "torch.bfloat16) returned a typed 6-DoF action over HTTP. Runtime-path evidence, "
+            "not task success."
+        ),
+    ),
+    ArtifactEntry(
         title="OpenVLA remote /v1/predict probe",
         path="docs/assets/sample_task_verification/openvla_remote_probe.md",
         category="GPU probes",

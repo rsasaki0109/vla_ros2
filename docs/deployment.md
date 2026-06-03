@@ -64,7 +64,9 @@ LeRobot adapters (it threads through to `load_model(..., dtype=...)` the same wa
 the model never materializes in float32; the same value also works as a `load_model(...)` kwarg or
 a `demo action-probe --adapter-kwarg dtype=bfloat16`. See the measured runs in
 [OpenVLA local runtime](openvla_local_runtime.md) and
-[SmolVLA local runtime](smolvla_local_runtime.md).
+[SmolVLA local runtime](smolvla_local_runtime.md). The `serve --dtype bfloat16` path is
+recorded end-to-end (a bf16-served SmolVLA returning a typed action) at
+[`smolvla_dtype_serve_probe.md`](assets/sample_task_verification/smolvla_dtype_serve_probe.md).
 
 For pi0 specifically, local loading also runs a **preflight** that fails loudly rather than
 silently serving a randomly-initialized model: LeRobot's `from_pretrained` returns an
