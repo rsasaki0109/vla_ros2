@@ -942,21 +942,38 @@ huggingface.co/<repo> and supply an HF token". The decision is a pure function
 heavy deps (5 new tests); the live path was verified in `.venv-smolvla` (raises the gated-tokenizer
 `AdapterError` instead of loading random weights). `policy_quality` stays `not_verified`.
 
-With the pi0 track fully closed (version-matched default → dtype-fit → documented gate → loud
-preflight), the two "fit a 16 GB GPU" knobs now diverge by adapter — OpenVLA uses `load_in_4bit`,
-SmolVLA/pi0 use `dtype=bfloat16` — and neither is surfaced in the deployment guide. The next best
-commit makes them discoverable:
+The 16 GB-fit knobs and the pi0 preflight are now documented for deployers (DONE):
 
 ```text
-document the 16 GB-fit knobs (openvla 4-bit, smolvla/pi0 dtype=bfloat16) and the pi0 preflight in deployment.md (v0.4)
+document the 16 GB-fit knobs (openvla 4-bit, smolvla/pi0 dtype=bfloat16) and the pi0 preflight in deployment.md (v0.4)  [DONE]
 ```
 
-Reason: the two memory-fit paths and the new pi0 preflight are real, working capabilities that a
-deployer needs but that currently live only in adapter code and the pi0 compatibility probe. A
-short `deployment.md` section ("fitting heavy checkpoints on a 16 GB card") that records both knobs
-with the measured footprints (OpenVLA-7b 4-bit ~4.6 GB; pi0_base bf16 ~8.9 GB) and notes the pi0
-preflight's loud-failure behavior is a docs-only, link-checked deliverable that closes the loop and
-keeps the honesty framing (runtime-path, no policy-quality claim). Keep all claims runtime-centric.
+What landed: `deployment.md` gained a "Fitting heavy checkpoints on a 16 GB GPU" subsection under
+the GPU-box serve section. A measured table records both knobs — OpenVLA-7b 4-bit (nf4) ~4.6 GB
+via `serve --load-in-4bit` / `load_model(load_in_4bit=True)`, and the LeRobot `dtype="bfloat16"`
+override (pi0_base ~8.9 GB, its float32 config OOMs) via `load_model(dtype=...)` /
+`demo action-probe --adapter-kwarg dtype=bfloat16`, with the honest note that `serve` does not yet
+expose a `dtype` flag. The pi0 preflight's loud-failure behavior (missing weights / gated
+PaliGemma tokenizer) is summarized with a link to the compatibility probe. All flags were verified
+against `--help` before documenting; the new internal links pass `report link-check --strict`.
+Docs-only, runtime-centric, no policy-quality claim.
+
+The natural follow-up — and a real gap surfaced while writing the above — is that `serve` cannot
+serve pi0/SmolVLA in bf16 (it has `--load-in-4bit` for OpenVLA but no `dtype` passthrough), so the
+documented deployment split is incomplete for the LeRobot adapters. The next best commit closes
+that gap in code:
+
+```text
+add a serve --dtype passthrough so LeRobot adapters (pi0/smolvla) can be served in bf16 on a 16 GB box (v0.4)
+```
+
+Reason: the deployment guide now tells a deployer to fit pi0_base with `dtype=bfloat16`, but the
+recommended serving path (`vla-zoo serve`) can't actually accept it — only the local
+`load_model`/`demo action-probe` paths can. Wiring a `--dtype` option through `serve` to the
+adapter `load_model(..., dtype=...)` call (mirroring how `--load-in-4bit` already threads through)
+makes the documented 16 GB serving split real for the LeRobot adapters. Keep it unit-testable at
+the CLI-wiring level (assert the kwarg threads through, no heavy load), surface it in
+`deployment.md`/`pi0_remote.md`, and keep `policy_quality` `not_verified`.
 
 Acceptance:
 
