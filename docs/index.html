@@ -318,7 +318,7 @@
         </div>
         <div class="tile">
           <h3>GR00T (blocked)</h3>
-          <p>Experimental and blocked until the NVIDIA Isaac GR00T stack; no inference, no task-success claim.</p>
+          <p>Blocked until the NVIDIA Isaac GR00T stack; reproducibly probed (adapter refuses, no GR00T package on PyPI). No inference, no task-success claim.</p>
           <a href="groot_remote.md">GR00T status</a>
         </div>
         <div class="tile">
@@ -520,6 +520,11 @@ ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000</code></pre
           <h3>pi0 compatibility</h3>
           <p>Version matrix for pi0: pi0_base is version-matched (bf16 fits 16 GB), local inference gated on the PaliGemma tokenizer.</p>
           <a href="assets/sample_task_verification/pi0_compatibility_probe.md">Open notes</a>
+        </div>
+        <div class="tile">
+          <h3>GR00T block probe</h3>
+          <p>Reproducible block: the adapter refuses (MissingDependencyError) and no GR00T package exists on PyPI; the real runtime is the NVIDIA Isaac-GR00T GitHub stack.</p>
+          <a href="assets/sample_task_verification/groot_block_probe.md">Open probe</a>
         </div>
         <div class="tile">
           <h3>SmolVLA bf16 serve probe</h3>
