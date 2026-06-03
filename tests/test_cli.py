@@ -47,6 +47,21 @@ def test_cli_demo_pybullet_help() -> None:
     assert "--render-stride" in result.output
 
 
+def test_cli_demo_action_probe_help() -> None:
+    result = CliRunner().invoke(app, ["demo", "action-probe", "--help"])
+    assert result.exit_code == 0
+    assert "--model" in result.output
+    assert "--allow-local-heavy" in result.output
+    assert "--summary-md" in result.output
+
+
+def test_cli_demo_action_probe_blocks_local_heavy_without_flag() -> None:
+    # must not attempt to download/load smolvla weights from a plain `pytest` run
+    result = CliRunner().invoke(app, ["demo", "action-probe", "--model", "smolvla"])
+    assert result.exit_code == 1
+    assert "allow-local-heavy" in result.output
+
+
 def test_cli_demo_gif_suite_help() -> None:
     result = CliRunner().invoke(app, ["demo", "gif-suite", "--help"])
     assert result.exit_code == 0

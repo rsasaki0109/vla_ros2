@@ -819,32 +819,51 @@ checked-in native logs (verified against both real runs). The recorder wiring wa
 exercised live (same-process rclpy pub→record smoke: 3 published DiagnosticArrays → 3 native
 records). Runtime-path claims only.
 
-With the diagnostics surface saturated (schema → CLI snapshot → CLI summary → dashboard band
-→ recorder native emit), the next best commit moves to honest task-level evidence:
+The real-scene task-level probe is now done — verified cells no longer run only on noise (DONE):
 
 ```text
-record a real-scene task-level probe on PyBullet frames (no policy-quality claim) (v0.4)
+record a real-scene action probe on PyBullet frames (no policy-quality claim) (v0.4)  [DONE]
 ```
 
-Reason: every verified cell so far runs on a synthetic random frame — a genuine runtime-path
-claim, but the inputs are noise. The next credibility step is to drive a working adapter
-(SmolVLA, real-time) on actual rendered PyBullet scene frames and record the action stream as
-runtime evidence: it exercises the real image preprocessing/encode path the synthetic frame
-skips. Keep the honesty discipline strict — this is still NOT a task-success or policy-quality
-claim (`policy_quality` stays `not_verified`); it only upgrades the *input* from noise to a
-real scene render. Reuse the PyBullet demo scene renderer, feed frames through the adapter,
-record latency + action magnitude, and check in the artifact with explicit "runtime path on
-real frames, not skill" framing. Keep model downloads out of tests. Alternative still open:
-pi0 unblock (version-matched checkpoint — rabbit-hole risk).
+What landed: `vla-zoo demo action-probe` drives an adapter through the existing PyBullet
+pick-and-place rollout and records, for every fresh query, the *full* action vector the
+adapter produced from a genuinely rendered camera frame. `run_simulation` gained an optional
+`prediction_sink` (and `predict_adapter_action` now also returns the raw prediction) so the
+full action is captured with no second model call; the new pure `demo/action_probe.py`
+(`build_probe_record` → `summarize_probe_records` → `format_action_probe_summary_markdown`)
+writes a canonical `vla_actions.jsonl` log that replays through `bench-replay` (`success=None`)
+plus a runtime-evidence summary, all stamped `policy_quality=not_verified` / `real_scene=true`.
+A real SmolVLA run (21 queries, action dim 6, latency p50 ~382 ms with `--return-action-chunk`
+forcing a fresh encode per query) is checked in at
+`docs/assets/sample_pybullet_smolvla/{smolvla_action_probe.jsonl,runtime_action_probe.md,json}`
+with artifact-index entries and a `docs/smolvla_local_runtime.md` section. The pure pieces are
+unit-tested (including a `load_action_log` round-trip); the heavy local adapter is gated behind
+`--allow-local-heavy` so a plain `pytest` never downloads weights. Runtime-path claims only:
+this upgrades the *input* from synthetic noise to a real render, nothing about skill.
+
+With SmolVLA now having real-scene runtime evidence, the next best commit surfaces it where the
+honesty story is read — the VLA evidence matrix / runtime dashboard:
+
+```text
+surface the real-scene action probe as a runtime-evidence cell in the VLA matrix (v0.4)
+```
+
+Reason: the probe artifact exists but is only linked from the SmolVLA doc; the evidence matrix
+(the central honest-claims surface) does not yet show a "real-scene runtime path" cell. Add a
+linkable cell/column that points at `runtime_action_probe.md` and keeps the
+`policy_quality=not_verified` framing explicit, so the matrix distinguishes synthetic-frame from
+real-scene runtime evidence without ever implying task success. Alternatives still open: an
+OpenVLA real-scene probe (needs pybullet inside the timm<1.0 openvla venv — env risk), or pi0
+unblock (version-matched checkpoint — rabbit-hole risk).
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_runtime_diagnostics.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_demo_action_probe.py tests/test_cli.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/safety.md,docs/index.html,docs/deployment.md \
+  --paths docs/safety.md,docs/index.html,docs/deployment.md,docs/smolvla_local_runtime.md \
   --strict
 ```
 

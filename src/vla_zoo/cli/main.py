@@ -2938,6 +2938,142 @@ def demo_pybullet(
     typer.echo(json.dumps(result, indent=2))
 
 
+@demo_app.command("action-probe")
+def demo_action_probe(
+    model: Annotated[str, typer.Option("--model", "-m")] = "dummy",
+    runtime: Annotated[str, typer.Option("--runtime")] = "local",
+    remote_url: Annotated[str, typer.Option("--remote-url")] = "http://localhost:8000",
+    instruction: Annotated[
+        str | None,
+        typer.Option("--instruction", "-i", help="Override the task instruction."),
+    ] = None,
+    task: Annotated[
+        str,
+        typer.Option("--task", help="PyBullet task id, for example pick_red_block."),
+    ] = "pick_red_block",
+    out: Annotated[Path, typer.Option("--out", "-o")] = Path(
+        "results/pybullet_action_probe.jsonl"
+    ),
+    summary_md: Annotated[
+        Path | None,
+        typer.Option("--summary-md", help="Write the runtime-evidence summary as Markdown."),
+    ] = None,
+    summary_json: Annotated[
+        Path | None,
+        typer.Option("--summary-json", help="Write the runtime-evidence summary as JSON."),
+    ] = None,
+    model_call_every: Annotated[int, typer.Option("--model-call-every")] = 4,
+    render_stride: Annotated[
+        int,
+        typer.Option("--render-stride", help="Render every N scripted simulation steps."),
+    ] = 6,
+    allow_local_heavy: Annotated[
+        bool,
+        typer.Option(
+            "--allow-local-heavy",
+            help="Permit local heavy adapters (openvla/smolvla); they download/load weights.",
+        ),
+    ] = False,
+    pretrained: Annotated[
+        str | None,
+        typer.Option("--pretrained", help="Adapter pretrained checkpoint id or path."),
+    ] = None,
+    device: Annotated[
+        str | None,
+        typer.Option("--device", help="Adapter device override, for example cuda or cpu."),
+    ] = None,
+    local_files_only: Annotated[
+        bool,
+        typer.Option("--local-files-only", help="Load adapter weights from local cache only."),
+    ] = False,
+    return_action_chunk: Annotated[
+        bool,
+        typer.Option(
+            "--return-action-chunk",
+            help="Ask the adapter for a full action chunk per query (fresh encode each call).",
+        ),
+    ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print the summary as JSON."),
+    ] = False,
+) -> None:
+    """Record an adapter's action stream on real PyBullet-rendered scene frames.
+
+    A runtime-path probe: it drives the adapter on genuinely rendered frames (exercising the
+    real image preprocessing path) and records latency + action magnitude as a canonical
+    ``vla_actions.jsonl`` log. It makes no task-success or policy-quality claim.
+    """
+
+    from vla_zoo.demo.action_probe import (
+        format_action_probe_summary_markdown,
+        record_pybullet_action_probe,
+        write_action_probe_log,
+    )
+    from vla_zoo.demo.pybullet import (
+        HEAVY_LOCAL_MODELS,
+        PyBulletDemoConfig,
+        pybullet_task_by_id,
+    )
+
+    canonical = model.strip().lower()
+    if runtime == "local" and canonical in HEAVY_LOCAL_MODELS and not allow_local_heavy:
+        typer.echo(
+            f"local heavy adapter {model!r} skipped to avoid model download; "
+            "use --allow-local-heavy or --runtime remote",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    adapter_kwargs: dict[str, object] = {}
+    if pretrained:
+        adapter_kwargs["pretrained"] = pretrained
+    if device:
+        adapter_kwargs["device"] = device
+    if local_files_only:
+        adapter_kwargs["local_files_only"] = True
+    if return_action_chunk:
+        adapter_kwargs["return_action_chunk"] = True
+
+    try:
+        task_spec = pybullet_task_by_id(task)
+        config_kwargs: dict[str, object] = {
+            "model_name": model,
+            "runtime": runtime,
+            "remote_url": remote_url,
+            "out": out,
+            "model_call_every": model_call_every,
+            "render_stride": render_stride,
+        }
+        if instruction:
+            config_kwargs["instruction"] = instruction
+        if adapter_kwargs:
+            config_kwargs["adapter_kwargs"] = adapter_kwargs
+        summary, records = record_pybullet_action_probe(
+            PyBulletDemoConfig.from_task(task_spec, **config_kwargs)
+        )
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    write_action_probe_log(out, records)
+    typer.echo(f"Action log written to {out} ({len(records)} records)")
+    if summary_json is not None:
+        _write_text(summary_json, json.dumps(summary.to_dict(), indent=2) + "\n")
+        typer.echo(f"Summary JSON written to {summary_json}")
+    if summary_md is not None:
+        _write_text(summary_md, format_action_probe_summary_markdown(summary))
+        typer.echo(f"Summary Markdown written to {summary_md}")
+
+    if not json_output:
+        p50 = "n/a" if summary.latency_ms_p50 is None else f"{summary.latency_ms_p50:.1f} ms"
+        typer.echo(
+            f"{summary.model}: {summary.record_count} queries, "
+            f"latency p50 {p50} (policy_quality={summary.policy_quality})"
+        )
+    typer.echo(json.dumps(summary.to_dict(), indent=2))
+
+
 @demo_app.command("gif-suite")
 def demo_gif_suite(
     models: Annotated[

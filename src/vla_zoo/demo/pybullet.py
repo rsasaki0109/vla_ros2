@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
 from html import escape
 from pathlib import Path
@@ -134,6 +134,29 @@ class RenderSample:
     model_name: str
     runtime: str
     frame_index: int
+
+
+@dataclass(frozen=True)
+class AdapterPredictionEvent:
+    """A single fresh adapter prediction emitted during a PyBullet rollout.
+
+    Carries the *full* raw prediction (not the 4D demo-overlay action), so a probe sink
+    can record the complete action vector the adapter produced from a real rendered frame.
+    """
+
+    frame_index: int
+    query_index: int
+    sim_time: float
+    phase: str
+    model_name: str
+    runtime: str
+    instruction: str
+    task_id: str
+    prediction: VLAAction | VLAActionChunk
+    latency_ms: float | None
+    cube_position: tuple[float, float, float]
+    cube_goal_position: tuple[float, float, float]
+    camera_keys: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -274,7 +297,12 @@ def predict_adapter_action(
     gripper: float,
     attached: bool,
     sim_time: float,
-) -> tuple[tuple[float, float, float, float] | None, str | None, float | None]:
+) -> tuple[
+    tuple[float, float, float, float] | None,
+    str | None,
+    float | None,
+    VLAAction | VLAActionChunk | None,
+]:
     state_vector = simulation_state_vector(
         target=target,
         cube_position=cube_position,
@@ -313,9 +341,9 @@ def predict_adapter_action(
         start = perf_counter()
         prediction = model.predict(observation=observation)
         latency_ms = (perf_counter() - start) * 1000.0
-        return prediction_to_demo_action(prediction), None, latency_ms
+        return prediction_to_demo_action(prediction), None, latency_ms, prediction
     except Exception as exc:
-        return None, str(exc), None
+        return None, str(exc), None, None
 
 
 def setup_world(
@@ -549,7 +577,11 @@ def overlay(sample: RenderSample) -> Image.Image:
     return image
 
 
-def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
+def run_simulation(
+    config: PyBulletDemoConfig,
+    *,
+    prediction_sink: Callable[[AdapterPredictionEvent], None] | None = None,
+) -> list[RenderSample]:
     model = make_model(config)
     p, pybullet_data = import_pybullet()
     robot, cube, _ = setup_world(p, pybullet_data, config.cube_initial_position)
@@ -627,13 +659,15 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                 )
                 if config.model_call_every > 0 and rendered_frames % config.model_call_every == 0:
                     adapter_query_count += 1
+                    observation_images = render_observation_images(p, primary=raw)
                     (
                         last_adapter_action,
                         last_adapter_error,
                         last_adapter_latency_ms,
+                        prediction,
                     ) = predict_adapter_action(
                         model,
-                        render_observation_images(p, primary=raw),
+                        observation_images,
                         config,
                         phase=waypoint.name,
                         target=target,
@@ -644,6 +678,24 @@ def run_simulation(config: PyBulletDemoConfig) -> list[RenderSample]:
                         sim_time=sim_step / 240.0,
                     )
                     adapter_query_fresh = True
+                    if prediction_sink is not None and prediction is not None:
+                        prediction_sink(
+                            AdapterPredictionEvent(
+                                frame_index=rendered_frames,
+                                query_index=adapter_query_count,
+                                sim_time=sim_step / 240.0,
+                                phase=waypoint.name,
+                                model_name=config.model_name,
+                                runtime=config.runtime,
+                                instruction=config.instruction,
+                                task_id=config.task_id,
+                                prediction=prediction,
+                                latency_ms=last_adapter_latency_ms,
+                                cube_position=cube_position,
+                                cube_goal_position=config.cube_goal_position,
+                                camera_keys=tuple(observation_images.keys()),
+                            )
+                        )
                 else:
                     adapter_query_fresh = False
                 samples.append(

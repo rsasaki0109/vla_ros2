@@ -72,7 +72,7 @@ def test_predict_adapter_action_builds_multicamera_observation() -> None:
     model = _CaptureModel()
     image = Image.new("RGB", (2, 2))
 
-    action, error, latency = predict_adapter_action(
+    action, error, latency, prediction = predict_adapter_action(
         model,
         {
             "primary": image,
@@ -93,6 +93,10 @@ def test_predict_adapter_action_builds_multicamera_observation() -> None:
     assert error is None
     assert latency is not None
     assert action == pytest.approx((0.1, 0.2, 0.3, 0.4))
+    assert prediction is not None
+    assert prediction.to_numpy().reshape(-1).tolist() == pytest.approx(
+        [0.1, 0.2, 0.3, 0.4, 0.0, 0.0]
+    )
     assert model.observation is not None
     assert set(model.observation.images) == {
         "primary",
