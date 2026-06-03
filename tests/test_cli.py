@@ -855,3 +855,33 @@ def test_diag_report_reconstructs_from_ros_log(tmp_path: Path) -> None:
 
 def test_diag_report_requires_exactly_one_input() -> None:
     assert CliRunner().invoke(app, ["diag-report"]).exit_code == 1
+
+
+def test_diag_report_summary_aggregates_log(tmp_path: Path) -> None:
+    from vla_zoo.runtime.diagnostics import RuntimeDiagnostics
+    from vla_zoo.runtime.guard import ActionClipGuard, evaluate_watchdog
+
+    def _rec(level: str, latency: float) -> dict[str, object]:
+        return RuntimeDiagnostics.from_parts(
+            model="dummy",
+            status_text="waiting for instruction" if level == "warn" else "ok",
+            level=level,
+            clip_guard=ActionClipGuard(),
+            watchdog=evaluate_watchdog(image_age_sec=0.1, instruction_age_sec=0.1),
+            last_latency_ms=latency,
+            avg_latency_ms=latency,
+        ).to_dict()
+
+    log = tmp_path / "diag.jsonl"
+    log.write_text(
+        "\n".join(json.dumps(r) for r in [_rec("warn", 10.0), _rec("ok", 30.0)]) + "\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(app, ["diag-report", "--log", str(log), "--summary", "--json"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["record_count"] == 2
+    assert payload["latency_ms_max"] == 30.0
+    assert payload["worst_level"] == "warn"

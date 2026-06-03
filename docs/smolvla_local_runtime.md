@@ -84,7 +84,10 @@ inference errors. The recorded result is checked in at
 [`sample_ros2_remote_smolvla/remote_smoke_check.md`](assets/sample_ros2_remote_smolvla/remote_smoke_check.md).
 The latest `vla-zoo-diagnostics/v1` snapshot reconstructed from that run's `/diagnostics`
 stream (`vla-zoo diag-report --from-ros-log .../vla_diagnostics.jsonl`) is at
-[`runtime_diagnostics_snapshot.md`](assets/sample_ros2_remote_smolvla/runtime_diagnostics_snapshot.md).
+[`runtime_diagnostics_snapshot.md`](assets/sample_ros2_remote_smolvla/runtime_diagnostics_snapshot.md),
+and the time-series reduction over the whole log (`--summary`: latency p50/max, drop/clip
+peaks, worst-severity record) is at
+[`runtime_diagnostics_summary.md`](assets/sample_ros2_remote_smolvla/runtime_diagnostics_summary.md).
 
 > **Loopback note:** the standard flow is the 3-process `smoke_record.launch.py`, which
 > needs cross-process DDS discovery (multicast). If `ip link show lo` shows no `MULTICAST`

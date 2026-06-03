@@ -768,22 +768,37 @@ SmolVLA and OpenVLA-7b ROS2 runs are checked in at
 JSONL), with artifact-index entries. Unit-tested with written fixtures (no ROS2/model deps);
 runtime-path claims only.
 
-The next best commit advances the diagnostics surface from a single snapshot to a time
-series:
+The diag-report time-series summary is also done (DONE):
 
 ```text
-render a diag-report time-series summary over a full diagnostics JSONL (v0.4)
+render a diag-report time-series summary over a full diagnostics JSONL (v0.4)  [DONE]
 ```
 
-Reason: `diag-report` currently renders only the latest record. A real run is a stream
-(106-143 records here); the useful runtime view is the trend — latency p50/max over the
-log, dropped-frame growth, clip-rate drift, and the worst (highest-level) record. Add a
-`--summary` mode that aggregates all records in the log into one Markdown table (min/p50/max
-latency, max dropped_frames, peak clip rate, worst level + its status_text), keeping the
-single-snapshot default. Keep it pure and unit-tested (written JSONL fixture, no ROS2/model
-deps), keep model downloads out of tests, and keep claims runtime-centric. Alternatives still
-open: pi0 unblock (version-matched checkpoint — rabbit-hole risk) and a task-level probe on
-real PyBullet scene frames (no policy-quality claims).
+What landed: `diag-report --summary` aggregates the whole log via the pure
+`summarize_diagnostics` → `DiagnosticsSummary` (latency min/p50/max over each record's
+`last_latency_ms`, max dropped_frames, final actions, peak action/element clip rate, and the
+worst — highest-`level`, latest-on-ties — record + its status_text/index), rendered by
+`format_diagnostics_summary_markdown`; the single-snapshot path stays the default. This
+surfaces transients the latest-snapshot hides: both real runs end `ok` but the summary
+reports the startup `warn`. Real summaries are checked in at
+`docs/assets/sample_ros2_remote_{smolvla,openvla}/runtime_diagnostics_summary.md` with
+artifact-index entries (SmolVLA p50 882 / max 5194 ms; OpenVLA p50 3563 / max 6273 ms).
+Unit-tested with written fixtures; runtime-path claims only.
+
+The next best commit surfaces the diagnostics summary in the HTML runtime dashboard:
+
+```text
+show the diagnostics time-series summary in the runtime dashboard (v0.4)
+```
+
+Reason: `compare dashboard` already ingests ROS2 `/diagnostics` logs but renders per-record
+rows; the new `summarize_diagnostics` reduction (latency spread + worst-level transient) is a
+better at-a-glance runtime health view and is not shown anywhere visual yet. Add a summary
+band/section to the dashboard HTML built from `summarize_diagnostics` when a diagnostics log
+is present, keeping it pure and unit-tested (written JSONL fixture, no ROS2/model deps),
+model downloads out of tests, claims runtime-centric. Alternatives still open: pi0 unblock
+(version-matched checkpoint — rabbit-hole risk) and a task-level probe on real PyBullet scene
+frames (no policy-quality claims).
 
 Acceptance:
 
