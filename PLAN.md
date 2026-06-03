@@ -890,30 +890,44 @@ comparison at `docs/assets/sample_pybullet_compare/runtime_probe_comparison.{htm
 were added and both runtime docs link the comparison. The `--source` override is unit-tested;
 no task-success claim anywhere.
 
-The real-scene runtime evidence track is now saturated (both adapters probed + a side-by-side
-comparison, all linked from the docs). The next best commit makes the evidence discoverable from
-the front page:
+The real-scene action probes + comparison are now discoverable from the front page (DONE):
 
 ```text
-surface the real-scene action probes + comparison on the GitHub Pages index (v0.4)
+surface the real-scene action probes + comparison on the GitHub Pages index (v0.4)  [DONE]
 ```
 
-Reason: `docs/index.html` is the project's front page, but the real-scene probes and their
-comparison are only reachable from the per-model runtime docs and the artifact index. Add a
-linkable card/section to `docs/index.html` (and any generated index) pointing at
-`runtime_probe_comparison.html` and the two `runtime_action_probe.md` artifacts, keeping the
-"real-scene runtime path, not task success" framing explicit. Verify with `report link-check`.
-Alternative still open: pi0 unblock (version-matched checkpoint — rabbit-hole risk).
+What landed: `docs/index.html` gained a "Real-scene action probes" tile in *What Works Now*
+(pointing at the comparison) and three tiles in *Visible Reports* — the SmolVLA/OpenVLA probe
+summaries and the side-by-side comparison — each keeping the "runtime path, not task success"
+framing. All new links are covered by `report link-check` (39/39). Docs-only change; no code or
+schema touched.
+
+With the real-scene runtime evidence track fully built and discoverable (probe → matrix →
+comparison → front page), the one consistently-deferred blocked cell is pi0. The next best commit
+resolves it one way or the other:
+
+```text
+resolve the pi0 local-load block: version-matched checkpoint or a documented hard block (v0.4)
+```
+
+Reason: pi0 is the only adapter whose `local_runtime` is `blocked` — the cached `lerobot/pi0`
+checkpoint carries `PI0Config` fields (`resize_imgs_with_padding`, `adapt_to_pi_aloha`,
+`num_steps`, …) that LeRobot 0.5.1 rejects (`draccus.DecodingError`). Time-box an attempt to
+load a version-matched checkpoint (or pin a compatible LeRobot) in the `.venv-smolvla` env; if it
+loads, record a real-scene action probe like the other two and flip the matrix cells. If it stays
+blocked, upgrade `pi0_compatibility_probe.md` with the exact version matrix tried and the precise
+failure so the `blocked` status is backed by reproducible evidence rather than a stale note —
+that documented hard block is itself an honest deliverable. Keep model downloads out of tests and
+`policy_quality` `not_verified`.
 
 Acceptance:
 
 ```bash
-rtk proxy env PYTHONPATH=src pytest -q tests/test_cli.py tests/test_benchmark_replay.py \
-  tests/test_docs_index.py
+rtk proxy env PYTHONPATH=src pytest -q tests/test_evidence.py tests/test_cli.py
 rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
 rtk proxy env PYTHONPATH=src mypy src/vla_zoo
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
-  --paths docs/index.html,docs/assets/sample_pybullet_compare/runtime_probe_comparison.md \
+  --paths docs/index.html,docs/smolvla_local_runtime.md \
   --strict
 ```
 
