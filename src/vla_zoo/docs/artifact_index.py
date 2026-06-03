@@ -453,6 +453,42 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="Real-scene probe ranked aggregate (Markdown)",
+        path="docs/assets/sample_pybullet_compare/runtime_probe_aggregate.md",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo bench-aggregate --summaries "
+            "docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,"
+            "docs/assets/sample_pybullet_compare/openvla_probe_summary.json "
+            "--metric latency_ms_p50 "
+            "--markdown-out docs/assets/sample_pybullet_compare/runtime_probe_aggregate.md"
+        ),
+        caveat=(
+            "Probe summaries ranked by latency p50 (SmolVLA #1, OpenVLA #2); runtime path "
+            "only, ranking is not a task-success claim."
+        ),
+    ),
+    ArtifactEntry(
+        title="Real-scene probe ranked aggregate (JSON)",
+        path="docs/assets/sample_pybullet_compare/runtime_probe_aggregate.json",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo bench-aggregate --summaries "
+            "docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,"
+            "docs/assets/sample_pybullet_compare/openvla_probe_summary.json "
+            "--metric latency_ms_p50 "
+            "--out docs/assets/sample_pybullet_compare/runtime_probe_aggregate.json"
+        ),
+        caveat=(
+            "Machine-readable vla-zoo-benchmark-aggregate/v1 artifact; runtime path only, "
+            "no task-success claim."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke plan",
         path="docs/assets/ros2_remote_smoke_plan.md",
         category="ROS2",

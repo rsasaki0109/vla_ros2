@@ -967,6 +967,85 @@ def bench_report(
             typer.echo(f"{summary.model:<12} {summary.source:<22} {p50:>10} {rate:>10}")
 
 
+@app.command("bench-aggregate")
+def bench_aggregate(
+    summaries: Annotated[
+        str,
+        typer.Option(
+            "--summaries",
+            help="Comma-separated benchmark summary JSON files (vla-zoo-benchmark/v1).",
+        ),
+    ],
+    metric: Annotated[
+        str,
+        typer.Option(
+            "--metric",
+            help="Ranking metric: latency_ms_p50/p95/mean (lower better) or action_rate_hz.",
+        ),
+    ] = "latency_ms_p50",
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write the machine-readable aggregate JSON."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write the ranked Markdown table."),
+    ] = None,
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Report title."),
+    ] = "Benchmark Aggregate (Ranked)",
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print machine-readable JSON instead of a table."),
+    ] = False,
+) -> None:
+    """Merge several benchmark summaries into one table ranked by a runtime metric."""
+
+    from vla_zoo.benchmark.aggregate import (
+        format_aggregate_markdown,
+        rank_summaries,
+    )
+    from vla_zoo.benchmark.results import read_summary_json
+
+    loaded = []
+    for raw in _parse_name_list(summaries):
+        path = Path(raw)
+        if not path.is_file():
+            typer.echo(f"summary not found: {path}", err=True)
+            raise typer.Exit(1)
+        loaded.append(read_summary_json(path))
+
+    if not loaded:
+        typer.echo("no summaries provided", err=True)
+        raise typer.Exit(1)
+
+    try:
+        report = rank_summaries(loaded, metric=metric)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    if out is not None:
+        _write_text(out, json.dumps(report.to_dict(), indent=2) + "\n")
+        typer.echo(f"JSON written to {out}")
+    if markdown_out is not None:
+        _write_text(markdown_out, format_aggregate_markdown(report, title=title))
+        typer.echo(f"Markdown written to {markdown_out}")
+    if json_output:
+        typer.echo(json.dumps(report.to_dict(), indent=2))
+    else:
+        typer.echo(f"ranked by {report.metric} ({report.count} entries)")
+        typer.echo(f"{'rank':>4} {'model':<12} {'source':<22} {'value':>12}")
+        typer.echo(f"{'-' * 4} {'-' * 12} {'-' * 22} {'-' * 12}")
+        for entry in report.ranked:
+            rank = "-" if entry.rank is None else str(entry.rank)
+            value = "-" if entry.metric_value is None else f"{entry.metric_value:.2f}"
+            typer.echo(
+                f"{rank:>4} {entry.summary.model:<12} {entry.summary.source:<22} {value:>12}"
+            )
+
+
 def _load_ros_diagnostics(path: Path, status_name: str) -> list[Any]:
     """Reconstruct native diagnostics records from a recorded ROS2 /diagnostics JSONL."""
 

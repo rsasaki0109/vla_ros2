@@ -1069,24 +1069,39 @@ row was refreshed to the real-scene comparison, OpenVLA remote, SmolVLA bf16-ser
 compatibility, and GR00T block probes. Every changed claim was checked against a committed artifact;
 `report link-check --strict` passes (45/45). Docs-only; `policy_quality` stays `not_verified`.
 
-The v0.4 honesty arc is fully closed and consistent end to end (adapter code → evidence matrix →
-artifact index → deployment guide → Pages index → README). There is no remaining honesty-polish
-commit of the same character. The next session should **start a genuinely new capability** rather
-than re-document the existing surface. A candidate that extends the runtime/benchmark surface (not a
-re-doc):
+The first v0.5 capability — a ranked benchmark aggregate — is in (DONE):
 
 ```text
-add a benchmark aggregation command that merges multiple vla-zoo-benchmark/v1 summaries into a ranked latency/action-rate table (v0.5)
+add a benchmark aggregation command that merges multiple vla-zoo-benchmark/v1 summaries into a ranked latency/action-rate table (v0.5)  [DONE]
 ```
 
-Reason: the repo records per-run `vla-zoo-benchmark/v1` summaries (from `bench-replay`) and renders
-single reports, but there is no command that *aggregates* several runs into one comparison table
-(e.g. SmolVLA vs OpenVLA vs a baseline across recorded probes) ranked by latency p50/p95 and action
-rate. That is a real new capability on the existing schema — pure, unit-testable, and it turns the
-already-recorded probe logs into a single ranked artifact. Keep it schema-versioned, keep
-`success_rate` honest (blank/`None` when not a task-success run), and add a recorded example
-artifact. If a different new direction is preferred, choose one that adds runtime/benchmark surface
-rather than more documentation.
+What landed: a new pure `benchmark/aggregate.py` (`rank_summaries` → `AggregateReport` /
+`RankedSummary`, `format_aggregate_markdown`) ranks several `vla-zoo-benchmark/v1` summaries by a
+runtime metric — latency p50/p95/mean (lower is better) or action_rate_hz (higher is better) — using
+competition ranking (ties share a rank) and listing metric-less summaries unranked at the end rather
+than dropping them. It emits a schema-versioned `vla-zoo-benchmark-aggregate/v1` JSON and a ranked
+Markdown table. A new `vla-zoo bench-aggregate` CLI (`--summaries/--metric/--out/--markdown-out/
+--json`) drives it. A recorded example over the two real-scene probe summaries is checked in at
+`docs/assets/sample_pybullet_compare/runtime_probe_aggregate.{json,md}` (SmolVLA #1 ~382 ms,
+OpenVLA #2 ~2.0 s, blank success rate), with two artifact-index entries and a Pages-index tile. 7
+unit tests cover ranking direction, ties, the unranked-tail, the metric-validation error, the
+schema, and the runtime-centric Markdown. `success_rate` stays blank when no task-success claim;
+ranking is explicitly latency/throughput, not skill.
+
+A natural follow-up that extends the same surface: `bench-aggregate` ranks but does not *summarize
+the spread* — when several runs exist for one model (e.g. repeated probes), there is no
+fastest/slowest/median-across-runs roll-up per model. The next best commit adds that grouping:
+
+```text
+add per-model roll-up (best/worst/median latency across runs) to the benchmark aggregate (v0.5)
+```
+
+Reason: once multiple runs per model are recorded, a flat ranked table hides variance; a per-model
+group that reports the best/median/worst of the ranking metric across that model's runs turns the
+aggregate into a stability view, not just a single-run leaderboard. Keep it pure and unit-tested,
+reuse the `vla-zoo-benchmark-aggregate/v1` schema (add an optional `groups` block rather than a
+breaking change), keep `success_rate` honest, and record an example only if multiple same-model runs
+exist. If a different direction is preferred, pick one that adds runtime/benchmark surface.
 
 Acceptance:
 
