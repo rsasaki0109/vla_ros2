@@ -107,3 +107,63 @@ def test_markdown_is_ranked_and_runtime_centric() -> None:
     assert "not by robot task-success quality" in md
     # success rate stays blank for a no-task-success run
     assert "| - |" in md
+
+
+def test_per_model_rollup_across_runs() -> None:
+    # three smolvla runs + one openvla run -> per-model best/median/worst
+    report = rank_summaries(
+        [
+            _summary("smolvla", p50=300.0),
+            _summary("smolvla", p50=500.0),
+            _summary("smolvla", p50=400.0),
+            _summary("openvla", p50=2000.0),
+        ],
+        metric="latency_ms_p50",
+    )
+    groups = {g.model: g for g in report.groups}
+    assert groups["smolvla"].run_count == 3
+    assert groups["smolvla"].best == 300.0  # lowest latency is best
+    assert groups["smolvla"].worst == 500.0
+    assert groups["smolvla"].median == 400.0
+    assert groups["openvla"].run_count == 1
+    # groups are ordered best-first in the metric direction
+    assert [g.model for g in report.groups] == ["smolvla", "openvla"]
+
+
+def test_per_model_rollup_best_follows_action_rate_direction() -> None:
+    report = rank_summaries(
+        [_summary("m", p50=100.0, rate=2.0), _summary("m", p50=100.0, rate=9.0)],
+        metric="action_rate_hz",
+    )
+    group = report.groups[0]
+    assert group.best == 9.0  # higher action rate is best
+    assert group.worst == 2.0
+    assert group.median == 5.5
+
+
+def test_rollup_with_no_metric_values_is_none_and_last() -> None:
+    report = rank_summaries(
+        [_summary("has", p50=100.0), _summary("none", p50=None)],
+        metric="latency_ms_p50",
+    )
+    groups = {g.model: g for g in report.groups}
+    assert groups["none"].best is None
+    assert groups["none"].median is None
+    assert report.groups[-1].model == "none"  # metric-less model ordered last
+
+
+def test_markdown_has_per_model_rollup_section() -> None:
+    report = rank_summaries(
+        [_summary("smolvla", p50=300.0), _summary("smolvla", p50=500.0)],
+        metric="latency_ms_p50",
+    )
+    md = format_aggregate_markdown(report)
+    assert "## Per-model roll-up" in md
+    assert "| Model | Runs | Best | Median | Worst |" in md
+
+
+def test_groups_in_aggregate_to_dict() -> None:
+    report = rank_summaries([_summary("a", p50=1.0)], metric="latency_ms_p50")
+    payload = report.to_dict()
+    assert payload["groups"][0]["model"] == "a"
+    assert payload["groups"][0]["run_count"] == 1

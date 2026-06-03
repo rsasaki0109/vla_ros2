@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from statistics import median
 
 from vla_zoo.benchmark.results import RESULT_SCHEMA_VERSION, BenchmarkSummary
 
@@ -60,12 +61,41 @@ class RankedSummary:
 
 
 @dataclass(frozen=True)
+class ModelRollup:
+    """Best / worst / median of the ranking metric across one model's runs.
+
+    "Best" and "worst" follow the metric direction (for latency, best is the lowest;
+    for action rate, best is the highest). Values are ``None`` when none of the
+    model's runs carry the metric. This turns a flat ranked table into a per-model
+    stability view when several runs of the same model are aggregated.
+    """
+
+    model: str
+    run_count: int
+    metric: str
+    best: float | None
+    worst: float | None
+    median: float | None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "model": self.model,
+            "run_count": self.run_count,
+            "metric": self.metric,
+            "best": self.best,
+            "worst": self.worst,
+            "median": self.median,
+        }
+
+
+@dataclass(frozen=True)
 class AggregateReport:
     """A ranked aggregate over several benchmark summaries."""
 
     metric: str
     lower_is_better: bool
     ranked: tuple[RankedSummary, ...]
+    groups: tuple[ModelRollup, ...] = ()
     schema_version: str = AGGREGATE_SCHEMA_VERSION
 
     @property
@@ -80,6 +110,7 @@ class AggregateReport:
             "count": self.count,
             "source_schema_version": RESULT_SCHEMA_VERSION,
             "ranked": [entry.to_dict() for entry in self.ranked],
+            "groups": [group.to_dict() for group in self.groups],
         }
 
 
@@ -133,9 +164,77 @@ def rank_summaries(
             RankedSummary(rank=None, metric=metric, metric_value=None, summary=summary)
         )
 
+    groups = _rollup_by_model(summaries, metric=metric, lower_is_better=lower_is_better)
+
     return AggregateReport(
-        metric=metric, lower_is_better=lower_is_better, ranked=tuple(ranked)
+        metric=metric,
+        lower_is_better=lower_is_better,
+        ranked=tuple(ranked),
+        groups=groups,
     )
+
+
+def _rollup_by_model(
+    summaries: Sequence[BenchmarkSummary],
+    *,
+    metric: str,
+    lower_is_better: bool,
+) -> tuple[ModelRollup, ...]:
+    """Group summaries by model and roll up the metric across each model's runs.
+
+    Models are ordered by their best value in the ranking direction; a model whose
+    runs all lack the metric is placed last (in first-seen order). Insertion order is
+    preserved within ties so the output is deterministic.
+    """
+
+    order: list[str] = []
+    values_by_model: dict[str, list[float]] = {}
+    runs_by_model: dict[str, int] = {}
+    for summary in summaries:
+        model = summary.model
+        if model not in runs_by_model:
+            order.append(model)
+            values_by_model[model] = []
+            runs_by_model[model] = 0
+        runs_by_model[model] += 1
+        raw = getattr(summary, metric)
+        if raw is not None:
+            values_by_model[model].append(float(raw))
+
+    rollups: list[ModelRollup] = []
+    for model in order:
+        values = values_by_model[model]
+        if values:
+            best = min(values) if lower_is_better else max(values)
+            worst = max(values) if lower_is_better else min(values)
+            rollups.append(
+                ModelRollup(
+                    model=model,
+                    run_count=runs_by_model[model],
+                    metric=metric,
+                    best=best,
+                    worst=worst,
+                    median=float(median(values)),
+                )
+            )
+        else:
+            rollups.append(
+                ModelRollup(
+                    model=model,
+                    run_count=runs_by_model[model],
+                    metric=metric,
+                    best=None,
+                    worst=None,
+                    median=None,
+                )
+            )
+
+    def _sort_key(rollup: ModelRollup) -> tuple[int, float]:
+        if rollup.best is None:
+            return (1, 0.0)
+        return (0, rollup.best if lower_is_better else -rollup.best)
+
+    return tuple(sorted(rollups, key=_sort_key))
 
 
 def _num(value: float | None) -> str:
@@ -192,5 +291,30 @@ def format_aggregate_markdown(
             str(summary.exception_count),
         ]
         lines.append("| " + " | ".join(cells) + " |")
+
+    if report.groups:
+        direction = "lowest" if report.lower_is_better else "highest"
+        group_headers = ["Model", "Runs", "Best", "Median", "Worst"]
+        lines.extend(
+            [
+                "",
+                "## Per-model roll-up",
+                "",
+                f"Best is the {direction} `{report.metric}` across each model's runs.",
+                "",
+                "| " + " | ".join(group_headers) + " |",
+                "|" + "|".join("---" for _ in group_headers) + "|",
+            ]
+        )
+        for group in report.groups:
+            cells = [
+                group.model or "-",
+                str(group.run_count),
+                _num(group.best),
+                _num(group.median),
+                _num(group.worst),
+            ]
+            lines.append("| " + " | ".join(cells) + " |")
+
     lines.extend(["", _DISCLAIMER, ""])
     return "\n".join(lines) + "\n"
