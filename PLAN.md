@@ -493,10 +493,16 @@ Reason: OpenVLA is important for credibility. Local 7B inference was previously 
 free VRAM; that is now resolved with 4-bit loading and verified with measured numbers. A
 remote GPU server is still the recommended deployment path for the heavy stack.
 
+Remote serving (verified): the `serve` command now exposes `--load-in-4bit` (threaded
+through `_model_load_kwargs` -> `run_server` -> the adapter), so OpenVLA-7b fits a 16 GB
+card on the server side too. A real `vla-zoo serve --model openvla --load-in-4bit` server
+passed a health-first probe and returned a typed 7-DoF action over HTTP `/v1/predict`,
+recorded end-to-end (`docs/assets/sample_task_verification/openvla_remote_probe.{md,json}`).
+The OpenVLA `remote_server` cell is now `verified`.
+
 Remaining/next useful tasks:
 
-- Run a real OpenVLA server on a GPU box and record a real `/v1/predict` artifact.
-- Promote the `remote_server` cell from `planned` to `verified` only then.
+- Record a ROS2 remote action log against the OpenVLA server.
 - Add a task-level probe (real scene frame) before any policy-quality claim.
 
 ### 7.6 pi0/openpi Path (remote-first docs + plan DONE)

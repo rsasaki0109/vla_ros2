@@ -15,7 +15,7 @@ code{font-size:0.8rem;word-break:break-all;}
 </head>
 <body>
 <h1>vla_zoo Artifact Index</h1>
-<p>32 artifacts, all present. Statuses and caveats reflect runtime evidence only.</p>
+<p>33 artifacts, all present. Statuses and caveats reflect runtime evidence only.</p>
 <table>
 <thead><tr><th>Artifact</th><th>Status</th><th>Kind</th><th>Source command</th><th>Caveat</th></tr></thead>
 <tbody>
@@ -56,6 +56,7 @@ code{font-size:0.8rem;word-break:break-all;}
 <tr><td><a href="sample_task_verification/openvla_prompt_probe.md">OpenVLA prompt probe</a></td><td><span class="status">verified</span></td><td>checked</td><td>-</td><td>Originally bf16-OOM&#x27;d on a 16 GB card; resolved via 4-bit. See the measured OpenVLA local runtime evidence.</td></tr>
 <tr><td><a href="sample_task_verification/remote_probe_dummy.md">Remote probe tool sample (dummy)</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>vla-zoo remote-probe --model dummy --remote-url http://127.0.0.1:PORT</code></td><td>Verifies the health-first remote probe tool; not an OpenVLA claim.</td></tr>
 <tr><td><a href="sample_task_verification/smolvla_remote_probe.md">SmolVLA remote /v1/predict probe</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>vla-zoo serve --model smolvla --pretrained lerobot/smolvla_base --device cuda &amp;&amp; vla-zoo remote-probe --model smolvla --remote-url http://127.0.0.1:PORT</code></td><td>Real SmolVLA server returned a typed 6-DoF action over HTTP; runtime-path evidence, not task success.</td></tr>
+<tr><td><a href="sample_task_verification/openvla_remote_probe.md">OpenVLA remote /v1/predict probe</a></td><td><span class="status">verified</span></td><td>checked</td><td><code>vla-zoo serve --model openvla --pretrained openvla/openvla-7b --device cuda:0 --load-in-4bit &amp;&amp; vla-zoo remote-probe --model openvla --remote-url http://127.0.0.1:PORT</code></td><td>Real OpenVLA-7b 4-bit server returned a typed 7-DoF action over HTTP; runtime-path evidence, not task success.</td></tr>
 <tr><td><a href="sample_task_verification/pi0_compatibility_probe.md">pi0 compatibility probe</a></td><td><span class="status">planned</span></td><td>checked</td><td>-</td><td>pi0/openpi is remote-first and still needs a recorded real action probe.</td></tr>
 </tbody>
 </table>

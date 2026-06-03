@@ -261,16 +261,16 @@
           ]
         },
         "remote_server": {
-          "status": "planned",
-          "summary": "Health-first remote probe (vla-zoo remote-probe) is reproducible and verified against the dummy server; a recorded OpenVLA /v1/predict run on a GPU box is still needed.",
+          "status": "verified",
+          "summary": "A real `vla-zoo serve --model openvla --load-in-4bit` server passed a health-first probe and returned a typed 7-DoF action over HTTP /v1/predict (recorded end-to-end on a 16 GB GPU).",
           "links": [
+            {
+              "label": "OpenVLA remote probe",
+              "href": "sample_task_verification/openvla_remote_probe.md"
+            },
             {
               "label": "OpenVLA remote path",
               "href": "../openvla_remote.md"
-            },
-            {
-              "label": "remote probe tool sample",
-              "href": "sample_task_verification/remote_probe_dummy.md"
             }
           ]
         },
@@ -300,7 +300,7 @@
           "links": []
         }
       },
-      "next_step": "Local 4-bit GPU inference is now verified; next, record remote-server and ROS2 remote action logs, then add task-level probes.",
+      "next_step": "Local 4-bit GPU inference and a real remote /v1/predict are both verified; next, record a ROS2 remote action log, then add task-level probes.",
       "caveat": "Adapter scaffold and prompt path are documented. In the latest local run, the CUDA prompt probe did not complete because free GPU memory was insufficient."
     },
     {

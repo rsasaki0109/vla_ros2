@@ -138,6 +138,8 @@ def _model_load_kwargs(
     device: str | None,
     dtype: str | None,
     unnorm_key: str | None,
+    load_in_4bit: bool = False,
+    load_in_8bit: bool = False,
 ) -> dict[str, Any]:
     kwargs: dict[str, Any] = {}
     if pretrained:
@@ -148,6 +150,10 @@ def _model_load_kwargs(
         kwargs["dtype"] = dtype
     if unnorm_key:
         kwargs["unnorm_key"] = unnorm_key
+    if load_in_4bit:
+        kwargs["load_in_4bit"] = True
+    if load_in_8bit:
+        kwargs["load_in_8bit"] = True
     return kwargs
 
 
@@ -625,6 +631,17 @@ def serve(
         str | None,
         typer.Option("--unnorm-key", help="Dataset/action unnormalization key for adapters."),
     ] = None,
+    load_in_4bit: Annotated[
+        bool,
+        typer.Option(
+            "--load-in-4bit",
+            help="Load with 4-bit (nf4) quantization; fits OpenVLA-7b on a 16 GB GPU.",
+        ),
+    ] = False,
+    load_in_8bit: Annotated[
+        bool,
+        typer.Option("--load-in-8bit", help="Load with 8-bit quantization (bitsandbytes)."),
+    ] = False,
 ) -> None:
     """Start the optional FastAPI inference server."""
 
@@ -640,6 +657,8 @@ def serve(
                 device=device,
                 dtype=dtype,
                 unnorm_key=unnorm_key,
+                load_in_4bit=load_in_4bit,
+                load_in_8bit=load_in_8bit,
             ),
         )
     except MissingDependencyError as exc:
