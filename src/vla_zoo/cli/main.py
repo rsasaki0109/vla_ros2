@@ -953,6 +953,116 @@ def bench_report(
             typer.echo(f"{summary.model:<12} {summary.source:<22} {p50:>10} {rate:>10}")
 
 
+def _load_ros_diagnostics(path: Path, status_name: str) -> list[Any]:
+    """Reconstruct native diagnostics records from a recorded ROS2 /diagnostics JSONL."""
+
+    from vla_zoo.runtime.diagnostics import diagnostics_from_key_values
+
+    records: list[Any] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        payload = json.loads(stripped)
+        for status in payload.get("status", []):
+            if status_name and status.get("name") != status_name:
+                continue
+            pairs = {item["key"]: item["value"] for item in status.get("values", [])}
+            if pairs:
+                records.append(diagnostics_from_key_values(pairs))
+    return records
+
+
+@app.command("diag-report")
+def diag_report(
+    log: Annotated[
+        Path | None,
+        typer.Option("--log", help="Native vla-zoo-diagnostics/v1 JSONL log path."),
+    ] = None,
+    from_ros_log: Annotated[
+        Path | None,
+        typer.Option(
+            "--from-ros-log",
+            help="Recorded ROS2 /diagnostics DiagnosticArray JSONL to reconstruct from.",
+        ),
+    ] = None,
+    status_name: Annotated[
+        str,
+        typer.Option(
+            "--status-name",
+            help="DiagnosticStatus name to select when reading --from-ros-log.",
+        ),
+    ] = "vla_zoo/vla_runtime_node",
+    jsonl_out: Annotated[
+        Path | None,
+        typer.Option(
+            "--jsonl-out",
+            help="Persist the (reconstructed) records as a native vla-zoo-diagnostics/v1 JSONL.",
+        ),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write the Markdown snapshot of the latest record."),
+    ] = None,
+    title: Annotated[
+        str,
+        typer.Option("--title", help="Snapshot title."),
+    ] = "Runtime Diagnostics Snapshot",
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print all records as machine-readable JSON."),
+    ] = False,
+) -> None:
+    """Render a runtime diagnostics snapshot from a JSONL log (native or ROS2 /diagnostics)."""
+
+    from vla_zoo.runtime.diagnostics import (
+        format_diagnostics_markdown,
+        read_diagnostics_jsonl,
+        write_diagnostics_jsonl,
+    )
+
+    if (log is None) == (from_ros_log is None):
+        typer.echo("Provide exactly one of --log or --from-ros-log.", err=True)
+        raise typer.Exit(1)
+
+    try:
+        if log is not None:
+            if not log.is_file():
+                typer.echo(f"log not found: {log}", err=True)
+                raise typer.Exit(1)
+            records = read_diagnostics_jsonl(log)
+        else:
+            assert from_ros_log is not None
+            if not from_ros_log.is_file():
+                typer.echo(f"log not found: {from_ros_log}", err=True)
+                raise typer.Exit(1)
+            records = _load_ros_diagnostics(from_ros_log, status_name)
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    if not records:
+        typer.echo("no diagnostics records found", err=True)
+        raise typer.Exit(1)
+
+    if jsonl_out is not None:
+        write_diagnostics_jsonl(jsonl_out, records)
+        typer.echo(f"JSONL written to {jsonl_out}")
+
+    latest = records[-1]
+    if markdown_out is not None:
+        _write_text(markdown_out, format_diagnostics_markdown(latest, title=title))
+        typer.echo(f"Markdown written to {markdown_out}")
+    if json_output:
+        typer.echo(json.dumps([record.to_dict() for record in records], indent=2))
+    elif markdown_out is None and jsonl_out is None:
+        typer.echo(format_diagnostics_markdown(latest, title=title))
+    else:
+        typer.echo(f"{len(records)} record(s); latest level={latest.level}")
+
+
 @compare_app.command("adapters")
 def compare_adapters() -> None:
     """Compare registered adapter metadata and availability."""

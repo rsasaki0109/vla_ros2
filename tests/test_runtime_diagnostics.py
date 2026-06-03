@@ -10,6 +10,7 @@ from vla_zoo.runtime.diagnostics import (
     DIAGNOSTICS_SCHEMA_VERSION,
     RuntimeDiagnostics,
     SchemaVersionError,
+    diagnostics_from_key_values,
     format_diagnostics_markdown,
     read_diagnostics_jsonl,
     write_diagnostics_jsonl,
@@ -125,3 +126,40 @@ def test_format_markdown_contains_metrics() -> None:
     assert DIAGNOSTICS_SCHEMA_VERSION in text
     assert "Action clip rate" in text
     assert "not model task-success quality" in text
+
+
+def test_diagnostics_from_key_values_round_trips() -> None:
+    record = _record()
+
+    restored = diagnostics_from_key_values(record.to_key_values())
+
+    # KeyValue pairs are strings rounded to a few decimals, so rates round-trip approximately.
+    assert restored.model == record.model
+    assert restored.status_text == record.status_text
+    assert restored.total_actions == record.total_actions
+    assert restored.clipped_actions == record.clipped_actions
+    assert restored.watchdog_ok == record.watchdog_ok
+    assert restored.last_latency_ms == pytest.approx(record.last_latency_ms, abs=1e-3)
+    assert restored.action_clip_rate == pytest.approx(record.action_clip_rate, abs=1e-4)
+    assert restored.element_clip_rate == pytest.approx(record.element_clip_rate, abs=1e-4)
+
+
+def test_diagnostics_from_key_values_parses_string_bools_and_blanks() -> None:
+    record = RuntimeDiagnostics.from_parts(
+        model="smolvla",
+        status_text="waiting for instruction",
+        level="warn",
+        clip_guard=ActionClipGuard(),
+        watchdog=evaluate_watchdog(image_age_sec=0.1, instruction_age_sec=0.2),
+        last_latency_ms=None,
+        avg_latency_ms=None,
+        pending_inference=False,
+    )
+
+    restored = diagnostics_from_key_values(record.to_key_values())
+
+    # bool("False") is True, so naive from_dict would corrupt these — the inverse must not.
+    assert restored.pending_inference is False
+    assert restored.watchdog_ok is True
+    assert restored.last_latency_ms is None
+    assert restored == record

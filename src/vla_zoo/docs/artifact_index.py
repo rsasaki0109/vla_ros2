@@ -265,6 +265,38 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="Runtime diagnostics snapshot (SmolVLA ROS2)",
+        path="docs/assets/sample_ros2_remote_smolvla/runtime_diagnostics_snapshot.md",
+        category="ROS2",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo diag-report --from-ros-log "
+            "docs/assets/sample_ros2_remote_smolvla/vla_diagnostics.jsonl --markdown-out "
+            "docs/assets/sample_ros2_remote_smolvla/runtime_diagnostics_snapshot.md"
+        ),
+        caveat=(
+            "Latest vla-zoo-diagnostics/v1 snapshot reconstructed from the real SmolVLA "
+            "ROS2 run; latency/clip-rate/staleness only, not task success."
+        ),
+    ),
+    ArtifactEntry(
+        title="Runtime diagnostics snapshot (OpenVLA ROS2)",
+        path="docs/assets/sample_ros2_remote_openvla/runtime_diagnostics_snapshot.md",
+        category="ROS2",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo diag-report --from-ros-log "
+            "docs/assets/sample_ros2_remote_openvla/vla_diagnostics.jsonl --markdown-out "
+            "docs/assets/sample_ros2_remote_openvla/runtime_diagnostics_snapshot.md"
+        ),
+        caveat=(
+            "Latest vla-zoo-diagnostics/v1 snapshot reconstructed from the real OpenVLA-7b "
+            "(4-bit) ROS2 run; latency/clip-rate/staleness only, not task success."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke plan",
         path="docs/assets/ros2_remote_smoke_plan.md",
         category="ROS2",

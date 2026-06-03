@@ -15,7 +15,7 @@ effects and no heavy dependencies, so it is unit-testable directly.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -215,6 +215,54 @@ def read_diagnostics_jsonl(path: Path) -> list[RuntimeDiagnostics]:
             continue
         records.append(RuntimeDiagnostics.from_dict(json.loads(stripped)))
     return records
+
+
+def diagnostics_from_key_values(
+    pairs: Mapping[str, str] | Iterable[tuple[str, str]],
+) -> RuntimeDiagnostics:
+    """Rebuild a record from flattened ``(key, value)`` string pairs.
+
+    This is the inverse of :meth:`RuntimeDiagnostics.to_key_values`. Use it to recover the
+    native record from a recorded ROS2 ``diagnostic_msgs/KeyValue`` payload, where every
+    value is a string and an empty string stands for a missing optional number. ``from_dict``
+    cannot be used for that source because Python's ``bool("False")`` is ``True``.
+    """
+
+    data = dict(pairs)
+
+    def _opt_float(key: str) -> float | None:
+        value = data.get(key, "")
+        return float(value) if value not in ("", None) else None
+
+    def _bool(key: str) -> bool:
+        return str(data.get(key, "")).strip().lower() == "true"
+
+    def _opt_str(key: str) -> str | None:
+        value = data.get(key)
+        return value if value else None
+
+    return RuntimeDiagnostics(
+        model=str(data.get("model", "")),
+        status_text=str(data.get("status_text", "")),
+        level=str(data.get("level", "ok")),
+        last_latency_ms=_opt_float("last_latency_ms"),
+        avg_latency_ms=_opt_float("avg_latency_ms"),
+        action_rate_hz=_opt_float("action_rate_hz"),
+        dropped_frames=int(data.get("dropped_frames", "0") or "0"),
+        pending_inference=_bool("pending_inference"),
+        total_actions=int(data.get("total_actions", "0") or "0"),
+        clipped_actions=int(data.get("clipped_actions", "0") or "0"),
+        clipped_elements=int(data.get("clipped_elements", "0") or "0"),
+        total_elements=int(data.get("total_elements", "0") or "0"),
+        action_clip_rate=float(data.get("action_clip_rate", "0.0") or "0.0"),
+        element_clip_rate=float(data.get("element_clip_rate", "0.0") or "0.0"),
+        watchdog_ok=_bool("watchdog_ok"),
+        watchdog_reason=_opt_str("watchdog_reason"),
+        image_age_sec=_opt_float("image_age_sec"),
+        instruction_age_sec=_opt_float("instruction_age_sec"),
+        note=_opt_str("note"),
+        schema_version=str(data.get("schema_version", DIAGNOSTICS_SCHEMA_VERSION)),
+    )
 
 
 def _fmt(value: float | None, *, suffix: str = "") -> str:
