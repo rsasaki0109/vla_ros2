@@ -1193,3 +1193,52 @@ def test_cli_compare_roofline_from_log_reports_bands() -> None:
     assert payload["schema_version"] == "vla-zoo-roofline/v1"
     models = {c["model"]: c for c in payload["comparisons"]}
     assert models["smolvla"]["measured_p50_ms"] is not None
+
+
+def test_cli_rtc_record_help_lists_options() -> None:
+    result = CliRunner().invoke(app, ["rtc-record", "--help"])
+
+    assert result.exit_code == 0
+    assert "--control-hz" in result.output
+    assert "--allow-local-heavy" in result.output
+
+
+def test_cli_rtc_record_blocks_heavy_without_flag() -> None:
+    result = CliRunner().invoke(app, ["rtc-record", "--model", "smolvla", "--out", "x.json"])
+
+    assert result.exit_code == 1
+    assert "allow-local-heavy" in result.output
+
+
+def test_cli_rtc_sim_trace_replays_recorded_chunks(tmp_path) -> None:
+    import numpy as np
+
+    from vla_zoo.core.types import ActionSpec, VLAAction, VLAActionChunk, VLAObservation
+    from vla_zoo.runtime.rtc_executor import record_rtc_trace
+
+    spec = ActionSpec(action_space="eef_delta", shape=(3,))
+
+    class _Fake:
+        name = "fake"
+
+        def __init__(self) -> None:
+            self._rng = np.random.default_rng(0)
+
+        def predict(self, *, observation: VLAObservation) -> VLAActionChunk:
+            base = np.sin(0.2 * np.arange(16)[:, None] + np.array([0.0, 1.0, 2.0])[None, :])
+            off = self._rng.normal(0, 0.7, size=3)
+            chunk = (base + off[None, :]).astype(np.float32)
+            return VLAActionChunk(actions=[VLAAction(data=r, spec=spec) for r in chunk])
+
+    obs = [VLAObservation(instruction="pick") for _ in range(8)]
+    ticks = iter([v for i in range(8) for v in (i * 1.0, i * 1.0 + 0.13)])
+    trace = record_rtc_trace(
+        _Fake(), obs, control_hz=30.0, execute_horizon=8, clock=lambda: next(ticks)
+    )
+    trace_path = tmp_path / "trace.json"
+    trace_path.write_text(json.dumps(trace.to_dict()), encoding="utf-8")
+
+    result = CliRunner().invoke(app, ["rtc-sim", "--trace", str(trace_path), "--json"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["rtc"]["mean_boundary_jump"] < payload["naive"]["mean_boundary_jump"]

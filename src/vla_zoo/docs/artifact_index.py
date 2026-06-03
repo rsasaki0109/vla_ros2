@@ -218,6 +218,52 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="SmolVLA real-model RTC trace (JSON)",
+        path="docs/assets/rtc_sim/smolvla_rtc_trace.json",
+        category="model evidence",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo rtc-record --model smolvla --allow-local-heavy --control-hz 30 --execute 12 "
+            "--model-call-every 1 --render-stride 6 "
+            "--out docs/assets/rtc_sim/smolvla_rtc_trace.json"
+        ),
+        caveat=(
+            "Recorded SmolVLA action chunks (horizon 50) + measured per-cycle inference latency "
+            "from a real PyBullet rollout on a 16 GB VRAM GPU. Runtime path; no task-success claim."
+        ),
+    ),
+    ArtifactEntry(
+        title="SmolVLA real-model RTC continuity (Markdown)",
+        path="docs/assets/rtc_sim/smolvla_rtc_compare.md",
+        category="model evidence",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo rtc-sim --trace docs/assets/rtc_sim/smolvla_rtc_trace.json "
+            "--markdown-out docs/assets/rtc_sim/smolvla_rtc_compare.md"
+        ),
+        caveat=(
+            "naive-async vs RTC-freeze continuity computed from the recorded real SmolVLA chunk "
+            "stream with its real per-cycle delays. Runtime scheduling property, not skill."
+        ),
+    ),
+    ArtifactEntry(
+        title="SmolVLA real-model RTC continuity (animated GIF)",
+        path="docs/assets/rtc_sim/smolvla_rtc.gif",
+        category="model evidence",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo demo rtc-gif --trace docs/assets/rtc_sim/smolvla_rtc_trace.json "
+            "--out docs/assets/rtc_sim/smolvla_rtc.gif --max-frames 80"
+        ),
+        caveat=(
+            "Stacked naive vs RTC-freeze control streams from the recorded real SmolVLA run. "
+            "Real-model runtime path; not a policy-quality or task-success claim."
+        ),
+    ),
+    ArtifactEntry(
         title="OpenVLA commanded EEF trajectory (animated GIF)",
         path="docs/assets/trajectory/openvla_trajectory.gif",
         category="simulation",

@@ -343,8 +343,8 @@
         </div>
         <div class="tile">
           <h3>Real-Time Chunking scheduler</h3>
-          <p>A latency-aware action-chunk scheduler (Real-Time Chunking style): freezing the actions guaranteed to execute during inference cuts the chunk-boundary jump ~76% vs naive async. The animation stacks both emitted control streams — naive snaps at each boundary, freeze stays smooth. Pure CPU simulation of the scheduling layer, not a policy-quality claim.</p>
-          <a href="assets/rtc_sim/rtc_scheduler_sim.gif">Open RTC animation</a> · <a href="assets/rtc_sim/rtc_scheduler_sim.md">numbers</a>
+          <p>A latency-aware action-chunk scheduler (Real-Time Chunking style): freezing the actions guaranteed to execute during inference keeps the control stream continuous across chunk swaps. On a recorded <strong>real SmolVLA</strong> run (81 chunks, 6-DoF, real per-cycle latency) freeze cuts the chunk-boundary jump <strong>87%</strong>; the animation stacks both streams — naive snaps, freeze stays smooth. Runtime scheduling property, not a policy-quality claim.</p>
+          <a href="assets/rtc_sim/smolvla_rtc.gif">Real-model RTC animation</a> · <a href="assets/rtc_sim/smolvla_rtc_compare.md">numbers</a> · <a href="assets/rtc_sim/rtc_scheduler_sim.gif">synthetic</a>
         </div>
         <div class="tile">
           <h3>Remote GPU VLA path</h3>
