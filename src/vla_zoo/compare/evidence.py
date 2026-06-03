@@ -211,10 +211,16 @@ def _openvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
             ),
         ),
         "pybullet_tasks": _cell(
-            "planned",
-            "PyBullet runner can call OpenVLA locally or remotely; heavy local run is "
-            "skipped by default.",
+            "partial",
+            "Recorded a real-scene action probe: OpenVLA-7b (4-bit) driven on real "
+            "PyBullet-rendered frames (21 queries, 7-DoF, latency p50 ~2.0 s), exercising the "
+            "real image preprocessing path that synthetic-frame probes skip. Runtime path on "
+            "real renders, not a task-success benchmark.",
             (
+                _link(
+                    "real-scene action probe",
+                    "sample_pybullet_openvla/runtime_action_probe.md",
+                ),
                 _link(
                     "external adapter status",
                     "sample_task_verification/external_adapter_status.md",
@@ -223,7 +229,9 @@ def _openvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         ),
         "policy_quality": _cell(
             "not_verified",
-            "No task-success or robot-skill claim is made for OpenVLA in this repository.",
+            "No task-success or robot-skill claim is made for OpenVLA in this repository. The "
+            "real-scene action probe upgrades the input from synthetic noise to a real render "
+            "but makes no task-success or policy-quality claim.",
         ),
     }
 
@@ -453,8 +461,9 @@ def _next_step(info: AdapterInfo) -> str:
         return "Keep using this baseline for simulation/report regression checks."
     if info.name == "openvla":
         return (
-            "Local 4-bit GPU, remote /v1/predict, and a ROS2 remote trace are all verified; "
-            "next, broaden to task-level probes on real scene frames."
+            "Local 4-bit GPU, remote /v1/predict, a ROS2 remote trace, and a real-scene "
+            "PyBullet action probe are all verified; the remaining gap is task-success / "
+            "policy quality, which stays unclaimed without a graded benchmark."
         )
     if info.name == "pi0":
         return (

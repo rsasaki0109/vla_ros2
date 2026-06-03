@@ -2938,6 +2938,37 @@ def demo_pybullet(
     typer.echo(json.dumps(result, indent=2))
 
 
+def _coerce_kwarg_value(raw: str) -> object:
+    """Coerce a CLI string into bool/int/float, falling back to the raw string."""
+
+    lowered = raw.strip().lower()
+    if lowered in {"true", "false"}:
+        return lowered == "true"
+    if lowered in {"none", "null"}:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        pass
+    try:
+        return float(raw)
+    except ValueError:
+        return raw
+
+
+def _parse_adapter_kwargs(pairs: list[str] | None) -> dict[str, object]:
+    """Parse repeated ``key=value`` options into a typed adapter-kwargs dict."""
+
+    result: dict[str, object] = {}
+    for pair in pairs or []:
+        if "=" not in pair:
+            msg = f"adapter kwarg must be key=value, got {pair!r}"
+            raise ValueError(msg)
+        key, _, value = pair.partition("=")
+        result[key.strip()] = _coerce_kwarg_value(value)
+    return result
+
+
 @demo_app.command("action-probe")
 def demo_action_probe(
     model: Annotated[str, typer.Option("--model", "-m")] = "dummy",
@@ -2993,6 +3024,13 @@ def demo_action_probe(
             help="Ask the adapter for a full action chunk per query (fresh encode each call).",
         ),
     ] = False,
+    adapter_kwarg: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--adapter-kwarg",
+            help="Extra adapter kwarg as key=value (repeatable); coerced to bool/int/float/str.",
+        ),
+    ] = None,
     json_output: Annotated[
         bool,
         typer.Option("--json", help="Print the summary as JSON."),
@@ -3025,7 +3063,11 @@ def demo_action_probe(
         )
         raise typer.Exit(1)
 
-    adapter_kwargs: dict[str, object] = {}
+    try:
+        adapter_kwargs = _parse_adapter_kwargs(adapter_kwarg)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     if pretrained:
         adapter_kwargs["pretrained"] = pretrained
     if device:

@@ -289,9 +289,13 @@
           ]
         },
         "pybullet_tasks": {
-          "status": "planned",
-          "summary": "PyBullet runner can call OpenVLA locally or remotely; heavy local run is skipped by default.",
+          "status": "partial",
+          "summary": "Recorded a real-scene action probe: OpenVLA-7b (4-bit) driven on real PyBullet-rendered frames (21 queries, 7-DoF, latency p50 ~2.0 s), exercising the real image preprocessing path that synthetic-frame probes skip. Runtime path on real renders, not a task-success benchmark.",
           "links": [
+            {
+              "label": "real-scene action probe",
+              "href": "sample_pybullet_openvla/runtime_action_probe.md"
+            },
             {
               "label": "external adapter status",
               "href": "sample_task_verification/external_adapter_status.md"
@@ -300,11 +304,11 @@
         },
         "policy_quality": {
           "status": "not_verified",
-          "summary": "No task-success or robot-skill claim is made for OpenVLA in this repository.",
+          "summary": "No task-success or robot-skill claim is made for OpenVLA in this repository. The real-scene action probe upgrades the input from synthetic noise to a real render but makes no task-success or policy-quality claim.",
           "links": []
         }
       },
-      "next_step": "Local 4-bit GPU, remote /v1/predict, and a ROS2 remote trace are all verified; next, broaden to task-level probes on real scene frames.",
+      "next_step": "Local 4-bit GPU, remote /v1/predict, a ROS2 remote trace, and a real-scene PyBullet action probe are all verified; the remaining gap is task-success / policy quality, which stays unclaimed without a graded benchmark.",
       "caveat": "Adapter scaffold and prompt path are documented. In the latest local run, the CUDA prompt probe did not complete because free GPU memory was insufficient."
     },
     {

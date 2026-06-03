@@ -62,6 +62,30 @@ def test_cli_demo_action_probe_blocks_local_heavy_without_flag() -> None:
     assert "allow-local-heavy" in result.output
 
 
+def test_parse_adapter_kwargs_coerces_types() -> None:
+    from vla_zoo.cli.main import _parse_adapter_kwargs
+
+    parsed = _parse_adapter_kwargs(
+        ["load_in_4bit=true", "unnorm_key=bridge_orig", "max_new_tokens=8", "temp=0.5"]
+    )
+
+    assert parsed == {
+        "load_in_4bit": True,
+        "unnorm_key": "bridge_orig",
+        "max_new_tokens": 8,
+        "temp": 0.5,
+    }
+
+
+def test_parse_adapter_kwargs_rejects_bare_token() -> None:
+    import pytest
+
+    from vla_zoo.cli.main import _parse_adapter_kwargs
+
+    with pytest.raises(ValueError, match="key=value"):
+        _parse_adapter_kwargs(["load_in_4bit"])
+
+
 def test_cli_demo_gif_suite_help() -> None:
     result = CliRunner().invoke(app, ["demo", "gif-suite", "--help"])
     assert result.exit_code == 0
