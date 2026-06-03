@@ -1263,6 +1263,72 @@ rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
 rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report index --json
 ```
 
+## v0.7 — research-aligned runtime capabilities
+
+Before this track the user asked to survey current VLA papers/OSS first. Key findings
+(2025-2026): model landscape is SmolVLA(450M) / pi0 / GR00T **N1.7** / OpenVLA, split
+between single-model-forward and dual-system (VLM + diffusion action expert) designs;
+X-VLA (ICLR 2026) uses a server-client split that validates vla_zoo's remote-first stance.
+Two papers land squarely on vla_zoo's runtime-boundary niche:
+
+- **VLA-Perf** (NVIDIA, `NVlabs/vla-perf`, arXiv:2602.18397): an analytical roofline model
+  that *predicts* VLA inference latency/throughput from model config + hardware
+  (`latency = max(FLOPs/peak_compute, Bytes/bw)`), component-split across vision/VLM/action
+  expert. Real-time target is 10-100 ms; edge ~19 Hz vs datacenter ~314 Hz; diffusion is
+  1-2 orders faster than AR with chunking. Candidate: add a predicted-vs-measured latency
+  view to the leaderboard, validated against vla_zoo's recorded probes.
+- **Real-Time Chunking (RTC)** (Physical Intelligence, arXiv:2506.07339): a model-agnostic,
+  training-free inference-time scheduler that runs the next action chunk's inference in the
+  background, freezes the actions guaranteed to execute during inference, and inpaints the
+  rest to stay continuous. This is exactly a runtime-boundary mechanism.
+
+The first capability — an RTC-style scheduler simulation — is in (DONE):
+
+```text
+add vla-zoo rtc-sim: a latency-aware action-chunk scheduler simulation (Real-Time Chunking) (v0.7)  [DONE]
+```
+
+What landed: a new pure module `runtime/realtime_chunking.py` (`vla-zoo-rtc-sim/v1`).
+`RealtimeChunkingConfig(horizon H, execute_horizon s, inference_delay_ticks d)` validates
+the real-time feasibility constraint `d + s <= H`. `simulate_emission(chunks, config,
+freeze=…)` rolls a stream of pre-computed chunks into a control trajectory under two
+strategies: **naive async** (execute each new chunk raw from its current-time index `d`,
+exposing the inter-chunk mode jump) and **RTC freeze** (offset-correct the executable
+segment to connect to the previous chunk's last committed action, with an exponentially
+decaying soft mask — Eq. 5 — returning later actions to the raw prediction). The freeze
+degenerates to naive when `d == 0` (no stale prefix). `compare_strategies` reports
+chunk-boundary continuity; `synthetic_chunk_stream` builds a deterministic seeded stress
+input (smooth reference + per-chunk mode offset), and `chunks_from_action_log` windows a
+recorded `vla_actions.jsonl`. CLI `vla-zoo rtc-sim` (`--chunks/--horizon/--execute/--delay/
+--dims/--mode-strength/--seed/--action-log/--out/--markdown-out/--json`). Recorded artifact
+at `docs/assets/rtc_sim/rtc_scheduler_sim.{json,md}` shows a **76.3% boundary-jump
+reduction** (naive 1.33 → RTC 0.32). Surfaced as a README section (with the RTC arXiv link)
+and a Pages "What Works Now" tile; 2 artifact-index entries (count 64 → 66). Tested: 10
+module tests + 3 CLI tests (316 → 329). It is a **pure simulation of the scheduling layer**
+— no diffusion/flow policy, no gradient-guided sampler — and makes no policy-quality or
+task-success claim: continuity is a runtime scheduling property.
+
+Remaining v0.7 candidates (pause for direction before each):
+
+1. **Predicted-vs-measured latency** on the leaderboard (VLA-Perf roofline), validated
+   against the recorded SmolVLA/OpenVLA probes; add a 10/100 Hz real-time band.
+2. **RTC continuity GIF**: animate the naive vs freeze emitted control stream so the
+   boundary jump is visible (reuses the trajectory PIL renderer).
+3. **`chunks_from_action_log` driven artifact** + a real-log RTC view.
+4. Update GR00T note to **N1.7**; scope an X-VLA server-client adapter.
+5. **PyPI publish** + release workflow (metadata already install-correct).
+
+Acceptance (this feature):
+
+```bash
+rtk proxy env PYTHONPATH=src pytest -q tests/test_realtime_chunking.py tests/test_cli.py
+rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
+rtk proxy env PYTHONPATH=src mypy src/vla_zoo
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
+  --paths docs/index.html,README.md --strict
+rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report index --json
+```
+
 ## 14. One-Screen Claude Brief
 
 Start here:

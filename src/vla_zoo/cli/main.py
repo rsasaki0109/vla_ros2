@@ -975,6 +975,110 @@ def bench_replay(
     typer.echo(json.dumps(summary.to_dict(), indent=2))
 
 
+@app.command("rtc-sim")
+def rtc_sim(
+    chunks: Annotated[
+        int,
+        typer.Option("--chunks", help="Number of synthetic chunks (re-plan cycles)."),
+    ] = 12,
+    horizon: Annotated[
+        int,
+        typer.Option("--horizon", help="Actions predicted per inference (H)."),
+    ] = 16,
+    execute: Annotated[
+        int,
+        typer.Option("--execute", help="Actions executed per cycle before swapping (s)."),
+    ] = 8,
+    delay: Annotated[
+        int,
+        typer.Option("--delay", help="Inference delay in control ticks (d)."),
+    ] = 4,
+    dims: Annotated[
+        int,
+        typer.Option("--dims", help="Action dimensionality of the synthetic stream."),
+    ] = 3,
+    mode_strength: Annotated[
+        float,
+        typer.Option("--mode-strength", help="Per-chunk mode-offset magnitude (jump source)."),
+    ] = 0.6,
+    seed: Annotated[
+        int,
+        typer.Option("--seed", help="Seed for the deterministic synthetic stream."),
+    ] = 0,
+    action_log: Annotated[
+        Path | None,
+        typer.Option("--action-log", help="Drive from a recorded log instead of synthetic chunks."),
+    ] = None,
+    out: Annotated[
+        Path | None,
+        typer.Option("--out", help="Write the comparison as versioned JSON."),
+    ] = None,
+    markdown_out: Annotated[
+        Path | None,
+        typer.Option("--markdown-out", help="Write the comparison as Markdown."),
+    ] = None,
+    json_out: Annotated[
+        bool,
+        typer.Option("--json", help="Print JSON instead of the Markdown table."),
+    ] = False,
+) -> None:
+    """Simulate latency-aware action-chunk scheduling (Real-Time Chunking style).
+
+    Compares naive async chunk-swapping against the RTC freeze-prefix + soft-mask blend
+    over a chunk stream, reporting the chunk-boundary continuity of each. Pure CPU
+    simulation of the scheduling layer (no diffusion/flow policy, no gradient-guided
+    sampler); a runtime mechanism characterization, not a policy-quality claim.
+    """
+
+    from vla_zoo.runtime.realtime_chunking import (
+        RealtimeChunkingConfig,
+        chunks_from_action_log,
+        compare_strategies,
+        format_rtc_sim_markdown,
+        synthetic_chunk_stream,
+    )
+
+    try:
+        config = RealtimeChunkingConfig(
+            horizon=horizon, execute_horizon=execute, inference_delay_ticks=delay
+        )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+    if action_log is not None:
+        from vla_zoo.benchmark.replay import load_action_log
+
+        if not action_log.is_file():
+            typer.echo(f"action log not found: {action_log}", err=True)
+            raise typer.Exit(1)
+        frames = load_action_log(action_log)
+        if not frames:
+            typer.echo(f"no action frames in {action_log}", err=True)
+            raise typer.Exit(1)
+        stream = chunks_from_action_log([f.action for f in frames], config)
+        source = f"action-log:{action_log.name}"
+    else:
+        stream = synthetic_chunk_stream(
+            config, chunk_count=chunks, action_dim=dims, mode_strength=mode_strength, seed=seed
+        )
+        source = f"synthetic(seed={seed}, mode_strength={mode_strength:g})"
+
+    report = compare_strategies(stream, config, source=source)
+    payload = report.to_dict()
+
+    if out is not None:
+        _write_text(out, json.dumps(payload, indent=2) + "\n")
+        typer.echo(f"JSON written to {out}")
+    if markdown_out is not None:
+        _write_text(markdown_out, format_rtc_sim_markdown(report))
+        typer.echo(f"Markdown written to {markdown_out}")
+    if json_out:
+        typer.echo(json.dumps(payload, indent=2))
+    else:
+        typer.echo(format_rtc_sim_markdown(report))
+
+
 @app.command("bench-report")
 def bench_report(
     summaries: Annotated[

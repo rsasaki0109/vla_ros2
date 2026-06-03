@@ -53,6 +53,25 @@ that SmolVLA commands much larger position deltas than OpenVLA-7b:
 
 ![VLA trajectory race](docs/assets/trajectory/trajectory_race.gif)
 
+### Real-Time Chunking scheduler simulation
+
+Action-chunking policies predict a horizon of future actions per inference. While the
+controller executes them, the next chunk is computed in the background — and because that
+inference takes time, naively swapping to the new chunk jumps between two independently
+sampled plans at the boundary. [Real-Time Chunking](https://arxiv.org/abs/2506.07339)
+(Black et al.) fixes this purely at inference time by *freezing* the actions guaranteed to
+execute during inference and inpainting the rest.
+
+`vla-zoo rtc-sim` is a pure CPU simulation of that scheduling layer. On a synthetic chunk
+stream it cuts the mean chunk-boundary jump **~76%** vs naive async swapping
+([recorded run](docs/assets/rtc_sim/rtc_scheduler_sim.md)). It models the freeze-prefix +
+soft-mask blend, not the diffusion/flow gradient-guided sampler — a runtime scheduling
+property, not a policy-quality or task-success claim.
+
+```bash
+vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4
+```
+
 ## Why vla_zoo?
 
 Most VLA repositories focus on model code, training, checkpoints, or task demos.

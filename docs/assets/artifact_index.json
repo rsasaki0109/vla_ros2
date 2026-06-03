@@ -1,5 +1,5 @@
 {
-  "count": 48,
+  "count": 66,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -11,6 +11,126 @@
     "GPU probes"
   ],
   "entries": [
+    {
+      "title": "VLA runtime leaderboard (HTML)",
+      "path": "docs/assets/leaderboard/vla_runtime_leaderboard.html",
+      "category": "model evidence",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo compare leaderboard --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --metric latency_ms_p50 --html-out docs/assets/leaderboard/vla_runtime_leaderboard.html",
+      "caveat": "Shareable runtime ranking (latency/throughput + measured memory); SmolVLA #1, OpenVLA #2, pi0/groot shown as honest blocked rows. Not a task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "VLA runtime leaderboard (Markdown)",
+      "path": "docs/assets/leaderboard/vla_runtime_leaderboard.md",
+      "category": "model evidence",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo compare leaderboard --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --metric latency_ms_p50 --markdown-out docs/assets/leaderboard/vla_runtime_leaderboard.md",
+      "caveat": "Runtime path only; ranking is latency/throughput, not skill.",
+      "exists": true
+    },
+    {
+      "title": "VLA runtime leaderboard (JSON)",
+      "path": "docs/assets/leaderboard/vla_runtime_leaderboard.json",
+      "category": "model evidence",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo compare leaderboard --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --metric latency_ms_p50 --out docs/assets/leaderboard/vla_runtime_leaderboard.json",
+      "caveat": "Machine-readable vla-zoo-leaderboard/v1 artifact; no task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "VLA trajectory race (OpenVLA vs SmolVLA, animated GIF)",
+      "path": "docs/assets/trajectory/trajectory_race.gif",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo demo trajectory-race --action-logs docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl,docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl --out docs/assets/trajectory/trajectory_race.gif",
+      "caveat": "Two recorded action streams overlaid on a shared scale \u2014 it reveals SmolVLA's deltas are much larger than OpenVLA's. Runtime path, not a real-EEF claim.",
+      "exists": true
+    },
+    {
+      "title": "Real-Time Chunking scheduler simulation (JSON)",
+      "path": "docs/assets/rtc_sim/rtc_scheduler_sim.json",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4 --dims 3 --mode-strength 0.6 --seed 7 --out docs/assets/rtc_sim/rtc_scheduler_sim.json",
+      "caveat": "Deterministic simulation of latency-aware chunk scheduling: RTC freeze-prefix cuts the chunk-boundary jump ~76% vs naive async on a synthetic stream. Runtime scheduling property, not a policy-quality claim.",
+      "exists": true
+    },
+    {
+      "title": "Real-Time Chunking scheduler simulation (Markdown)",
+      "path": "docs/assets/rtc_sim/rtc_scheduler_sim.md",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4 --dims 3 --mode-strength 0.6 --seed 7 --markdown-out docs/assets/rtc_sim/rtc_scheduler_sim.md",
+      "caveat": "Compares naive async vs RTC freeze chunk-boundary continuity. Models the scheduling layer, not the diffusion/flow gradient-guided sampler.",
+      "exists": true
+    },
+    {
+      "title": "OpenVLA commanded EEF trajectory (animated GIF)",
+      "path": "docs/assets/trajectory/openvla_trajectory.gif",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo demo trajectory-gif --action-log docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --out docs/assets/trajectory/openvla_trajectory.gif",
+      "caveat": "Integrates OpenVLA's recorded eef_delta stream open-loop (action units, not metric). Shows what the policy commanded; not a task-success or real-EEF claim.",
+      "exists": true
+    },
+    {
+      "title": "SmolVLA commanded EEF trajectory (animated GIF)",
+      "path": "docs/assets/trajectory/smolvla_trajectory.gif",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo demo trajectory-gif --action-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl --out docs/assets/trajectory/smolvla_trajectory.gif",
+      "caveat": "Integrates SmolVLA's recorded action stream open-loop (action units, not metric). Shows what the policy commanded; not a task-success or real-EEF claim.",
+      "exists": true
+    },
+    {
+      "title": "Quickstart terminal demo (animated GIF)",
+      "path": "docs/assets/quickstart/quickstart_demo.gif",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo demo quickstart-gif --out docs/assets/quickstart/quickstart_demo.gif",
+      "caveat": "Animated terminal demo of `vla-zoo quickstart`, rendered with PIL (no external tools). Presentation asset with representative baseline figures; not an evidence artifact.",
+      "exists": true
+    },
+    {
+      "title": "Quickstart runtime-boundary report (HTML)",
+      "path": "docs/assets/quickstart/report.html",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo quickstart --out-dir docs/assets/quickstart",
+      "caveat": "Zero-dependency local smoke of load_model()->predict() on the pure-Python baselines (no GPU/weights/PyBullet); latencies are machine-specific. Proves the plumbing, not model quality.",
+      "exists": true
+    },
+    {
+      "title": "Quickstart runtime-boundary report (Markdown)",
+      "path": "docs/assets/quickstart/report.md",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo quickstart --out-dir docs/assets/quickstart",
+      "caveat": "Baseline runtime-boundary smoke; not a model-quality claim.",
+      "exists": true
+    },
+    {
+      "title": "Quickstart runtime-boundary report (JSON)",
+      "path": "docs/assets/quickstart/report.json",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo quickstart --out-dir docs/assets/quickstart",
+      "caveat": "Machine-readable vla-zoo-quickstart/v1 artifact; no task-success claim.",
+      "exists": true
+    },
     {
       "title": "VLA model evidence matrix (HTML)",
       "path": "docs/assets/vla_model_evidence_matrix.html",
@@ -279,6 +399,66 @@
       "kind": "checked",
       "source_command": "vla-zoo bench-report --summaries docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,docs/assets/sample_pybullet_compare/openvla_probe_summary.json --markdown-out docs/assets/sample_pybullet_compare/runtime_probe_comparison.md",
       "caveat": "Markdown twin of the real-scene probe comparison; runtime path only, no task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "Real-scene probe ranked aggregate (HTML)",
+      "path": "docs/assets/sample_pybullet_compare/runtime_probe_aggregate.html",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo bench-aggregate --summaries docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,docs/assets/sample_pybullet_compare/openvla_probe_summary.json --metric latency_ms_p50 --html-out docs/assets/sample_pybullet_compare/runtime_probe_aggregate.html",
+      "caveat": "Standalone HTML of the ranked aggregate + per-model roll-up; runtime path only, ranking is not a task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "Real-scene probe ranked aggregate (Markdown)",
+      "path": "docs/assets/sample_pybullet_compare/runtime_probe_aggregate.md",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo bench-aggregate --summaries docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,docs/assets/sample_pybullet_compare/openvla_probe_summary.json --metric latency_ms_p50 --markdown-out docs/assets/sample_pybullet_compare/runtime_probe_aggregate.md",
+      "caveat": "Probe summaries ranked by latency p50 (SmolVLA #1, OpenVLA #2); runtime path only, ranking is not a task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "Real-scene probe ranked aggregate (JSON)",
+      "path": "docs/assets/sample_pybullet_compare/runtime_probe_aggregate.json",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo bench-aggregate --summaries docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,docs/assets/sample_pybullet_compare/openvla_probe_summary.json --metric latency_ms_p50 --out docs/assets/sample_pybullet_compare/runtime_probe_aggregate.json",
+      "caveat": "Machine-readable vla-zoo-benchmark-aggregate/v1 artifact; runtime path only, no task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "Replayed action-log aggregate (HTML)",
+      "path": "docs/assets/sample_pybullet_compare/replayed_log_aggregate.html",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo bench-aggregate --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --metric latency_ms_p50 --html-out docs/assets/sample_pybullet_compare/replayed_log_aggregate.html",
+      "caveat": "Built directly from the two recorded vla_actions.jsonl logs via --from-log (no manual bench-replay step); runtime path only, no task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "Replayed action-log aggregate (Markdown)",
+      "path": "docs/assets/sample_pybullet_compare/replayed_log_aggregate.md",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo bench-aggregate --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --metric latency_ms_p50 --markdown-out docs/assets/sample_pybullet_compare/replayed_log_aggregate.md",
+      "caveat": "Two recorded action logs replayed and ranked in one step (SmolVLA #1, OpenVLA #2); replayed logs keep a blank success rate.",
+      "exists": true
+    },
+    {
+      "title": "Replayed action-log aggregate (JSON)",
+      "path": "docs/assets/sample_pybullet_compare/replayed_log_aggregate.json",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "generated",
+      "source_command": "vla-zoo bench-aggregate --from-log docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --metric latency_ms_p50 --out docs/assets/sample_pybullet_compare/replayed_log_aggregate.json",
+      "caveat": "Machine-readable vla-zoo-benchmark-aggregate/v1 artifact built via --from-log; runtime path only, no task-success claim.",
       "exists": true
     },
     {

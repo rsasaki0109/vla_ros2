@@ -141,6 +141,37 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="Real-Time Chunking scheduler simulation (JSON)",
+        path="docs/assets/rtc_sim/rtc_scheduler_sim.json",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4 --dims 3 "
+            "--mode-strength 0.6 --seed 7 --out docs/assets/rtc_sim/rtc_scheduler_sim.json"
+        ),
+        caveat=(
+            "Deterministic simulation of latency-aware chunk scheduling: RTC freeze-prefix "
+            "cuts the chunk-boundary jump ~76% vs naive async on a synthetic stream. Runtime "
+            "scheduling property, not a policy-quality claim."
+        ),
+    ),
+    ArtifactEntry(
+        title="Real-Time Chunking scheduler simulation (Markdown)",
+        path="docs/assets/rtc_sim/rtc_scheduler_sim.md",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4 --dims 3 "
+            "--mode-strength 0.6 --seed 7 --markdown-out docs/assets/rtc_sim/rtc_scheduler_sim.md"
+        ),
+        caveat=(
+            "Compares naive async vs RTC freeze chunk-boundary continuity. Models the "
+            "scheduling layer, not the diffusion/flow gradient-guided sampler."
+        ),
+    ),
+    ArtifactEntry(
         title="OpenVLA commanded EEF trajectory (animated GIF)",
         path="docs/assets/trajectory/openvla_trajectory.gif",
         category="simulation",
