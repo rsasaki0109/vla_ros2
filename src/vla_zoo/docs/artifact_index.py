@@ -124,6 +124,23 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Machine-readable vla-zoo-leaderboard/v1 artifact; no task-success claim.",
     ),
     ArtifactEntry(
+        title="VLA trajectory race (OpenVLA vs SmolVLA, animated GIF)",
+        path="docs/assets/trajectory/trajectory_race.gif",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command=(
+            "vla-zoo demo trajectory-race --action-logs "
+            "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl,"
+            "docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl "
+            "--out docs/assets/trajectory/trajectory_race.gif"
+        ),
+        caveat=(
+            "Two recorded action streams overlaid on a shared scale — it reveals SmolVLA's "
+            "deltas are much larger than OpenVLA's. Runtime path, not a real-EEF claim."
+        ),
+    ),
+    ArtifactEntry(
         title="OpenVLA commanded EEF trajectory (animated GIF)",
         path="docs/assets/trajectory/openvla_trajectory.gif",
         category="simulation",

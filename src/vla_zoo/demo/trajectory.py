@@ -36,6 +36,14 @@ _PALETTE = {
     "closed": (245, 158, 66),
 }
 
+#: Distinct per-adapter colours for the overlaid trajectory race.
+RACE_COLORS: tuple[tuple[int, int, int], ...] = (
+    (76, 194, 255),
+    (245, 158, 66),
+    (160, 120, 245),
+    (110, 210, 140),
+)
+
 TRAJECTORY_NOTE = (
     "Integrated eef_delta action stream (open-loop, action units, not metric). Runtime-path "
     "visualisation of what the policy commanded — NOT a task-success or real-end-effector claim."
@@ -210,6 +218,105 @@ def render_trajectory_gif(
         durations.append(step_ms)
 
     durations[-1] = hold_ms  # linger on the completed path
+
+    path = Path(path).expanduser()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    images[0].save(
+        path,
+        save_all=True,
+        append_images=images[1:],
+        duration=durations,
+        loop=0,
+        disposal=2,
+        optimize=True,
+    )
+    return path
+
+
+def render_trajectory_race_gif(
+    trajectories: Sequence[Trajectory],
+    path: Path,
+    *,
+    width: int = 760,
+    panel: int = 300,
+    margin: int = 26,
+    gap: int = 20,
+    header: int = 60,
+    step_ms: int = 130,
+    hold_ms: int = 2400,
+) -> Path:
+    """Overlay several adapters' trajectories in one animated GIF, advancing in lock-step.
+
+    All trajectories share one world-to-pixel scale (computed over every point) so the paths
+    are directly comparable, and each adapter gets a distinct colour + legend chip. Shorter
+    trajectories freeze at their final point once exhausted. Runtime-path visualisation only.
+    """
+
+    from PIL import Image, ImageDraw
+
+    series = [t for t in trajectories if len(t.points) >= 2]
+    if not series:
+        msg = "need at least one trajectory with two points to race"
+        raise ValueError(msg)
+
+    colors = [RACE_COLORS[i % len(RACE_COLORS)] for i in range(len(series))]
+    all_pts = [p for traj in series for p in traj.points]
+    xs = [p[0] for p in all_pts]
+    ys = [p[1] for p in all_pts]
+    zs = [p[2] for p in all_pts]
+    cx, cy, cz = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2, (max(zs) + min(zs)) / 2
+    span = max(max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs), 1e-6)
+    inner = panel - 2 * margin
+    scale = inner / (span * 1.15)
+
+    panel_top = header + 8
+    xy = _Projection(gap + margin, panel_top + margin, inner, cx, cy, scale)
+    xz = _Projection(gap + panel + gap + margin, panel_top + margin, inner, cx, cz, scale)
+    height = panel_top + panel + 30
+
+    font = _load_font(15)
+    small = _load_font(12)
+    max_steps = max(len(traj.points) for traj in series) - 1
+
+    def _draw_static(draw: ImageDraw.ImageDraw) -> None:
+        for x0, (ha, va) in ((gap, ("X", "Y")), (gap + panel + gap, ("X", "Z"))):
+            box = (x0, panel_top, x0 + panel, panel_top + panel)
+            draw.rectangle(box, fill=_PALETTE["panel"], outline=_PALETTE["grid"])
+            mid_x, mid_y = x0 + panel / 2, panel_top + panel / 2
+            draw.line((x0 + margin, mid_y, x0 + panel - margin, mid_y), fill=_PALETTE["grid"])
+            draw.line((mid_x, panel_top + margin, mid_x, panel_top + panel - margin),
+                      fill=_PALETTE["grid"])
+            draw.text((x0 + panel - 18, mid_y - 16), ha, fill=_PALETTE["muted"], font=small)  # type: ignore[arg-type]
+            draw.text((mid_x + 6, panel_top + margin - 4), va, fill=_PALETTE["muted"], font=small)  # type: ignore[arg-type]
+
+    images: list[Image.Image] = []
+    durations: list[int] = []
+    for i in range(1, max_steps + 1):
+        image = Image.new("RGB", (width, height), _PALETTE["bg"])
+        draw = ImageDraw.Draw(image)
+        draw.text((gap, 12), f"VLA trajectory race  ·  step {i}/{max_steps}",
+                  fill=_PALETTE["fg"], font=font)  # type: ignore[arg-type]
+        # legend chips
+        lx = gap
+        for traj, color in zip(series, colors, strict=False):
+            draw.rectangle((lx, 36, lx + 14, 50), fill=color)
+            draw.text((lx + 20, 36), traj.model, fill=_PALETTE["muted"], font=small)  # type: ignore[arg-type]
+            lx += 40 + len(traj.model) * 8
+        _draw_static(draw)
+        for traj, color in zip(series, colors, strict=False):
+            j = min(i, len(traj.points) - 1)
+            for proj, (a, b) in ((xy, (0, 1)), (xz, (0, 2))):
+                for k in range(1, j + 1):
+                    p0, p1 = traj.points[k - 1], traj.points[k]
+                    draw.line((*proj.to_px(p0[a], p0[b]), *proj.to_px(p1[a], p1[b])),
+                              fill=color, width=2)
+                hx, hy = proj.to_px(traj.points[j][a], traj.points[j][b])
+                draw.ellipse((hx - 5, hy - 5, hx + 5, hy + 5), fill=color)
+        draw.text((gap, height - 18), TRAJECTORY_NOTE[:96], fill=_PALETTE["muted"], font=small)  # type: ignore[arg-type]
+        images.append(image)
+        durations.append(step_ms)
+
+    durations[-1] = hold_ms
 
     path = Path(path).expanduser()
     path.parent.mkdir(parents=True, exist_ok=True)
