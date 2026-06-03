@@ -1,7 +1,7 @@
 {
   "schema_version": "vla-zoo-roofline/v1",
   "hardware": {
-    "name": "RTX 4070 Ti SUPER",
+    "name": "16 GB VRAM GPU",
     "peak_tflops_fp16": 88.0,
     "memory_bandwidth_gbps": 672.0,
     "note": "Local card the recorded probes ran on (16 GB)."
@@ -9,7 +9,7 @@
   "comparisons": [
     {
       "model": "smolvla",
-      "hardware": "RTX 4070 Ti SUPER",
+      "hardware": "16 GB VRAM GPU",
       "weight_gb": 0.9,
       "memory_bound_ms": 1.3392857142857142,
       "compute_bound_ms": 0.010227272727272727,
@@ -21,7 +21,7 @@
     },
     {
       "model": "openvla",
-      "hardware": "RTX 4070 Ti SUPER",
+      "hardware": "16 GB VRAM GPU",
       "weight_gb": 3.5,
       "memory_bound_ms": 5.208333333333333,
       "compute_bound_ms": 0.1590909090909091,
@@ -33,7 +33,7 @@
     },
     {
       "model": "pi0",
-      "hardware": "RTX 4070 Ti SUPER",
+      "hardware": "16 GB VRAM GPU",
       "weight_gb": 6.6,
       "memory_bound_ms": 9.821428571428571,
       "compute_bound_ms": 0.075,

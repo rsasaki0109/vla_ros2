@@ -1664,7 +1664,7 @@ def compare_roofline(
     hardware: Annotated[
         str,
         typer.Option("--hardware", help="Hardware profile key (see --list-hardware)."),
-    ] = "rtx_4070_ti_super",
+    ] = "local_16gb",
     list_hardware: Annotated[
         bool,
         typer.Option("--list-hardware", help="List the available hardware profiles and exit."),

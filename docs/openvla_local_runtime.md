@@ -14,7 +14,7 @@ OpenVLA-7b loaded through `load_model("openvla", load_in_4bit=True, ...)` and pr
 |---|---|
 | Model | `openvla/openvla-7b` |
 | Quantization | 4-bit (nf4, double-quant, bf16 compute) |
-| GPU | NVIDIA GeForce RTX 4070 Ti SUPER (16 GB) |
+| GPU | 16 GB VRAM GPU (16 GB) |
 | torch / CUDA | 2.10.0+cu128 / 12.8 |
 | Load time | ~20 s (warm cache) |
 | VRAM after load | 4.35 GB |

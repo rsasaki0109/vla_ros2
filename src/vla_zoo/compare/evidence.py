@@ -175,7 +175,7 @@ def _openvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         "local_runtime": _cell(
             "verified",
             "OpenVLA-7b loaded and predicted a 7-DoF action through the public adapter on a "
-            "local RTX 4070 Ti SUPER (4-bit), with measured load time, VRAM, and latency.",
+            "local 16 GB VRAM GPU (4-bit), with measured load time, VRAM, and latency.",
             (_link("local runtime evidence", "../openvla_local_runtime.md"),),
         ),
         "gpu_inference": _cell(
@@ -297,7 +297,7 @@ def _smolvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         "local_runtime": _cell(
             "verified",
             "lerobot/smolvla_base loaded and predicted a 6-DoF action through "
-            "load_model('smolvla') on a local RTX 4070 Ti SUPER, with measured load/VRAM/latency.",
+            "load_model('smolvla') on a local 16 GB VRAM GPU, with measured load/VRAM/latency.",
             (_link("local runtime evidence", "../smolvla_local_runtime.md"),),
         ),
         "gpu_inference": _cell(

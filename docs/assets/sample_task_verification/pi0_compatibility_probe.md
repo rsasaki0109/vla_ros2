@@ -10,7 +10,7 @@ SmolVLA and OpenVLA-7b — and records the precise boundary that remains.
 
 | Component | Version |
 |---|---|
-| GPU | NVIDIA GeForce RTX 4070 Ti SUPER (16 GB) |
+| GPU | 16 GB VRAM GPU (16 GB) |
 | Local package env | `.venv-smolvla` |
 | LeRobot | `0.5.1` |
 | draccus | `0.10.0` |

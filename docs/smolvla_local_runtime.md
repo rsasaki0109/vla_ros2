@@ -14,7 +14,7 @@ action on a synthetic 256×256 RGB frame, repeated over several runs. SmolVLA is
 | Metric | Value |
 |---|---|
 | Model | `lerobot/smolvla_base` |
-| GPU | NVIDIA GeForce RTX 4070 Ti SUPER (16 GB) |
+| GPU | 16 GB VRAM GPU (16 GB) |
 | torch / CUDA | 2.10.0+cu128 / 12.8 |
 | Load time | ~23 s (warm cache) |
 | VRAM peak | **0.97 GB** (small footprint) |

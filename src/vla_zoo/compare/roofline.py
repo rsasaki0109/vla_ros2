@@ -79,8 +79,8 @@ class ModelComputeProfile:
 
 #: Nominal vendor specs (fp16 tensor TFLOPS dense; HBM/GDDR bandwidth GB/s).
 HARDWARE_PROFILES: dict[str, HardwareProfile] = {
-    "rtx_4070_ti_super": HardwareProfile(
-        "RTX 4070 Ti SUPER", 88.0, 672.0, "Local card the recorded probes ran on (16 GB)."
+    "local_16gb": HardwareProfile(
+        "16 GB VRAM GPU", 88.0, 672.0, "Local card the recorded probes ran on (16 GB)."
     ),
     "rtx_4090": HardwareProfile("RTX 4090", 165.0, 1008.0, "Consumer flagship (24 GB)."),
     "jetson_agx_orin": HardwareProfile(

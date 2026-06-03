@@ -242,7 +242,7 @@
         },
         "local_runtime": {
           "status": "verified",
-          "summary": "OpenVLA-7b loaded and predicted a 7-DoF action through the public adapter on a local RTX 4070 Ti SUPER (4-bit), with measured load time, VRAM, and latency.",
+          "summary": "OpenVLA-7b loaded and predicted a 7-DoF action through the public adapter on a local 16 GB VRAM GPU (4-bit), with measured load time, VRAM, and latency.",
           "links": [
             {
               "label": "local runtime evidence",
@@ -410,7 +410,7 @@
         },
         "local_runtime": {
           "status": "verified",
-          "summary": "lerobot/smolvla_base loaded and predicted a 6-DoF action through load_model('smolvla') on a local RTX 4070 Ti SUPER, with measured load/VRAM/latency.",
+          "summary": "lerobot/smolvla_base loaded and predicted a 6-DoF action through load_model('smolvla') on a local 16 GB VRAM GPU, with measured load/VRAM/latency.",
           "links": [
             {
               "label": "local runtime evidence",

@@ -1,6 +1,6 @@
 # VLA roofline floor vs recorded latency
 
-- Hardware: **RTX 4070 Ti SUPER** (672 GB/s, 88 TFLOPS fp16 nominal)
+- Hardware: **16 GB VRAM GPU** (672 GB/s, 88 TFLOPS fp16 nominal)
 - Floor = single-forward, batch-1 memory-bound lower bound `weight_bytes / bandwidth`.
 
 | Model | Weights | Floor (ms) | Bound by | Measured p50 (ms) | Headroom | Real-time band |

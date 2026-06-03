@@ -87,7 +87,7 @@ _LEADERBOARD_CMD = (
 _ROOFLINE_CMD = (
     "vla-zoo compare roofline --from-log "
     "docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl,"
-    "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --hardware rtx_4070_ti_super"
+    "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --hardware local_16gb"
 )
 
 DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
@@ -352,7 +352,7 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
             "PYTHONPATH=src python3 scripts/measure_openvla_runtime.py "
             "--out docs/assets/openvla_local_runtime.json"
         ),
-        caveat="Machine-readable measured runtime profile (RTX 4070 Ti SUPER, 4-bit).",
+        caveat="Machine-readable measured runtime profile (16 GB VRAM GPU, 4-bit).",
     ),
     ArtifactEntry(
         title="SmolVLA local runtime evidence",
@@ -379,7 +379,7 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
             "PYTHONPATH=src python3 scripts/measure_lerobot_runtime.py "
             "--model smolvla --out docs/assets/smolvla_local_runtime.json"
         ),
-        caveat="Machine-readable measured runtime profile (RTX 4070 Ti SUPER, ~0.97 GB).",
+        caveat="Machine-readable measured runtime profile (16 GB VRAM GPU, ~0.97 GB).",
     ),
     ArtifactEntry(
         title="PyBullet GIF gallery",

@@ -4,7 +4,7 @@
   "model": "lerobot/smolvla_base",
   "runtime": "local",
   "device": "cuda",
-  "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+  "gpu": "16 GB VRAM GPU",
   "python_env": ".venv-smolvla",
   "dependency": "lerobot[smolvla]==0.5.1",
   "vla_zoo_entrypoint": "load_model('smolvla')",

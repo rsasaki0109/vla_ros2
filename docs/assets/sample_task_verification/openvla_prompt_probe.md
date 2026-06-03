@@ -18,7 +18,7 @@ not complete because the GPU did not have enough free memory: bf16 weights are
 ## Resolution
 
 This was resolved by loading in 4-bit (nf4). OpenVLA-7b now loads and predicts a
-7-DoF action on the same class of GPU (RTX 4070 Ti SUPER) at ~4.6 GB peak VRAM
+7-DoF action on the same class of GPU (16 GB VRAM GPU) at ~4.6 GB peak VRAM
 and ~1.1-2.7 s latency. See the measured profile in
 [OpenVLA local runtime evidence](../../openvla_local_runtime.md).
 

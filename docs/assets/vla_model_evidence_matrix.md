@@ -73,7 +73,7 @@ It is not a model-quality leaderboard. `verified` means the repository contains 
 | Cell | Status | Evidence |
 |---|---|---|
 | Contract | verified | Built-in adapter metadata declares inputs, action shape, runtime mode, and caveats.<br>[adapter card](../adapters/openvla.md) |
-| Local runtime | verified | OpenVLA-7b loaded and predicted a 7-DoF action through the public adapter on a local RTX 4070 Ti SUPER (4-bit), with measured load time, VRAM, and latency.<br>[local runtime evidence](../openvla_local_runtime.md) |
+| Local runtime | verified | OpenVLA-7b loaded and predicted a 7-DoF action through the public adapter on a local 16 GB VRAM GPU (4-bit), with measured load time, VRAM, and latency.<br>[local runtime evidence](../openvla_local_runtime.md) |
 | GPU inference | verified | 4-bit (nf4) loading fits a 16 GB consumer GPU: ~4.6 GB peak VRAM, ~1.1-2.7 s per inference. Measured via scripts/measure_openvla_runtime.py.<br>[local runtime evidence](../openvla_local_runtime.md) |
 | Remote server | verified | A real `vla-zoo serve --model openvla --load-in-4bit` server passed a health-first probe and returned a typed 7-DoF action over HTTP /v1/predict (recorded end-to-end on a 16 GB GPU).<br>[OpenVLA remote probe](sample_task_verification/openvla_remote_probe.md), [OpenVLA remote path](../openvla_remote.md) |
 | ROS2 remote | verified | The real VLARuntimeNode ran in remote mode against a live OpenVLA-7b (4-bit) server: recorded 7 RemoteVLAClient actions + 143 status/diagnostics with 0 inference errors (vla-zoo ros remote-smoke-check passed).<br>[ROS2 remote smoke check](sample_ros2_remote_openvla/remote_smoke_check.md), [ROS2 remote plan](ros2_remote_smoke_plan.md) |
@@ -105,7 +105,7 @@ It is not a model-quality leaderboard. `verified` means the repository contains 
 | Cell | Status | Evidence |
 |---|---|---|
 | Contract | verified | Built-in adapter metadata declares inputs, action shape, runtime mode, and caveats.<br>[adapter card](../adapters/smolvla.md) |
-| Local runtime | verified | lerobot/smolvla_base loaded and predicted a 6-DoF action through load_model('smolvla') on a local RTX 4070 Ti SUPER, with measured load/VRAM/latency.<br>[local runtime evidence](../smolvla_local_runtime.md) |
+| Local runtime | verified | lerobot/smolvla_base loaded and predicted a 6-DoF action through load_model('smolvla') on a local 16 GB VRAM GPU, with measured load/VRAM/latency.<br>[local runtime evidence](../smolvla_local_runtime.md) |
 | GPU inference | verified | CUDA inference measured at ~0.97 GB peak VRAM and ~60-133 ms steady latency (real-time capable). Captured via scripts/measure_lerobot_runtime.py.<br>[local runtime evidence](../smolvla_local_runtime.md) |
 | Remote server | verified | A real `vla-zoo serve --model smolvla` server passed a health-first probe and returned a typed 6-DoF action over HTTP /v1/predict (recorded end-to-end).<br>[SmolVLA remote probe](sample_task_verification/smolvla_remote_probe.md), [SmolVLA remote plan](smolvla_remote_smoke_plan.md) |
 | ROS2 remote | verified | The real VLARuntimeNode ran in remote mode against a live SmolVLA server: recorded 14 RemoteVLAClient actions + 106 status/diagnostics with 0 inference errors (vla-zoo ros remote-smoke-check passed).<br>[ROS2 remote smoke check](sample_ros2_remote_smolvla/remote_smoke_check.md), [ROS2 remote plan](ros2_remote_smoke_plan.md) |
