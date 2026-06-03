@@ -56,13 +56,14 @@ SUPER (16 GB) and are runtime-path numbers, not a task-success claim.
 | Adapter | Knob | Measured footprint | How to pass it |
 |---|---|---|---|
 | OpenVLA-7b | 4-bit (bitsandbytes nf4) | ~4.6 GB peak (bf16 weights are ~15 GB and OOM) | `vla-zoo serve --model openvla --load-in-4bit` (server), or `load_model("openvla", load_in_4bit=True)` |
-| SmolVLA / pi0 (LeRobot) | `dtype="bfloat16"` | pi0_base ~8.9 GB (its float32 config OOMs); SmolVLA already ~1 GB | `load_model("pi0", dtype="bfloat16")`, or `demo action-probe --adapter-kwarg dtype=bfloat16` |
+| SmolVLA / pi0 (LeRobot) | `dtype="bfloat16"` | pi0_base ~8.9 GB (its float32 config OOMs); SmolVLA already ~1 GB | `vla-zoo serve --model pi0 --pretrained lerobot/pi0_base --dtype bfloat16` (server), or `load_model("pi0", dtype="bfloat16")` |
 
-The `--load-in-4bit` flag is exposed directly on `vla-zoo serve` for OpenVLA. The LeRobot
-`dtype` override builds the policy config with a pinned compute dtype before the weights load,
-so the model never materializes in float32; it is passed as a `load_model(...)` kwarg or a
-`demo action-probe --adapter-kwarg dtype=bfloat16` (serve does not expose a `dtype` flag yet).
-See the measured runs in [OpenVLA local runtime](openvla_local_runtime.md) and
+Both knobs are exposed on `vla-zoo serve`: `--load-in-4bit` for OpenVLA, and `--dtype` for the
+LeRobot adapters (it threads through to `load_model(..., dtype=...)` the same way). The LeRobot
+`dtype` override builds the policy config with a pinned compute dtype before the weights load, so
+the model never materializes in float32; the same value also works as a `load_model(...)` kwarg or
+a `demo action-probe --adapter-kwarg dtype=bfloat16`. See the measured runs in
+[OpenVLA local runtime](openvla_local_runtime.md) and
 [SmolVLA local runtime](smolvla_local_runtime.md).
 
 For pi0 specifically, local loading also runs a **preflight** that fails loudly rather than
