@@ -111,6 +111,33 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Machine-readable evidence matrix.",
     ),
     ArtifactEntry(
+        title="OpenVLA local runtime evidence",
+        path="docs/openvla_local_runtime.md",
+        category="model evidence",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "PYTHONPATH=src python3 scripts/measure_openvla_runtime.py "
+            "--out docs/assets/openvla_local_runtime.json"
+        ),
+        caveat=(
+            "Measured load/VRAM/latency for OpenVLA-7b (4-bit) on a synthetic frame; "
+            "a runtime-path claim, not task success."
+        ),
+    ),
+    ArtifactEntry(
+        title="OpenVLA local runtime measurements (JSON)",
+        path="docs/assets/openvla_local_runtime.json",
+        category="model evidence",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "PYTHONPATH=src python3 scripts/measure_openvla_runtime.py "
+            "--out docs/assets/openvla_local_runtime.json"
+        ),
+        caveat="Machine-readable measured runtime profile (RTX 4070 Ti SUPER, 4-bit).",
+    ),
+    ArtifactEntry(
         title="PyBullet GIF gallery",
         path="docs/assets/gif_suite/index.html",
         category="simulation",
@@ -326,12 +353,12 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         title="OpenVLA prompt probe",
         path="docs/assets/sample_task_verification/openvla_prompt_probe.md",
         category="GPU probes",
-        status="blocked",
+        status="verified",
         kind="checked",
         source_command=None,
         caveat=(
-            "Local CUDA prompt probe blocked by insufficient free VRAM; "
-            "remote GPU path is next."
+            "Originally bf16-OOM'd on a 16 GB card; resolved via 4-bit. See the measured "
+            "OpenVLA local runtime evidence."
         ),
     ),
     ArtifactEntry(

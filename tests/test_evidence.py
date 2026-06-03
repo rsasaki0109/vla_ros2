@@ -25,7 +25,9 @@ def test_evidence_matrix_keeps_openvla_policy_quality_unverified() -> None:
     record = records[0]
 
     assert payload["schema"] == "vla_zoo.vla_model_evidence_matrix.v1"
-    assert record.evidence["gpu_inference"].status == "blocked"
+    # Local 4-bit GPU inference is now measured and verified, but policy quality stays
+    # explicitly unverified: a runtime-path claim is not a task-success claim.
+    assert record.evidence["gpu_inference"].status == "verified"
     assert record.evidence["policy_quality"].status == "not_verified"
     assert "No task-success" in record.evidence["policy_quality"].summary
 
@@ -45,4 +47,4 @@ def test_evidence_matrix_html_renders_status_and_links() -> None:
     assert "This is not a model-quality leaderboard" in html
     assert "status-verified" in html
     assert "SmolVLA GPU probe" in html
-    assert "OpenVLA prompt probe" in html
+    assert "local runtime evidence" in html

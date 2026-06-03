@@ -173,15 +173,16 @@ def _openvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
     return {
         "contract": _registry_contract(info),
         "local_runtime": _cell(
-            "partial",
-            "Lazy Hugging Face adapter and prompt path are implemented without test-time "
-            "downloads.",
-            (_link("adapter card", "../adapters/openvla.md"),),
+            "verified",
+            "OpenVLA-7b loaded and predicted a 7-DoF action through the public adapter on a "
+            "local RTX 4070 Ti SUPER (4-bit), with measured load time, VRAM, and latency.",
+            (_link("local runtime evidence", "../openvla_local_runtime.md"),),
         ),
         "gpu_inference": _cell(
-            "blocked",
-            "Local CUDA prompt probe found weights/deps but did not complete due to free VRAM.",
-            (_link("OpenVLA prompt probe", "sample_task_verification/openvla_prompt_probe.md"),),
+            "verified",
+            "4-bit (nf4) loading fits a 16 GB consumer GPU: ~4.6 GB peak VRAM, ~1.1-2.7 s per "
+            "inference. Measured via scripts/measure_openvla_runtime.py.",
+            (_link("local runtime evidence", "../openvla_local_runtime.md"),),
         ),
         "remote_server": _cell(
             "planned",
@@ -421,8 +422,8 @@ def _next_step(info: AdapterInfo) -> str:
         return "Keep using this baseline for simulation/report regression checks."
     if info.name == "openvla":
         return (
-            "Run OpenVLA behind a GPU server with enough free VRAM and check in remote "
-            "action logs."
+            "Local 4-bit GPU inference is now verified; next, record remote-server and "
+            "ROS2 remote action logs, then add task-level probes."
         )
     if info.name == "pi0":
         return (

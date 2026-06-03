@@ -446,7 +446,20 @@ Remaining/next useful tasks:
 
 Do not claim policy-quality success.
 
-### 7.5 OpenVLA 7B Path (health-first remote probe DONE)
+### 7.5 OpenVLA 7B Path (health-first remote probe DONE; local 4-bit GPU run VERIFIED)
+
+Local-runtime update (verified): OpenVLA-7b now loads and predicts a 7-DoF action through
+the public adapter on a local RTX 4070 Ti SUPER. bf16 weights (~15 GB) do not fit a 16 GB
+card, so the adapter gained `load_in_4bit` / `load_in_8bit` (bitsandbytes nf4 +
+`device_map`, skipping the post-load `.to()`). Measured: ~4.6 GB peak VRAM, ~1.1-2.7 s
+latency, ~20 s warm-cache load. OpenVLA's `trust_remote_code` needs `timm<1.0`, isolated in
+a `--system-site-packages` venv. Evidence is reproducible via
+`scripts/measure_openvla_runtime.py` (artifact `docs/assets/openvla_local_runtime.json`,
+page `docs/openvla_local_runtime.md`); the `local_runtime` and `gpu_inference` cells are now
+`verified`. This is a runtime-path claim on a synthetic frame, not task success;
+`policy_quality` stays `not_verified`.
+
+
 
 Status: `vla-zoo remote-probe` (`src/vla_zoo/runtime/remote_probe.py`) checks a server's
 `/health` first and only then records one `/v1/predict` response, with three statuses
@@ -459,13 +472,15 @@ without any model download. The OpenVLA `remote_server` evidence cell stays `pla
 tooling sample. Tests in `tests/test_remote_probe.py` (injected fakes + a real
 unreachable-server path; no downloads).
 
-Reason: OpenVLA is important for credibility, but local 7B inference was blocked by
-free VRAM. The correct next path is a remote GPU server with enough memory.
+Reason: OpenVLA is important for credibility. Local 7B inference was previously blocked by
+free VRAM; that is now resolved with 4-bit loading and verified with measured numbers. A
+remote GPU server is still the recommended deployment path for the heavy stack.
 
 Remaining/next useful tasks:
 
 - Run a real OpenVLA server on a GPU box and record a real `/v1/predict` artifact.
 - Promote the `remote_server` cell from `planned` to `verified` only then.
+- Add a task-level probe (real scene frame) before any policy-quality claim.
 
 ### 7.6 pi0/openpi Path (remote-first docs + plan DONE)
 
