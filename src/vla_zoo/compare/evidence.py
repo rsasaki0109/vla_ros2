@@ -198,10 +198,17 @@ def _openvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
             ),
         ),
         "ros2_remote": _cell(
-            "planned",
-            "ROS2 remote command is generated; checked-in OpenVLA ROS2 action logs are "
-            "still needed.",
-            (_link("ROS2 remote plan", "ros2_remote_smoke_plan.md"),),
+            "verified",
+            "The real VLARuntimeNode ran in remote mode against a live OpenVLA-7b (4-bit) "
+            "server: recorded 7 RemoteVLAClient actions + 143 status/diagnostics with 0 "
+            "inference errors (vla-zoo ros remote-smoke-check passed).",
+            (
+                _link(
+                    "ROS2 remote smoke check",
+                    "sample_ros2_remote_openvla/remote_smoke_check.md",
+                ),
+                _link("ROS2 remote plan", "ros2_remote_smoke_plan.md"),
+            ),
         ),
         "pybullet_tasks": _cell(
             "planned",
@@ -438,8 +445,8 @@ def _next_step(info: AdapterInfo) -> str:
         return "Keep using this baseline for simulation/report regression checks."
     if info.name == "openvla":
         return (
-            "Local 4-bit GPU inference and a real remote /v1/predict are both verified; "
-            "next, record a ROS2 remote action log, then add task-level probes."
+            "Local 4-bit GPU, remote /v1/predict, and a ROS2 remote trace are all verified; "
+            "next, broaden to task-level probes on real scene frames."
         )
     if info.name == "pi0":
         return (

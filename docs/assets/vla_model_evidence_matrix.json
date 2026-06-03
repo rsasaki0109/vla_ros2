@@ -275,9 +275,13 @@
           ]
         },
         "ros2_remote": {
-          "status": "planned",
-          "summary": "ROS2 remote command is generated; checked-in OpenVLA ROS2 action logs are still needed.",
+          "status": "verified",
+          "summary": "The real VLARuntimeNode ran in remote mode against a live OpenVLA-7b (4-bit) server: recorded 7 RemoteVLAClient actions + 143 status/diagnostics with 0 inference errors (vla-zoo ros remote-smoke-check passed).",
           "links": [
+            {
+              "label": "ROS2 remote smoke check",
+              "href": "sample_ros2_remote_openvla/remote_smoke_check.md"
+            },
             {
               "label": "ROS2 remote plan",
               "href": "ros2_remote_smoke_plan.md"
@@ -300,7 +304,7 @@
           "links": []
         }
       },
-      "next_step": "Local 4-bit GPU inference and a real remote /v1/predict are both verified; next, record a ROS2 remote action log, then add task-level probes.",
+      "next_step": "Local 4-bit GPU, remote /v1/predict, and a ROS2 remote trace are all verified; next, broaden to task-level probes on real scene frames.",
       "caveat": "Adapter scaffold and prompt path are documented. In the latest local run, the CUDA prompt probe did not complete because free GPU memory was insufficient."
     },
     {

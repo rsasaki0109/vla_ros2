@@ -249,6 +249,22 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="ROS2 remote smoke check (OpenVLA)",
+        path="docs/assets/sample_ros2_remote_openvla/remote_smoke_check.md",
+        category="ROS2",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "python3 scripts/record_ros2_remote_trace.py --model openvla "
+            "--remote-url http://127.0.0.1:PORT && vla-zoo ros remote-smoke-check "
+            "--output-dir docs/assets/sample_ros2_remote_openvla --model openvla"
+        ),
+        caveat=(
+            "Real OpenVLA-7b (4-bit) server driven through the ROS2 runtime node "
+            "(RemoteVLAClient); runtime-path evidence, not task success."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke plan",
         path="docs/assets/ros2_remote_smoke_plan.md",
         category="ROS2",
