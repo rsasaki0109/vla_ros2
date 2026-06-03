@@ -168,6 +168,16 @@ def run_pi0_local_preflight(
     """Abort with an actionable :class:`AdapterError` when a local pi0 load would
     silently produce a random-weight model or fail later on the gated tokenizer.
 
+    This guard is intentionally **pi0-specific**. The hazard exists only because
+    pi0's modeling overrides ``from_pretrained`` to catch a failed state-dict load
+    and return an un-weighted model ("Returning model without loading pretrained
+    weights"). SmolVLA — and any other LeRobot policy loaded through the shared
+    ``SmolVLAAdapter`` base — uses LeRobot's base ``PreTrainedPolicy.from_pretrained``,
+    which *raises* (``FileNotFoundError`` / ``LocalEntryNotFoundError``) when the
+    weights are unavailable. Verified 2026-06-03: loading an uncached SmolVLA
+    checkpoint offline raises ``LocalEntryNotFoundError`` rather than returning a
+    random model, so no preflight is needed for that path.
+
     Best-effort: if huggingface_hub is unavailable the normal
     :class:`MissingDependencyError` path takes over; a probe that itself errors
     unexpectedly degrades to ``"missing"`` rather than masking the real load.

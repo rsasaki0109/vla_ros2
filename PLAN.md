@@ -1004,24 +1004,39 @@ stale "pi0 compatibility" tile text was refreshed to the version-matrix finding 
 version-matched, bf16 fits 16 GB, local inference gated on the PaliGemma tokenizer). All links pass
 `report link-check --strict` (40/40). Docs-only; no code or schema touched.
 
-The OpenVLA/SmolVLA/pi0 → dtype/4-bit → serve → record → surface track is now fully closed and
-discoverable. The remaining honesty question with real headroom is whether the **pi0 silent
-random-weight hazard** generalizes: the preflight is pi0-specific, but `SmolVLAAdapter` (its shared
-base) loads any LeRobot policy and could hit the same "weights silently absent" path for a
-not-yet-cached checkpoint. The next best commit investigates and, if confirmed, generalizes:
+The silent random-weight hazard was investigated and found to be pi0-specific (DONE):
 
 ```text
-investigate whether the silent random-weight hazard affects the SmolVLA base, and generalize the preflight if so (v0.4)
+investigate whether the silent random-weight hazard affects the SmolVLA base, and generalize the preflight if so (v0.4)  [DONE]
 ```
 
-Reason: the pi0 preflight closed one instance of "an adapter that silently serves un-trained
-weights," but SmolVLA/any LeRobot policy loaded through the same base may share it. Time-box a check
-of whether `SmolVLAPolicy.from_pretrained` raises or silently returns random weights when
-`model.safetensors` is unavailable; if it silently degrades, lift the weights-presence half of the
-pi0 preflight into `SmolVLAAdapter` (keeping the pi0 tokenizer-gate check pi0-specific). If SmolVLA
-already raises cleanly, record that finding and leave the guard pi0-only — either way it is an
-honest, unit-testable correctness deliverable. Keep model downloads out of tests and
-`policy_quality` `not_verified`.
+What landed: the finding is that the hazard does **not** generalize. pi0's modeling overrides
+`from_pretrained` to catch a failed state-dict load and return an un-weighted model ("Returning
+model without loading pretrained weights"); SmolVLA — and any LeRobot policy loaded through the
+shared `SmolVLAAdapter` base — uses LeRobot's base `PreTrainedPolicy.from_pretrained`, which raises
+on missing weights (the code raises `FileNotFoundError` on an `HfHubHTTPError`). Verified
+empirically: loading an uncached SmolVLA checkpoint offline raises `LocalEntryNotFoundError` rather
+than returning a random model. So the preflight is correctly left pi0-only; the finding is recorded
+in `run_pi0_local_preflight`'s docstring so a future maintainer neither thinks SmolVLA was
+overlooked nor removes the pi0 guard as redundant. No code generalization (it would be wrong); no
+test (the repo's suite has no lerobot, by convention). Investigation + recorded finding only.
+
+With the pi0/dtype/serve track fully closed and the silent-weight hazard scoped, the next thread is
+the other consistently-`blocked` adapter, GR00T. Unlike pi0 (now reduced to a license gate), GR00T
+has no installable stack here, so the honest move mirrors the *first* pi0 step: confirm and
+precisely document the block rather than fake support.
+
+```text
+re-confirm the GR00T block with a reproducible probe and tighten its evidence-matrix wording (v0.4)
+```
+
+Reason: GR00T's matrix cells are `blocked`/`planned` with prose that may have drifted from the
+actual import/installation failure. Time-box a check of what `load_model("groot", enable_local=True)`
+(or the documented install path) actually does today, capture the precise failure (missing package,
+unavailable stack), and tighten `groot_remote.md` + the evidence matrix so the `blocked` status is
+backed by a reproducible probe — the same honesty bar pi0 now meets. If a real GR00T path
+unexpectedly exists, record what it needs. Keep `policy_quality` `not_verified` and no fabricated
+inference.
 
 Acceptance:
 
