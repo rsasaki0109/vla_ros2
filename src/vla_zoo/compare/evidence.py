@@ -322,9 +322,15 @@ def _smolvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         ),
         "pybullet_tasks": _cell(
             "partial",
-            "Rendered multi-camera plus state observation path was probed; not a "
-            "task-success benchmark.",
+            "Recorded a real-scene action probe: SmolVLA driven on real PyBullet-rendered "
+            "frames (21 queries, 6-DoF, latency p50 ~382 ms with a fresh encode per query), "
+            "exercising the real image preprocessing path that synthetic-frame probes skip. "
+            "Runtime path on real renders, not a task-success benchmark.",
             (
+                _link(
+                    "real-scene action probe",
+                    "sample_pybullet_smolvla/runtime_action_probe.md",
+                ),
                 _link(
                     "SmolVLA PyBullet report",
                     "sample_task_verification/smolvla_pybullet_report.html",
@@ -333,7 +339,9 @@ def _smolvla_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         ),
         "policy_quality": _cell(
             "not_verified",
-            "SmolVLA base still needs robot/task-specific fine-tuning and calibration.",
+            "SmolVLA base still needs robot/task-specific fine-tuning and calibration. The "
+            "real-scene action probe upgrades the input from synthetic noise to a real render "
+            "but makes no task-success or policy-quality claim.",
         ),
     }
 
@@ -455,8 +463,9 @@ def _next_step(info: AdapterInfo) -> str:
         )
     if info.name == "smolvla":
         return (
-            "Local GPU, remote /v1/predict, and a ROS2 remote trace are all verified; "
-            "next, broaden to task-level probes on real scene frames."
+            "Local GPU, remote /v1/predict, a ROS2 remote trace, and a real-scene PyBullet "
+            "action probe are all verified; the remaining gap is task-success / policy "
+            "quality, which stays unclaimed without a fine-tuned checkpoint and graded benchmark."
         )
     if info.name == "groot":
         return (
