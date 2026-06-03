@@ -502,8 +502,12 @@
         },
         "local_runtime": {
           "status": "blocked",
-          "summary": "Blocked until the NVIDIA Isaac GR00T stack is wired in; no GR00T inference ships and the adapter raises instead of fabricating actions.",
+          "summary": "Blocked until the NVIDIA Isaac GR00T stack is wired in; no GR00T inference ships and the adapter raises instead of fabricating actions. Reproducibly probed: load_model('groot').predict(...) raises MissingDependencyError, and no GR00T package is published to PyPI (gr00t/isaac-gr00t/nvidia-gr00t all 404) \u2014 the real runtime is the NVIDIA Isaac-GR00T GitHub stack, not a pip install.",
           "links": [
+            {
+              "label": "block probe",
+              "href": "sample_task_verification/groot_block_probe.md"
+            },
             {
               "label": "blocked status",
               "href": "../groot_remote.md"

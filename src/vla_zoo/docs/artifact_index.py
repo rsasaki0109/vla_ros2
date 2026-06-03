@@ -567,6 +567,22 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         ),
     ),
     ArtifactEntry(
+        title="GR00T block probe",
+        path="docs/assets/sample_task_verification/groot_block_probe.md",
+        category="GPU probes",
+        status="blocked",
+        kind="checked",
+        source_command=(
+            "PYTHONPATH=src python -c \"from vla_zoo import load_model; "
+            "load_model('groot').predict(image=None, instruction='walk forward')\""
+        ),
+        caveat=(
+            "Reproducible block: load_model('groot').predict(...) raises "
+            "MissingDependencyError and no GR00T package exists on PyPI; the real runtime is "
+            "the NVIDIA Isaac-GR00T GitHub stack. No inference, no task-success claim."
+        ),
+    ),
+    ArtifactEntry(
         title="Adapter cards index",
         path="docs/adapters/README.md",
         category="adapter docs",

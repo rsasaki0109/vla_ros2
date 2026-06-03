@@ -371,8 +371,12 @@ def _groot_evidence(info: AdapterInfo) -> dict[str, EvidenceCell]:
         "local_runtime": _cell(
             "blocked",
             "Blocked until the NVIDIA Isaac GR00T stack is wired in; no GR00T inference ships "
-            "and the adapter raises instead of fabricating actions.",
+            "and the adapter raises instead of fabricating actions. Reproducibly probed: "
+            "load_model('groot').predict(...) raises MissingDependencyError, and no GR00T "
+            "package is published to PyPI (gr00t/isaac-gr00t/nvidia-gr00t all 404) — the real "
+            "runtime is the NVIDIA Isaac-GR00T GitHub stack, not a pip install.",
             (
+                _link("block probe", "sample_task_verification/groot_block_probe.md"),
                 _link("blocked status", "../groot_remote.md"),
                 _link(
                     "external adapter status",

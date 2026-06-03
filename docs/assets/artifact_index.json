@@ -1,5 +1,5 @@
 {
-  "count": 35,
+  "count": 48,
   "missing": 0,
   "ok_overall": true,
   "categories": [
@@ -152,6 +152,16 @@
       "exists": true
     },
     {
+      "title": "SmolVLA ROS2 runtime dashboard (with diagnostics summary band)",
+      "path": "docs/assets/sample_ros2_remote_smolvla/dashboard.html",
+      "category": "runtime dashboard",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo compare dashboard --status-log docs/assets/sample_ros2_remote_smolvla/vla_status.jsonl --diagnostics-log docs/assets/sample_ros2_remote_smolvla/vla_diagnostics_native.jsonl --out docs/assets/sample_ros2_remote_smolvla/dashboard.html",
+      "caveat": "Real SmolVLA ROS2 run; the diagnostics summary band reduces 106 records to latency spread and the worst-severity transient. Runtime-path, not task success.",
+      "exists": true
+    },
+    {
       "title": "ROS2 remote smoke check (SmolVLA)",
       "path": "docs/assets/sample_ros2_remote_smolvla/remote_smoke_check.md",
       "category": "ROS2",
@@ -169,6 +179,106 @@
       "kind": "checked",
       "source_command": "python3 scripts/record_ros2_remote_trace.py --model openvla --remote-url http://127.0.0.1:PORT && vla-zoo ros remote-smoke-check --output-dir docs/assets/sample_ros2_remote_openvla --model openvla",
       "caveat": "Real OpenVLA-7b (4-bit) server driven through the ROS2 runtime node (RemoteVLAClient); runtime-path evidence, not task success.",
+      "exists": true
+    },
+    {
+      "title": "Runtime diagnostics snapshot (SmolVLA ROS2)",
+      "path": "docs/assets/sample_ros2_remote_smolvla/runtime_diagnostics_snapshot.md",
+      "category": "ROS2",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo diag-report --from-ros-log docs/assets/sample_ros2_remote_smolvla/vla_diagnostics.jsonl --markdown-out docs/assets/sample_ros2_remote_smolvla/runtime_diagnostics_snapshot.md",
+      "caveat": "Latest vla-zoo-diagnostics/v1 snapshot reconstructed from the real SmolVLA ROS2 run; latency/clip-rate/staleness only, not task success.",
+      "exists": true
+    },
+    {
+      "title": "Runtime diagnostics snapshot (OpenVLA ROS2)",
+      "path": "docs/assets/sample_ros2_remote_openvla/runtime_diagnostics_snapshot.md",
+      "category": "ROS2",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo diag-report --from-ros-log docs/assets/sample_ros2_remote_openvla/vla_diagnostics.jsonl --markdown-out docs/assets/sample_ros2_remote_openvla/runtime_diagnostics_snapshot.md",
+      "caveat": "Latest vla-zoo-diagnostics/v1 snapshot reconstructed from the real OpenVLA-7b (4-bit) ROS2 run; latency/clip-rate/staleness only, not task success.",
+      "exists": true
+    },
+    {
+      "title": "Runtime diagnostics summary (SmolVLA ROS2)",
+      "path": "docs/assets/sample_ros2_remote_smolvla/runtime_diagnostics_summary.md",
+      "category": "ROS2",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo diag-report --from-ros-log docs/assets/sample_ros2_remote_smolvla/vla_diagnostics.jsonl --summary --markdown-out docs/assets/sample_ros2_remote_smolvla/runtime_diagnostics_summary.md",
+      "caveat": "Time-series reduction of the real SmolVLA ROS2 run (latency spread, drop/clip peaks, worst-severity record); runtime-path evidence, not task success.",
+      "exists": true
+    },
+    {
+      "title": "Runtime diagnostics summary (OpenVLA ROS2)",
+      "path": "docs/assets/sample_ros2_remote_openvla/runtime_diagnostics_summary.md",
+      "category": "ROS2",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo diag-report --from-ros-log docs/assets/sample_ros2_remote_openvla/vla_diagnostics.jsonl --summary --markdown-out docs/assets/sample_ros2_remote_openvla/runtime_diagnostics_summary.md",
+      "caveat": "Time-series reduction of the real OpenVLA-7b (4-bit) ROS2 run (latency spread, drop/clip peaks, worst-severity record); runtime-path evidence, not task success.",
+      "exists": true
+    },
+    {
+      "title": "SmolVLA real-scene action probe (PyBullet)",
+      "path": "docs/assets/sample_pybullet_smolvla/runtime_action_probe.md",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo demo action-probe --model smolvla --allow-local-heavy --pretrained lerobot/smolvla_base --local-files-only --return-action-chunk --out docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl --summary-md docs/assets/sample_pybullet_smolvla/runtime_action_probe.md",
+      "caveat": "Real SmolVLA driven on real PyBullet-rendered frames (21 queries, action dim 6); exercises the real image preprocessing path. Runtime-path latency/magnitude only, NOT task success or policy quality (policy_quality=not_verified).",
+      "exists": true
+    },
+    {
+      "title": "SmolVLA real-scene action log (PyBullet)",
+      "path": "docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo demo action-probe --model smolvla --allow-local-heavy --pretrained lerobot/smolvla_base --local-files-only --return-action-chunk --out docs/assets/sample_pybullet_smolvla/smolvla_action_probe.jsonl",
+      "caveat": "Canonical vla_actions.jsonl action stream from real renders; replayable via vla-zoo bench-replay (success=None). Runtime path, not a task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "OpenVLA real-scene action probe (PyBullet)",
+      "path": "docs/assets/sample_pybullet_openvla/runtime_action_probe.md",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo demo action-probe --model openvla --allow-local-heavy --pretrained openvla/openvla-7b --device cuda:0 --adapter-kwarg load_in_4bit=true --adapter-kwarg unnorm_key=bridge_orig --out docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl --summary-md docs/assets/sample_pybullet_openvla/runtime_action_probe.md",
+      "caveat": "Real OpenVLA-7b (4-bit) driven on real PyBullet-rendered frames (21 queries, action dim 7); exercises the real image preprocessing path. Runtime-path latency/magnitude only, NOT task success (policy_quality=not_verified).",
+      "exists": true
+    },
+    {
+      "title": "OpenVLA real-scene action log (PyBullet)",
+      "path": "docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo demo action-probe --model openvla --allow-local-heavy --pretrained openvla/openvla-7b --device cuda:0 --adapter-kwarg load_in_4bit=true --adapter-kwarg unnorm_key=bridge_orig --out docs/assets/sample_pybullet_openvla/openvla_action_probe.jsonl",
+      "caveat": "Canonical vla_actions.jsonl action stream from real renders; replayable via vla-zoo bench-replay (success=None). Runtime path, not a task-success claim.",
+      "exists": true
+    },
+    {
+      "title": "Real-scene action probe runtime comparison (SmolVLA vs OpenVLA)",
+      "path": "docs/assets/sample_pybullet_compare/runtime_probe_comparison.html",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo bench-replay --action-log .../{model}_action_probe.jsonl --source pybullet-action-probe --summary-out .../{model}_probe_summary.json && vla-zoo bench-report --summaries docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,docs/assets/sample_pybullet_compare/openvla_probe_summary.json --html-out docs/assets/sample_pybullet_compare/runtime_probe_comparison.html",
+      "caveat": "Side-by-side latency/action-rate of the two real-scene probes (SmolVLA p50 ~382 ms vs OpenVLA-7b 4-bit p50 ~2.0 s). Blank success rate: no task-success or policy-quality claim.",
+      "exists": true
+    },
+    {
+      "title": "Real-scene action probe runtime comparison (Markdown)",
+      "path": "docs/assets/sample_pybullet_compare/runtime_probe_comparison.md",
+      "category": "simulation",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo bench-report --summaries docs/assets/sample_pybullet_compare/smolvla_probe_summary.json,docs/assets/sample_pybullet_compare/openvla_probe_summary.json --markdown-out docs/assets/sample_pybullet_compare/runtime_probe_comparison.md",
+      "caveat": "Markdown twin of the real-scene probe comparison; runtime path only, no task-success claim.",
       "exists": true
     },
     {
@@ -282,6 +392,16 @@
       "exists": true
     },
     {
+      "title": "GR00T block probe",
+      "path": "docs/assets/sample_task_verification/groot_block_probe.md",
+      "category": "GPU probes",
+      "status": "blocked",
+      "kind": "checked",
+      "source_command": "PYTHONPATH=src python -c \"from vla_zoo import load_model; load_model('groot').predict(image=None, instruction='walk forward')\"",
+      "caveat": "Reproducible block: load_model('groot').predict(...) raises MissingDependencyError and no GR00T package exists on PyPI; the real runtime is the NVIDIA Isaac-GR00T GitHub stack. No inference, no task-success claim.",
+      "exists": true
+    },
+    {
       "title": "Adapter cards index",
       "path": "docs/adapters/README.md",
       "category": "adapter docs",
@@ -339,6 +459,16 @@
       "kind": "checked",
       "source_command": "vla-zoo serve --model smolvla --pretrained lerobot/smolvla_base --device cuda && vla-zoo remote-probe --model smolvla --remote-url http://127.0.0.1:PORT",
       "caveat": "Real SmolVLA server returned a typed 6-DoF action over HTTP; runtime-path evidence, not task success.",
+      "exists": true
+    },
+    {
+      "title": "SmolVLA bf16 dtype-serve remote probe",
+      "path": "docs/assets/sample_task_verification/smolvla_dtype_serve_probe.md",
+      "category": "GPU probes",
+      "status": "verified",
+      "kind": "checked",
+      "source_command": "vla-zoo serve --model smolvla --pretrained lerobot/smolvla_base --device cuda --dtype bfloat16 && vla-zoo remote-probe --model smolvla --remote-url http://127.0.0.1:PORT --strict",
+      "caveat": "Verifies the serve --dtype path: a bf16-loaded SmolVLA server (params confirmed torch.bfloat16) returned a typed 6-DoF action over HTTP. Runtime-path evidence, not task success.",
       "exists": true
     },
     {
