@@ -1159,16 +1159,36 @@ OpenVLA #2 ~1997 ms / 4.6 GB, pi0 & groot blocked rows) with three artifact-inde
 README "Open First" table. Tested: 10 module tests + 3 CLI tests (281 → 294). Every number is
 sourced from a checked-in artifact; ranking is latency/throughput, never task-success.
 
-This is a good point to **pause for direction**. Other high-leverage star-growth moves identified
-(for the user to choose):
+The frictionless quickstart + bare-install fix landed next (DONE):
 
-1. **Frictionless quickstart** — a `vla-zoo quickstart` one-command demo (no GPU/weights) that
-   emits a local dashboard/GIF, plus fixing the bare-install gap (the `vla-zoo` entry point needs
-   `typer`, but `typer` is only in the optional `[cli]` extra — `pip install vla_zoo && vla-zoo`
-   currently ImportErrors). Biggest time-to-wow lever.
-2. **PyPI publish** so `pip install vla_zoo` actually works (the package is not yet on PyPI).
-3. **README hero + a 60-second animated demo** (asciinema/GIF of the leaderboard or quickstart).
-4. A genuinely new runtime capability (new adapter / new ROS2 surface).
+```text
+add vla-zoo quickstart (zero-dep local runtime-boundary smoke) + fix bare-install CLI deps (v0.6)  [DONE]
+```
+
+What landed: two things. (1) **Install fix** — `typer`/`rich` moved from the optional `[cli]` extra
+into the core `dependencies` in `pyproject.toml`, because the `vla-zoo` console script imports
+`typer` at module load; `pip install vla_zoo` now yields a working CLI on its own (`[cli]` kept as a
+back-compat alias). (2) **`vla-zoo quickstart`** — a new top-level command + pure module
+`demo/quickstart.py` (`vla-zoo-quickstart/v1`). It loads the pure-Python baselines
+(dummy/scripted/random — no GPU/weights/PyBullet), drives each through `run_smoke_episode_records`
+→ `predict()`, records latency + a real typed action, and writes `report.{html,md,json}` to
+`--out-dir` (default `./vla_zoo_quickstart/`), printing the absolute path. `run_quickstart` turns a
+failed adapter into an error row (no fabricated latency) rather than aborting; `--json` prints only.
+The HTML is a friendly "✅ runtime boundary works on your machine" page that routes on to the
+recorded real-adapter evidence (leaderboard, evidence matrix, GIF gallery). A recorded example is at
+`docs/assets/quickstart/report.{html,md,json}` (3 artifact-index entries, count 57 → 60), surfaced
+as a Pages hero button + the **first** "What Works Now" tile and the lead of the README Quickstart.
+Tested: 7 module tests (incl. a real baseline run + an error-row case) + 2 CLI tests (294 → 302).
+Honest framing throughout: baselines are infrastructure baselines, not VLA policies; this proves the
+plumbing, not model quality. Note: the checked-in report's latencies are machine-specific.
+
+This is a good point to **pause for direction**. Remaining high-leverage star-growth moves:
+
+1. **PyPI publish** so `pip install vla_zoo` actually works for non-clone users (not yet on PyPI);
+   the metadata is now install-correct, so this is mostly packaging + a release workflow.
+2. **README hero + a 60-second animated demo** (asciinema/GIF of `vla-zoo quickstart` or the
+   leaderboard) at the very top of the README.
+3. A genuinely new runtime capability (new adapter / new ROS2 surface).
 
 No auto-increment: confirm the direction with the user before starting.
 

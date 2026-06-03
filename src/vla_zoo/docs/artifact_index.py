@@ -124,6 +124,37 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="Machine-readable vla-zoo-leaderboard/v1 artifact; no task-success claim.",
     ),
     ArtifactEntry(
+        title="Quickstart runtime-boundary report (HTML)",
+        path="docs/assets/quickstart/report.html",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command="vla-zoo quickstart --out-dir docs/assets/quickstart",
+        caveat=(
+            "Zero-dependency local smoke of load_model()->predict() on the pure-Python "
+            "baselines (no GPU/weights/PyBullet); latencies are machine-specific. Proves "
+            "the plumbing, not model quality."
+        ),
+    ),
+    ArtifactEntry(
+        title="Quickstart runtime-boundary report (Markdown)",
+        path="docs/assets/quickstart/report.md",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command="vla-zoo quickstart --out-dir docs/assets/quickstart",
+        caveat="Baseline runtime-boundary smoke; not a model-quality claim.",
+    ),
+    ArtifactEntry(
+        title="Quickstart runtime-boundary report (JSON)",
+        path="docs/assets/quickstart/report.json",
+        category="simulation",
+        status="verified",
+        kind="generated",
+        source_command="vla-zoo quickstart --out-dir docs/assets/quickstart",
+        caveat="Machine-readable vla-zoo-quickstart/v1 artifact; no task-success claim.",
+    ),
+    ArtifactEntry(
         title="VLA model evidence matrix (HTML)",
         path="docs/assets/vla_model_evidence_matrix.html",
         category="model evidence",

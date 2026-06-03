@@ -995,6 +995,32 @@ def test_bench_aggregate_from_log_missing_file_errors(tmp_path: Path) -> None:
     assert "action log not found" in result.output
 
 
+def test_quickstart_writes_report_and_proves_boundary(tmp_path: Path) -> None:
+    out_dir = tmp_path / "qs"
+    result = CliRunner().invoke(
+        app, ["quickstart", "--out-dir", str(out_dir), "--episodes", "2"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "runtime boundary works" in result.output
+    assert (out_dir / "report.html").is_file()
+    payload = json.loads((out_dir / "report.json").read_text(encoding="utf-8"))
+    assert payload["ok"] is True
+    assert {r["model"] for r in payload["rows"]} == {"dummy", "scripted", "random"}
+
+
+def test_quickstart_json_mode_does_not_write_files(tmp_path: Path) -> None:
+    out_dir = tmp_path / "qs"
+    result = CliRunner().invoke(
+        app, ["quickstart", "--out-dir", str(out_dir), "--episodes", "1", "--json"]
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "vla-zoo-quickstart/v1"
+    assert not out_dir.exists()  # --json prints only, writes nothing
+
+
 def test_compare_leaderboard_from_log_ranks_and_lists_blocked(tmp_path: Path) -> None:
     fast = tmp_path / "fast.jsonl"
     _write_action_log(fast, model="smolvla", latencies=[10.0, 12.0, 11.0])

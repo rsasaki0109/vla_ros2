@@ -105,6 +105,19 @@ Sample artifacts:
 
 ## Quickstart
 
+One command, no GPU / weights / PyBullet — it runs the real
+`load_model() -> predict() -> typed action` boundary on the pure-Python baselines and
+writes a local report that links on to the recorded real-adapter evidence:
+
+```bash
+pip install -e .          # or: pip install -e ".[cli,server,sim]" for the full stack
+vla-zoo quickstart        # writes ./vla_zoo_quickstart/report.html and prints the path
+```
+
+Example output is published at
+[assets/quickstart/report.html](https://rsasaki0109.github.io/vla_zoo/assets/quickstart/report.html).
+This proves the plumbing works locally; it is not a model-quality claim.
+
 ```bash
 git clone https://github.com/rsasaki0109/vla_zoo.git
 cd vla_zoo

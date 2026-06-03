@@ -1,0 +1,65 @@
+{
+  "schema_version": "vla-zoo-quickstart/v1",
+  "episodes": 5,
+  "ok": true,
+  "rows": [
+    {
+      "model": "dummy",
+      "action_space": "eef_delta",
+      "action_dim": 7,
+      "episodes": 5,
+      "latency_ms_p50": 0.007153954356908798,
+      "latency_ms_mean": 0.01346156932413578,
+      "action_rate_hz": 74285.54397495546,
+      "sample_action": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "error": null
+    },
+    {
+      "model": "scripted",
+      "action_space": "eef_delta",
+      "action_dim": 7,
+      "episodes": 5,
+      "latency_ms_p50": 0.05382508970797062,
+      "latency_ms_mean": 0.06587980315089226,
+      "action_rate_hz": 15179.158895019502,
+      "sample_action": [
+        0.2,
+        -0.1,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "error": null
+    },
+    {
+      "model": "random",
+      "action_space": "eef_delta",
+      "action_dim": 7,
+      "episodes": 5,
+      "latency_ms_p50": 0.012965872883796692,
+      "latency_ms_mean": 0.025939149782061577,
+      "action_rate_hz": 38551.76474178648,
+      "sample_action": [
+        -0.094879,
+        -0.007082,
+        0.194744,
+        0.217022,
+        -0.071102,
+        0.035765,
+        -0.089065
+      ],
+      "error": null
+    }
+  ],
+  "note": "Runtime-boundary smoke check on pure-Python baselines (dummy/scripted/random) \u2014 no GPU, weights, or PyBullet. It proves load_model() -> predict() -> typed action works locally and measures latency. Baselines are infrastructure baselines, NOT VLA policies; this is not a model-quality or task-success claim. See the linked evidence for real-adapter runtime paths."
+}
