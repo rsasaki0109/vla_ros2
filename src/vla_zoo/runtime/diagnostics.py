@@ -265,6 +265,43 @@ def diagnostics_from_key_values(
     )
 
 
+def native_records_from_diagnostics_payload(
+    payload: Mapping[str, object],
+    *,
+    status_name: str | None = None,
+) -> list[RuntimeDiagnostics]:
+    """Reconstruct native records from one ``DiagnosticArray``-shaped dict.
+
+    ``payload`` is the dict form of a ROS2 ``diagnostic_msgs/DiagnosticArray`` (a ``status``
+    list of entries, each with ``name`` and ``values`` KeyValue pairs). Only entries whose
+    values carry this schema version are reconstructed (via :func:`diagnostics_from_key_values`),
+    so the recorder can emit a native log alongside the raw ROS dump without re-derivation.
+    Pass ``status_name`` to keep only one DiagnosticStatus name. No ROS dependency.
+    """
+
+    statuses = payload.get("status")
+    if not isinstance(statuses, list):
+        return []
+
+    records: list[RuntimeDiagnostics] = []
+    for status in statuses:
+        if not isinstance(status, Mapping):
+            continue
+        if status_name is not None and status.get("name") != status_name:
+            continue
+        values = status.get("values")
+        if not isinstance(values, list):
+            continue
+        pairs: dict[str, str] = {}
+        for item in values:
+            if isinstance(item, Mapping) and "key" in item:
+                pairs[str(item["key"])] = str(item.get("value", ""))
+        if pairs.get("schema_version") != DIAGNOSTICS_SCHEMA_VERSION:
+            continue
+        records.append(diagnostics_from_key_values(pairs))
+    return records
+
+
 def _fmt(value: float | None, *, suffix: str = "") -> str:
     return f"{value:.2f}{suffix}" if value is not None else "-"
 

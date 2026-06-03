@@ -10,6 +10,7 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from rclpy.node import Node
 from vla_zoo_msgs.msg import VLAAction, VLAStatus
 
+from vla_zoo.runtime.diagnostics import native_records_from_diagnostics_payload
 from vla_zoo_ros.qos import action_qos, status_qos
 
 
@@ -113,9 +114,14 @@ class RuntimeLogRecorder(Node):
         self.declare_parameter("action_log_path", "results/vla_actions.jsonl")
         self.declare_parameter("status_log_path", "results/vla_status.jsonl")
         self.declare_parameter("diagnostics_log_path", "results/vla_diagnostics.jsonl")
+        self.declare_parameter(
+            "native_diagnostics_log_path", "results/vla_diagnostics_native.jsonl"
+        )
         self.declare_parameter("record_actions", True)
         self.declare_parameter("record_status", True)
         self.declare_parameter("record_diagnostics", True)
+        self.declare_parameter("record_native_diagnostics", True)
+        self.declare_parameter("native_diagnostics_status_name", "")
         self.declare_parameter("max_records", 0)
         self.declare_parameter("flush_every", 1)
 
@@ -125,12 +131,19 @@ class RuntimeLogRecorder(Node):
         self.record_actions = _bool_param(self.get_parameter("record_actions").value)
         self.record_status = _bool_param(self.get_parameter("record_status").value)
         self.record_diagnostics = _bool_param(self.get_parameter("record_diagnostics").value)
+        self.record_native_diagnostics = _bool_param(
+            self.get_parameter("record_native_diagnostics").value
+        )
+        native_name = str(self.get_parameter("native_diagnostics_status_name").value)
+        self.native_diagnostics_status_name = native_name or None
         self.max_records = int(self.get_parameter("max_records").value)
         self.flush_every = max(1, int(self.get_parameter("flush_every").value))
         self._records_written = 0
+        self._native_written = 0
         self._action_file: TextIO | None = None
         self._status_file: TextIO | None = None
         self._diagnostics_file: TextIO | None = None
+        self._native_diagnostics_file: TextIO | None = None
 
         if self.record_actions:
             self._action_file = self._open_log(str(self.get_parameter("action_log_path").value))
@@ -152,6 +165,10 @@ class RuntimeLogRecorder(Node):
             self._diagnostics_file = self._open_log(
                 str(self.get_parameter("diagnostics_log_path").value)
             )
+            if self.record_native_diagnostics:
+                self._native_diagnostics_file = self._open_log(
+                    str(self.get_parameter("native_diagnostics_log_path").value)
+                )
             self.create_subscription(
                 DiagnosticArray,
                 self.diagnostics_topic,
@@ -187,10 +204,33 @@ class RuntimeLogRecorder(Node):
         self._write_jsonl(self._status_file, status_msg_to_dict(msg))
 
     def _diagnostics_cb(self, msg: DiagnosticArray) -> None:
-        self._write_jsonl(self._diagnostics_file, diagnostics_msg_to_dict(msg))
+        payload = diagnostics_msg_to_dict(msg)
+        self._write_jsonl(self._diagnostics_file, payload)
+        if self._native_diagnostics_file is not None:
+            records = native_records_from_diagnostics_payload(
+                payload, status_name=self.native_diagnostics_status_name
+            )
+            for record in records:
+                self._write_native(record.to_dict())
+
+    def _write_native(self, payload: dict[str, Any]) -> None:
+        file = self._native_diagnostics_file
+        if file is None:
+            return
+        if self.max_records > 0 and self._native_written >= self.max_records:
+            return
+        file.write(json.dumps(payload, separators=(",", ":")) + "\n")
+        self._native_written += 1
+        if self._native_written % self.flush_every == 0:
+            file.flush()
 
     def destroy_node(self) -> None:
-        for file in (self._action_file, self._status_file, self._diagnostics_file):
+        for file in (
+            self._action_file,
+            self._status_file,
+            self._diagnostics_file,
+            self._native_diagnostics_file,
+        ):
             if file is not None:
                 file.flush()
                 file.close()
