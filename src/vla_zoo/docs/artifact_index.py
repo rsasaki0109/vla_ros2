@@ -233,6 +233,23 @@ DEFAULT_ARTIFACTS: tuple[ArtifactEntry, ...] = (
         caveat="ROS2 remote dummy runtime evidence; launch stays dry-run safe by default.",
     ),
     ArtifactEntry(
+        title="SmolVLA ROS2 runtime dashboard (with diagnostics summary band)",
+        path="docs/assets/sample_ros2_remote_smolvla/dashboard.html",
+        category="runtime dashboard",
+        status="verified",
+        kind="checked",
+        source_command=(
+            "vla-zoo compare dashboard --status-log "
+            "docs/assets/sample_ros2_remote_smolvla/vla_status.jsonl --diagnostics-log "
+            "docs/assets/sample_ros2_remote_smolvla/vla_diagnostics_native.jsonl --out "
+            "docs/assets/sample_ros2_remote_smolvla/dashboard.html"
+        ),
+        caveat=(
+            "Real SmolVLA ROS2 run; the diagnostics summary band reduces 106 records to "
+            "latency spread and the worst-severity transient. Runtime-path, not task success."
+        ),
+    ),
+    ArtifactEntry(
         title="ROS2 remote smoke check (SmolVLA)",
         path="docs/assets/sample_ros2_remote_smolvla/remote_smoke_check.md",
         category="ROS2",

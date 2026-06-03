@@ -1603,16 +1603,19 @@ def compare_dashboard(
     from vla_zoo.runtime.dashboard import (
         format_comparison_dashboard_html,
         load_dashboard_records,
+        load_diagnostics_summaries,
         load_runtime_dashboard_records,
     )
 
+    diagnostics_paths = _parse_optional_paths(diagnostics_logs)
     try:
         records = load_dashboard_records(_parse_optional_paths(results))
         runtime_log_paths = [
             *_parse_optional_paths(status_logs),
-            *_parse_optional_paths(diagnostics_logs),
+            *diagnostics_paths,
         ]
         records.extend(load_runtime_dashboard_records(runtime_log_paths))
+        diagnostics_summaries = load_diagnostics_summaries(diagnostics_paths)
     except Exception as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
@@ -1622,7 +1625,12 @@ def compare_dashboard(
             err=True,
         )
         raise typer.Exit(1)
-    _write_text(out, format_comparison_dashboard_html(records, title=title))
+    _write_text(
+        out,
+        format_comparison_dashboard_html(
+            records, title=title, diagnostics_summaries=diagnostics_summaries
+        ),
+    )
     typer.echo(f"Dashboard written to {out}")
 
 
@@ -1686,6 +1694,7 @@ def report_bundle(
     from vla_zoo.runtime.dashboard import (
         format_comparison_dashboard_html,
         load_dashboard_records,
+        load_diagnostics_summaries,
         load_runtime_dashboard_records,
     )
 
@@ -1695,6 +1704,7 @@ def report_bundle(
     try:
         records = load_dashboard_records(result_paths)
         records.extend(load_runtime_dashboard_records([*status_paths, *diagnostics_paths]))
+        diagnostics_summaries = load_diagnostics_summaries(diagnostics_paths)
     except Exception as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
@@ -1707,7 +1717,9 @@ def report_bundle(
 
     out.parent.mkdir(parents=True, exist_ok=True)
     records_payload = [asdict(record) for record in records]
-    dashboard_html = format_comparison_dashboard_html(records, title=title)
+    dashboard_html = format_comparison_dashboard_html(
+        records, title=title, diagnostics_summaries=diagnostics_summaries
+    )
     metadata = {
         "schema": "vla_zoo.report_bundle.v1",
         "created_at": datetime.now(timezone.utc).isoformat(),

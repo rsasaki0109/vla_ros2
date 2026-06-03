@@ -1,514 +1,9 @@
-from __future__ import annotations
-
-import json
-from collections.abc import Mapping
-from dataclasses import asdict, dataclass
-from html import escape
-from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from vla_zoo.runtime.diagnostics import DiagnosticsSummary
-
-
-@dataclass(frozen=True)
-class ComparisonDashboardRecord:
-    model_name: str
-    runtime: str
-    ok: bool
-    source: str = ""
-    remote_url: str | None = None
-    frames: int = 0
-    adapter_queries: int = 0
-    adapter_errors: int = 0
-    mean_latency_ms: float | None = None
-    max_latency_ms: float | None = None
-    mean_abs_action: float | None = None
-    task_success: bool | None = None
-    cube_lifted: bool | None = None
-    cube_moved_distance: float | None = None
-    final_cube_distance_to_goal: float | None = None
-    grasp_attached_frames: int = 0
-    phase_completion: float | None = None
-    last_error: str | None = None
-
-
-def _string(value: object, default: str = "") -> str:
-    if value is None:
-        return default
-    return str(value)
-
-
-def _bool(value: object) -> bool:
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.strip().lower() in {"1", "true", "yes", "ok"}
-    return bool(value)
-
-
-def _int(value: object, default: int = 0) -> int:
-    if isinstance(value, bool) or value is None:
-        return default
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        return int(value)
-    if isinstance(value, str) and value.strip():
-        try:
-            return int(float(value))
-        except ValueError:
-            return default
-    return default
-
-
-def _float(value: object) -> float | None:
-    if isinstance(value, bool) or value is None:
-        return None
-    if isinstance(value, int | float):
-        return float(value)
-    if isinstance(value, str) and value.strip():
-        try:
-            return float(value)
-        except ValueError:
-            return None
-    return None
-
-
-def _json_mapping_from_text(value: object) -> dict[str, object]:
-    if not isinstance(value, str) or not value.strip():
-        return {}
-    try:
-        parsed = json.loads(value)
-    except json.JSONDecodeError:
-        return {}
-    return parsed if isinstance(parsed, dict) else {}
-
-
-def _metadata(payload: Mapping[str, object]) -> dict[str, object]:
-    raw = payload.get("metadata")
-    if isinstance(raw, dict):
-        return dict(raw)
-    return _json_mapping_from_text(payload.get("metadata_json"))
-
-
-def _diagnostic_values(payload: Mapping[str, object]) -> dict[str, object]:
-    values = payload.get("values")
-    if isinstance(values, dict):
-        return dict(values)
-    if not isinstance(values, list):
-        return {}
-
-    parsed: dict[str, object] = {}
-    for item in values:
-        if not isinstance(item, dict):
-            continue
-        key = item.get("key")
-        if key is None:
-            continue
-        parsed[str(key)] = item.get("value", "")
-    return parsed
-
-
-def _iter_diagnostic_statuses(payload: object) -> list[Mapping[str, object]]:
-    if isinstance(payload, dict) and isinstance(payload.get("status"), list):
-        return [item for item in payload["status"] if isinstance(item, dict)]
-    if isinstance(payload, dict) and {"level", "message"}.issubset(payload):
-        return [payload]
-    return []
-
-
-def _looks_like_status_event(payload: object) -> bool:
-    return isinstance(payload, dict) and (
-        "ready" in payload or "status_text" in payload or "last_latency_ms" in payload
-    )
-
-
-def _looks_like_diagnostic_event(payload: object) -> bool:
-    return bool(_iter_diagnostic_statuses(payload))
-
-
-def _read_json_or_jsonl(path: Path) -> object:
-    text = path.read_text(encoding="utf-8")
-    if path.suffix == ".jsonl":
-        return [json.loads(line) for line in text.splitlines() if line.strip()]
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        return [json.loads(line) for line in text.splitlines() if line.strip()]
-
-
-def _payload_items(payload: object) -> list[object]:
-    if isinstance(payload, dict) and isinstance(payload.get("events"), list):
-        return list(payload["events"])
-    if isinstance(payload, dict) and isinstance(payload.get("messages"), list):
-        return list(payload["messages"])
-    if isinstance(payload, list):
-        return payload
-    return [payload]
-
-
-def _payload_is_runtime_log(payload: object) -> bool:
-    items = _payload_items(payload)
-    return any(
-        _looks_like_status_event(item) or _looks_like_diagnostic_event(item) for item in items
-    )
-
-
-def _aggregate_runtime_sample(
-    aggregates: dict[tuple[str, str, str | None], dict[str, object]],
-    *,
-    model_name: str,
-    runtime: str,
-    source: str,
-    remote_url: str | None,
-    ok: bool,
-    status_text: str,
-    latency_ms: float | None,
-    fallback_avg_latency_ms: float | None = None,
-) -> None:
-    key = (model_name, runtime, remote_url)
-    aggregate = aggregates.setdefault(
-        key,
-        {
-            "model_name": model_name,
-            "runtime": runtime,
-            "remote_url": remote_url,
-            "source": source,
-            "samples": 0,
-            "queries": 0,
-            "errors": 0,
-            "latencies": [],
-            "latest_ok": True,
-            "latest_status_text": "",
-        },
-    )
-    aggregate["samples"] = _int(aggregate["samples"]) + 1
-    aggregate["latest_ok"] = ok
-    aggregate["latest_status_text"] = status_text
-    if source and source not in _string(aggregate["source"]):
-        aggregate["source"] = f"{aggregate['source']},{source}" if aggregate["source"] else source
-    if not ok:
-        aggregate["errors"] = _int(aggregate["errors"]) + 1
-    latency = latency_ms if latency_ms is not None else fallback_avg_latency_ms
-    if latency is not None:
-        aggregate["queries"] = _int(aggregate["queries"]) + 1
-        latencies = aggregate["latencies"]
-        if isinstance(latencies, list):
-            latencies.append(latency)
-
-
-def _runtime_status_samples_from_payload(
-    payload: object,
-    *,
-    source: str = "",
-) -> list[dict[str, object]]:
-    samples: list[dict[str, object]] = []
-    for item in _payload_items(payload):
-        if not isinstance(item, dict) or not _looks_like_status_event(item):
-            continue
-        metadata = _metadata(item)
-        model_name = _string(item.get("model_name", metadata.get("model_name", "unknown")))
-        runtime = _string(item.get("runtime", metadata.get("runtime", "ros2")), "ros2")
-        status_text = _string(item.get("status_text", metadata.get("status_text", "")))
-        samples.append(
-            {
-                "model_name": model_name,
-                "runtime": runtime,
-                "source": source,
-                "remote_url": (
-                    _string(metadata.get("remote_url"))
-                    if metadata.get("remote_url") is not None
-                    else None
-                ),
-                "ok": _bool(item.get("ready", metadata.get("ready", False))),
-                "status_text": status_text,
-                "latency_ms": _float(item.get("last_latency_ms")),
-                "avg_latency_ms": _float(item.get("avg_latency_ms")),
-            }
-        )
-    return samples
-
-
-def _runtime_diagnostic_samples_from_payload(
-    payload: object,
-    *,
-    source: str = "",
-) -> list[dict[str, object]]:
-    samples: list[dict[str, object]] = []
-    for item in _payload_items(payload):
-        for status in _iter_diagnostic_statuses(item):
-            values = _diagnostic_values(status)
-            level = _int(status.get("level"))
-            model_name = _string(
-                values.get("model_name", status.get("hardware_id", "diagnostics")),
-                "diagnostics",
-            )
-            runtime = _string(values.get("runtime", "ros2"), "ros2")
-            samples.append(
-                {
-                    "model_name": model_name,
-                    "runtime": runtime,
-                    "source": source,
-                    "remote_url": (
-                        _string(values.get("remote_url"))
-                        if values.get("remote_url") is not None
-                        else None
-                    ),
-                    "ok": level == 0,
-                    "status_text": _string(status.get("message", "")),
-                    "latency_ms": _float(values.get("last_latency_ms")),
-                    "avg_latency_ms": _float(values.get("avg_latency_ms")),
-                }
-            )
-    return samples
-
-
-def dashboard_records_from_runtime_log_payload(
-    payload: object,
-    *,
-    source: str = "",
-) -> list[ComparisonDashboardRecord]:
-    return _dashboard_records_from_runtime_samples(
-        [
-            *_runtime_status_samples_from_payload(payload, source=source),
-            *_runtime_diagnostic_samples_from_payload(payload, source=source),
-        ]
-    )
-
-
-def _dashboard_records_from_runtime_samples(
-    samples: list[dict[str, object]],
-) -> list[ComparisonDashboardRecord]:
-    aggregates: dict[tuple[str, str, str | None], dict[str, object]] = {}
-    for sample in samples:
-        _aggregate_runtime_sample(
-            aggregates,
-            model_name=_string(sample.get("model_name", "unknown"), "unknown"),
-            runtime=_string(sample.get("runtime", "ros2"), "ros2"),
-            source=_string(sample.get("source")),
-            remote_url=(
-                _string(sample.get("remote_url")) if sample.get("remote_url") is not None else None
-            ),
-            ok=_bool(sample.get("ok")),
-            status_text=_string(sample.get("status_text")),
-            latency_ms=_float(sample.get("latency_ms")),
-            fallback_avg_latency_ms=_float(sample.get("avg_latency_ms")),
-        )
-
-    records: list[ComparisonDashboardRecord] = []
-    for aggregate in aggregates.values():
-        latencies = aggregate.get("latencies")
-        numeric_latencies = (
-            [float(value) for value in latencies] if isinstance(latencies, list) else []
-        )
-        latest_ok = _bool(aggregate.get("latest_ok"))
-        latest_status_text = _string(aggregate.get("latest_status_text"))
-        records.append(
-            ComparisonDashboardRecord(
-                model_name=_string(aggregate.get("model_name"), "unknown"),
-                runtime=_string(aggregate.get("runtime"), "ros2"),
-                ok=latest_ok,
-                source=_string(aggregate.get("source")),
-                remote_url=(
-                    _string(aggregate.get("remote_url"))
-                    if aggregate.get("remote_url") is not None
-                    else None
-                ),
-                frames=_int(aggregate.get("samples")),
-                adapter_queries=_int(aggregate.get("queries")),
-                adapter_errors=_int(aggregate.get("errors")),
-                mean_latency_ms=(
-                    sum(numeric_latencies) / len(numeric_latencies) if numeric_latencies else None
-                ),
-                max_latency_ms=max(numeric_latencies) if numeric_latencies else None,
-                mean_abs_action=None,
-                last_error=None if latest_ok else latest_status_text or "runtime unhealthy",
-            )
-        )
-    return sorted(records, key=lambda record: (record.model_name, record.runtime))
-
-
-def dashboard_record_from_mapping(
-    payload: Mapping[str, object],
-    *,
-    source: str = "",
-) -> ComparisonDashboardRecord:
-    return ComparisonDashboardRecord(
-        model_name=_string(payload.get("model_name", payload.get("model", "unknown"))),
-        runtime=_string(payload.get("runtime", "unknown")),
-        ok=_bool(payload.get("ok", False)),
-        source=source,
-        remote_url=(
-            _string(payload.get("remote_url")) if payload.get("remote_url") is not None else None
-        ),
-        frames=_int(payload.get("frames")),
-        adapter_queries=_int(payload.get("adapter_queries")),
-        adapter_errors=_int(payload.get("adapter_errors")),
-        mean_latency_ms=_float(payload.get("mean_latency_ms")),
-        max_latency_ms=_float(payload.get("max_latency_ms")),
-        mean_abs_action=_float(payload.get("mean_abs_action")),
-        task_success=(
-            _bool(payload.get("task_success")) if "task_success" in payload else None
-        ),
-        cube_lifted=(
-            _bool(payload.get("cube_lifted")) if "cube_lifted" in payload else None
-        ),
-        cube_moved_distance=_float(payload.get("cube_moved_distance")),
-        final_cube_distance_to_goal=_float(payload.get("final_cube_distance_to_goal")),
-        grasp_attached_frames=_int(payload.get("grasp_attached_frames")),
-        phase_completion=_float(payload.get("phase_completion")),
-        last_error=(
-            _string(payload.get("last_error")) if payload.get("last_error") is not None else None
-        ),
-    )
-
-
-def dashboard_records_from_payload(
-    payload: object,
-    *,
-    source: str = "",
-) -> list[ComparisonDashboardRecord]:
-    if _payload_is_runtime_log(payload):
-        return dashboard_records_from_runtime_log_payload(payload, source=source)
-    if isinstance(payload, dict) and isinstance(payload.get("results"), list):
-        payload = payload["results"]
-    if isinstance(payload, dict):
-        payload = [payload]
-    if not isinstance(payload, list):
-        msg = "Comparison result JSON must be a list, object, or object with a 'results' list."
-        raise ValueError(msg)
-
-    records: list[ComparisonDashboardRecord] = []
-    for index, item in enumerate(payload):
-        if not isinstance(item, dict):
-            msg = f"Comparison result entry {index} is not an object."
-            raise ValueError(msg)
-        records.append(dashboard_record_from_mapping(item, source=source))
-    return records
-
-
-def load_dashboard_records(paths: list[Path]) -> list[ComparisonDashboardRecord]:
-    records: list[ComparisonDashboardRecord] = []
-    for path in paths:
-        payload = _read_json_or_jsonl(path)
-        records.extend(dashboard_records_from_payload(payload, source=str(path)))
-    return records
-
-
-def load_runtime_dashboard_records(paths: list[Path]) -> list[ComparisonDashboardRecord]:
-    samples: list[dict[str, object]] = []
-    for path in paths:
-        payload = _read_json_or_jsonl(path)
-        samples.extend(_runtime_status_samples_from_payload(payload, source=str(path)))
-        samples.extend(_runtime_diagnostic_samples_from_payload(payload, source=str(path)))
-    return _dashboard_records_from_runtime_samples(samples)
-
-
-def load_diagnostics_summaries(paths: list[Path]) -> list[tuple[str, DiagnosticsSummary]]:
-    """Reduce native vla-zoo-diagnostics/v1 records in the given logs to per-model summaries.
-
-    Only DiagnosticStatus entries that carry the native schema version are reconstructed (via
-    the pure ``diagnostics_from_key_values`` inverse), so arbitrary ROS2 diagnostics are
-    ignored. Records are grouped by model in first-seen order and reduced with
-    ``summarize_diagnostics``. It is a runtime-path view, not a task-success claim.
-    """
-
-    from vla_zoo.runtime.diagnostics import (
-        DIAGNOSTICS_SCHEMA_VERSION,
-        RuntimeDiagnostics,
-        diagnostics_from_key_values,
-        summarize_diagnostics,
-    )
-
-    grouped: dict[str, list[RuntimeDiagnostics]] = {}
-    for path in paths:
-        payload = _read_json_or_jsonl(path)
-        for item in _payload_items(payload):
-            # Native vla-zoo-diagnostics/v1 records are flat dicts; ROS2 DiagnosticArray
-            # statuses carry the same fields as KeyValue string pairs. Handle both.
-            if (
-                isinstance(item, dict)
-                and item.get("schema_version") == DIAGNOSTICS_SCHEMA_VERSION
-                and "model" in item
-            ):
-                record = RuntimeDiagnostics.from_dict(item)
-                grouped.setdefault(record.model, []).append(record)
-                continue
-            for status in _iter_diagnostic_statuses(item):
-                values = _diagnostic_values(status)
-                pairs = {key: str(value) for key, value in values.items()}
-                if pairs.get("schema_version") != DIAGNOSTICS_SCHEMA_VERSION:
-                    continue
-                record = diagnostics_from_key_values(pairs)
-                grouped.setdefault(record.model, []).append(record)
-    return [(model, summarize_diagnostics(records)) for model, records in grouped.items()]
-
-
-def _render_diagnostics_summary_band(
-    summaries: list[tuple[str, DiagnosticsSummary]],
-) -> str:
-    if not summaries:
-        return ""
-
-    def _fmt(value: float | None) -> str:
-        return f"{value:.0f}" if value is not None else "-"
-
-    cards = []
-    for model, summary in summaries:
-        severity = {"ok": "ok-scope", "warn": "warn", "error": "error"}.get(
-            summary.worst_level, "warn"
-        )
-        metrics = "".join(
-            f"<li>{escape(text)}</li>"
-            for text in (
-                f"latency min/p50/max: {_fmt(summary.latency_ms_min)} / "
-                f"{_fmt(summary.latency_ms_p50)} / {_fmt(summary.latency_ms_max)} ms",
-                f"max dropped frames: {summary.max_dropped_frames}",
-                f"final actions seen: {summary.final_total_actions}",
-                f"peak action clip rate: {summary.peak_action_clip_rate:.2%}",
-            )
-        )
-        worst = (
-            f'<p class="worst">worst level: {escape(summary.worst_level)} '
-            f"(record #{summary.worst_index}) — {escape(summary.worst_status_text)}</p>"
-        )
-        cards.append(
-            f'<div class="scope-card {severity}">'
-            f"<h2>{escape(model)} diagnostics ({summary.record_count} records)</h2>"
-            f'<ul class="metrics">{metrics}</ul>{worst}</div>'
-        )
-    return (
-        '<section class="scope diagnostics-summary">'
-        + "".join(cards)
-        + "</section>"
-    )
-
-
-def format_comparison_dashboard_html(
-    records: list[ComparisonDashboardRecord],
-    *,
-    title: str = "vla_zoo Runtime Dashboard",
-    diagnostics_summaries: list[tuple[str, DiagnosticsSummary]] | None = None,
-) -> str:
-    data_json = json.dumps([asdict(record) for record in records], indent=2).replace(
-        "</",
-        "<\\/",
-    )
-    band = _render_diagnostics_summary_band(diagnostics_summaries or [])
-    return (
-        _DASHBOARD_HTML_TEMPLATE.replace("__VLA_ZOO_DASHBOARD_TITLE__", escape(title))
-        .replace("__VLA_ZOO_DIAGNOSTICS_SUMMARY__", band)
-        .replace("__VLA_ZOO_DASHBOARD_DATA__", data_json)
-    )
-
-
-_DASHBOARD_HTML_TEMPLATE = """<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>__VLA_ZOO_DASHBOARD_TITLE__</title>
+  <title>SmolVLA ROS2 Runtime Dashboard</title>
   <style>
     :root {
       color-scheme: light;
@@ -843,7 +338,7 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
     <header>
       <div>
         <div class="eyebrow">runtime comparison artifact</div>
-        <h1>__VLA_ZOO_DASHBOARD_TITLE__</h1>
+        <h1>SmolVLA ROS2 Runtime Dashboard</h1>
         <p>
           Inspect VLA adapter readiness, latency budget, query health, and failure triage
           from static comparison JSON.
@@ -872,7 +367,7 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
           watchdogs, and action clipping in the deployment path.</p>
       </div>
     </section>
-    __VLA_ZOO_DIAGNOSTICS_SUMMARY__
+    <section class="scope diagnostics-summary"><div class="scope-card warn"><h2>smolvla diagnostics (106 records)</h2><ul class="metrics"><li>latency min/p50/max: 429 / 882 / 5194 ms</li><li>max dropped frames: 58</li><li>final actions seen: 14</li><li>peak action clip rate: 0.00%</li></ul><p class="worst">worst level: warn (record #2) — waiting for instruction</p></div></section>
     <section class="toolbar">
       <input id="search" placeholder="Filter model, runtime, endpoint, note">
       <select id="status">
@@ -951,7 +446,48 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
     </details>
   </main>
   <script>
-    const records = __VLA_ZOO_DASHBOARD_DATA__;
+    const records = [
+  {
+    "model_name": "smolvla",
+    "runtime": "remote",
+    "ok": false,
+    "source": "docs/assets/sample_ros2_remote_smolvla/vla_status.jsonl",
+    "remote_url": "http://127.0.0.1:8013",
+    "frames": 106,
+    "adapter_queries": 106,
+    "adapter_errors": 92,
+    "mean_latency_ms": 914.2774289688974,
+    "max_latency_ms": 5193.7509765625,
+    "mean_abs_action": null,
+    "task_success": null,
+    "cube_lifted": null,
+    "cube_moved_distance": null,
+    "final_cube_distance_to_goal": null,
+    "grasp_attached_frames": 0,
+    "phase_completion": null,
+    "last_error": "inference pending"
+  },
+  {
+    "model_name": "unknown",
+    "runtime": "ros2",
+    "ok": false,
+    "source": "docs/assets/sample_ros2_remote_smolvla/vla_diagnostics_native.jsonl",
+    "remote_url": null,
+    "frames": 106,
+    "adapter_queries": 79,
+    "adapter_errors": 106,
+    "mean_latency_ms": 1226.7522025316455,
+    "max_latency_ms": 5193.751,
+    "mean_abs_action": null,
+    "task_success": null,
+    "cube_lifted": null,
+    "cube_moved_distance": null,
+    "final_cube_distance_to_goal": null,
+    "grasp_attached_frames": 0,
+    "phase_completion": null,
+    "last_error": "inference pending"
+  }
+];
 
     const fmt = (value, digits = 2) =>
       value === null || value === undefined ? "-" : Number(value).toFixed(digits);
@@ -1298,7 +834,7 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
           if (header === "health") return healthScore(record);
           return quote(record[header]);
         }).join(","))
-      ].join("\\n");
+      ].join("\n");
       const blob = new Blob([csv], {type: "text/csv"});
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1358,4 +894,3 @@ _DASHBOARD_HTML_TEMPLATE = """<!doctype html>
   </script>
 </body>
 </html>
-"""
