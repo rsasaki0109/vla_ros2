@@ -1202,15 +1202,37 @@ module tests (cast monotonicity + success/path content, animated-GIF render, emp
 recorded-GIF validity check (302 → 306). Framed honestly as a presentation asset with representative
 baseline figures, not an evidence artifact.
 
-This is a good point to **pause for direction**. Remaining high-leverage star-growth moves:
+Recorded action logs are now animated into trajectories (DONE — the user asked for an "interesting"
+feature and chose the trajectory animator):
+
+```text
+add demo trajectory-gif: animate a recorded action log into an end-effector trajectory GIF (v0.6)  [DONE]
+```
+
+What landed: new pure module `demo/trajectory.py`. `build_trajectory(frames)` integrates a recorded
+`vla_actions.jsonl` action stream open-loop — cumulative-summing the first three `eef_delta`
+dimensions into an end-effector path from the origin, keeping the 7th dim (when present) as the
+gripper signal. `render_trajectory_gif()` draws an animated GIF with two PIL-rendered panels (XY
+top-down + XZ side), a shared world-to-pixel scale, axis crosshairs, the path revealed step-by-step,
+and the current end-effector dot coloured by the gripper signal (open/closed). CLI `demo
+trajectory-gif --action-log ... --out ... [--scale --width]`. Two real recorded examples are checked
+in — `docs/assets/trajectory/{openvla,smolvla}_trajectory.gif` (21 steps each, 760×384) — and the
+two adapters trace visibly different commanded paths (OpenVLA a tight wiggle, SmolVLA a smooth
+sweep). Surfaced as a side-by-side pair in the README GIF section and a Pages "Commanded EEF
+trajectories" tile; 2 artifact-index entries (count 61 → 63). Tested: 8 module tests (integration
+math, scale, no-gripper, empty/<2-point guards, to_dict, animated-GIF render, recorded-GIF validity)
+(306 → 314). Honest framing throughout: open-loop, action units (not metric), shows what the policy
+*commanded* — not a real-EEF or task-success claim.
+
+This is a good point to **pause for direction**. Remaining high-leverage moves:
 
 1. **PyPI publish** so `pip install vla_zoo` actually works for non-clone users (not yet on PyPI);
    the metadata is now install-correct, so this is mostly packaging + a release workflow.
-2. A genuinely new runtime capability (new adapter / new ROS2 surface).
-3. Deeper onboarding polish (e.g. a short "why vla_zoo" comparison, a GIF in social-preview).
+2. More "fun"/visual extensions: a side-by-side trajectory race GIF, a 3D-ish isometric projection,
+   or overlaying the trajectory on the PyBullet scene render.
+3. A genuinely new runtime capability (new adapter / new ROS2 surface).
 
-No auto-increment: confirm the direction with the user before starting. (User has signalled a "new
-feature / new UI" follow-up after the demo GIF — clarify which when resuming.)
+No auto-increment: confirm the direction with the user before starting.
 
 Acceptance:
 

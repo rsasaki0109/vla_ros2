@@ -3631,6 +3631,49 @@ def demo_gif_report(
         raise typer.Exit(1)
 
 
+@demo_app.command("trajectory-gif")
+def demo_trajectory_gif(
+    action_log: Annotated[
+        Path,
+        typer.Option("--action-log", help="Recorded vla_actions.jsonl to visualize."),
+    ],
+    out: Annotated[
+        Path,
+        typer.Option("--out", help="Output GIF path."),
+    ],
+    scale: Annotated[
+        float,
+        typer.Option("--scale", help="Multiplier applied to integrated position deltas."),
+    ] = 1.0,
+    width: Annotated[
+        int,
+        typer.Option("--width", help="GIF width in pixels."),
+    ] = 760,
+) -> None:
+    """Animate a recorded action log into an end-effector trajectory GIF (PIL only).
+
+    Integrates the eef_delta action stream open-loop into a path and animates the XY/XZ
+    projections. Runtime-path visualization of what the policy commanded, not a
+    task-success or real-end-effector claim.
+    """
+
+    from vla_zoo.benchmark.replay import load_action_log
+    from vla_zoo.demo.trajectory import build_trajectory, render_trajectory_gif
+
+    if not action_log.is_file():
+        typer.echo(f"action log not found: {action_log}", err=True)
+        raise typer.Exit(1)
+
+    frames = load_action_log(action_log)
+    if not frames:
+        typer.echo(f"no action frames in {action_log}", err=True)
+        raise typer.Exit(1)
+
+    trajectory = build_trajectory(frames, scale=scale)
+    render_trajectory_gif(trajectory, out, width=width)
+    typer.echo(f"GIF written to {out} ({trajectory.step_count} steps, model {trajectory.model})")
+
+
 @demo_app.command("quickstart-gif")
 def demo_quickstart_gif(
     out: Annotated[

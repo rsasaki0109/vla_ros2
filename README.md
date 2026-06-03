@@ -39,6 +39,15 @@ they are not real-robot skill claims.
 |---|---|---|
 | ![scripted PyBullet pick red block](docs/assets/gif_suite/simulation_pick_red_block_scripted.gif) | ![dummy PyBullet pick red block](docs/assets/gif_suite/simulation_pick_red_block_dummy.gif) | ![random PyBullet pick red block](docs/assets/gif_suite/simulation_pick_red_block_random.gif) |
 
+These animate the **recorded action stream a real adapter produced** — the
+end-effector path the policy's `eef_delta` commands trace out (integrated open-loop,
+action units, not metric). It is a runtime-path visualization, not a real-EEF or
+task-success claim.
+
+| OpenVLA-7b commanded trajectory | SmolVLA commanded trajectory |
+|---|---|
+| ![OpenVLA commanded EEF trajectory](docs/assets/trajectory/openvla_trajectory.gif) | ![SmolVLA commanded EEF trajectory](docs/assets/trajectory/smolvla_trajectory.gif) |
+
 ## Why vla_zoo?
 
 Most VLA repositories focus on model code, training, checkpoints, or task demos.
