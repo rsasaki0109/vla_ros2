@@ -1,0 +1,26 @@
+# Example bring-up profile for a dashcam-style ROS graph (no arm / joint_states publisher).
+# Copy and edit for your machine:
+#   cp ros2/vla_ros2/config/bringup.dashcam.example.yaml ~/my_robot.yaml
+#
+# Verified topics on 2026-06-08: /camera/image_raw (dashcam2traj_node), no /joint_states publisher.
+
+vla_runtime_node:
+  ros__parameters:
+    model_name: "dummy"
+    runtime: "local"
+    dry_run: true
+    publish_actions_in_dry_run: false
+
+    image_topic: "/camera/image_raw"
+    instruction_topic: "/vla/instruction"
+    joint_state_topic: "/joint_states"
+    instruction_msg_type: "string"
+
+    control_hz: 5.0
+    require_image: true
+    stale_image_timeout_sec: 1.5
+    stale_instruction_timeout_sec: 5.0
+
+    clip_actions: true
+    action_low: "-0.05,-0.05,-0.05,-0.2,-0.2,-0.2,0.0"
+    action_high: "0.05,0.05,0.05,0.2,0.2,0.2,1.0"

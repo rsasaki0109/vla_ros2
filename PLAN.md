@@ -355,8 +355,9 @@ colcon test-result --verbose
 
 ## 12. Possible next steps
 - **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware; ship a reference
-  controller bridge if a common arm stack emerges.
-- **README polish**: surface `smolvla_so100_demo.gif` alongside the PyBullet hero.
+  controller bridge if a common arm stack emerges. Phase A/B gates:
+  `./scripts/bringup_validate.sh` (see `notes/2026-06-08_real_robot_bringup.md`).
+- ~~**README polish**: surface `smolvla_so100_demo.gif` alongside the PyBullet hero.~~ Done.
 - **SmolVLA fine-tune**: train on `lerobot/svla_so100_stacking` so the kinematic
   or real SO-100 demo actually completes the stacking task.
 - **Bloom / rosdistro**: release `vla_ros2_msgs` and `vla_ros2` (see `WORKSPACE.md` §7).
