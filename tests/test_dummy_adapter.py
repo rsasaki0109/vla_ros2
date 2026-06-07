@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from vla_zoo import load_model
-from vla_zoo.core.types import VLAAction
+from vla_ros2 import load_model
+from vla_ros2.core.types import VLAAction
 
 
 def test_dummy_predict_returns_vla_action() -> None:

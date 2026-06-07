@@ -3,13 +3,13 @@ requires = ["hatchling>=1.21"]
 build-backend = "hatchling.build"
 
 [project]
-name = "vla_zoo"
+name = "vla_ros2"
 version = "0.1.0"
-description = "ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models"
+description = "ROS2-native on-robot runtime for Vision-Language-Action models"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
-authors = [{name = "vla_zoo contributors"}]
+authors = [{name = "vla_ros2 contributors"}]
 keywords = ["robotics", "ros2", "vision-language-action", "vla", "embodied-ai"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -26,17 +26,13 @@ dependencies = [
   "pydantic>=2",
   "pillow>=10",
   "typing-extensions>=4.8",
-  # The `vla-zoo` console script imports typer at module load, so it is a core
-  # dependency: `pip install vla_zoo` must yield a working CLI on its own.
+  # The `vla-ros2` console script imports typer at module load, so it is a core
+  # dependency: `pip install vla_ros2` must yield a working CLI on its own.
   "typer>=0.12",
   "rich>=13",
 ]
 
 [project.optional-dependencies]
-server = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "httpx>=0.27,<0.28"]
-# Kept as an alias so existing `vla_zoo[cli]` installs keep working; the CLI deps
-# are now part of the base install above.
-cli = ["typer>=0.12", "rich>=13"]
 gpu = ["torch"]
 openvla = [
   "torch",
@@ -49,8 +45,6 @@ openvla = [
 openpi = ["lerobot>=0.5.1,<0.6.0"]
 smolvla = ["lerobot[smolvla]>=0.5.1,<0.6.0"]
 groot = []
-bench = ["pandas", "tqdm"]
-sim = ["pybullet>=3.2"]
 dev = [
   "pytest",
   "pytest-cov",
@@ -58,32 +52,30 @@ dev = [
   "mypy",
   "types-Pillow",
   "setuptools",
-  "lark",
-  "jinja2",
   "typeguard",
 ]
-all = ["vla_zoo[server,cli,openvla,bench]"]
+all = ["vla_ros2[openvla]"]
 
 [project.urls]
-Homepage = "https://github.com/rsasaki0109/vla_zoo"
-Documentation = "https://github.com/rsasaki0109/vla_zoo/tree/main/docs"
-Issues = "https://github.com/rsasaki0109/vla_zoo/issues"
-Repository = "https://github.com/rsasaki0109/vla_zoo"
+Homepage = "https://github.com/rsasaki0109/vla_ros2"
+Documentation = "https://github.com/rsasaki0109/vla_ros2/tree/main/ros2"
+Issues = "https://github.com/rsasaki0109/vla_ros2/issues"
+Repository = "https://github.com/rsasaki0109/vla_ros2"
 
 [project.scripts]
-vla-zoo = "vla_zoo.cli.main:app"
+vla-ros2 = "vla_ros2.cli.main:app"
 
-[project.entry-points."vla_zoo.adapters"]
-dummy = "vla_zoo.adapters.dummy:DummyAdapter"
-random = "vla_zoo.adapters.baselines:RandomAdapter"
-scripted = "vla_zoo.adapters.baselines:ScriptedAdapter"
-openvla = "vla_zoo.adapters.openvla:OpenVLAAdapter"
-pi0 = "vla_zoo.adapters.pi0:Pi0Adapter"
-smolvla = "vla_zoo.adapters.smolvla:SmolVLAAdapter"
-groot = "vla_zoo.adapters.groot:GR00TAdapter"
+[project.entry-points."vla_ros2.adapters"]
+dummy = "vla_ros2.adapters.dummy:DummyAdapter"
+random = "vla_ros2.adapters.baselines:RandomAdapter"
+scripted = "vla_ros2.adapters.baselines:ScriptedAdapter"
+openvla = "vla_ros2.adapters.openvla:OpenVLAAdapter"
+pi0 = "vla_ros2.adapters.pi0:Pi0Adapter"
+smolvla = "vla_ros2.adapters.smolvla:SmolVLAAdapter"
+groot = "vla_ros2.adapters.groot:GR00TAdapter"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/vla_zoo"]
+packages = ["src/vla_ros2"]
 
 [tool.ruff]
 line-length = 100
@@ -95,7 +87,7 @@ ignore = ["B008"]
 
 [tool.mypy]
 python_version = "3.10"
-packages = ["vla_zoo"]
+packages = ["vla_ros2"]
 strict = true
 warn_return_any = true
 warn_unused_configs = true

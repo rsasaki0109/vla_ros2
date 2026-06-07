@@ -25,7 +25,7 @@ from time import perf_counter
 
 import numpy as np
 
-from vla_zoo import load_model
+from vla_ros2 import load_model
 
 DEFAULT_OUT = Path("docs/assets/openvla_local_runtime.json")
 DEFAULT_INSTRUCTION = "pick up the red block"

@@ -4,8 +4,8 @@ import builtins
 
 import pytest
 
-from vla_zoo import load_model
-from vla_zoo.core.errors import MissingDependencyError, UnknownModelError
+from vla_ros2 import load_model
+from vla_ros2.core.errors import MissingDependencyError, UnknownModelError
 
 
 def test_load_model_dummy() -> None:
@@ -27,5 +27,5 @@ def test_missing_openvla_dependency_message(monkeypatch: pytest.MonkeyPatch) -> 
         return original_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", guarded_import)
-    with pytest.raises(MissingDependencyError, match=r'pip install "vla_zoo\[openvla\]"'):
+    with pytest.raises(MissingDependencyError, match=r'pip install "vla_ros2\[openvla\]"'):
         load_model("openvla")

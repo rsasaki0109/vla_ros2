@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from vla_zoo.adapters import openvla
+from vla_ros2.adapters import openvla
 
 
 class _FakeTensor:

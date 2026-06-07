@@ -1,6 +1,26 @@
 # Changelog
 
-All notable changes to `vla_zoo` are documented here.
+All notable changes to `vla_ros2` are documented here.
+
+## [Unreleased] - Pivot to vla_ros2
+
+Refocused the project from the broad `vla_zoo` runtime/benchmark/adapter hub
+into a ROS2-native on-robot VLA runtime, and renamed the package and repository
+to `vla_ros2`.
+
+### Changed
+
+- Renamed package `vla_zoo` -> `vla_ros2` (ROS2 module `vla_ros2_ros`,
+  messages `vla_ros2_msgs`).
+- CLI reduced to a minimal off-robot sanity tool: `vla-ros2 list` / `predict`.
+
+### Removed
+
+- `benchmark/`, `compare/`, `demo/`, `docs/` packages and all generated report
+  artifacts (GIF/HTML/leaderboard, `examples/`, `results/`, `log/`, `build/`,
+  `install/`).
+- Remote-GPU HTTP path (server/client/schemas) and its node/config/launch
+  plumbing; inference is now on-robot local only.
 
 ## [0.1.0] - Unreleased
 
