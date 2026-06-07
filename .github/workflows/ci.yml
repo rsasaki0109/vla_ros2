@@ -21,3 +21,24 @@ jobs:
       - run: ruff check src tests ros2
       - run: mypy src/vla_ros2
       - run: pytest
+
+  ros2-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: jazzy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - name: Build and run launch smoke test
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --packages-select vla_ros2_msgs vla_ros2
+          source install/setup.bash
+          colcon test --packages-select vla_ros2 --python-testing pytest --event-handlers console_direct+
+          colcon test-result --verbose

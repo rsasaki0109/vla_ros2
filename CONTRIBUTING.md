@@ -5,18 +5,18 @@ Thanks for helping make `vla_ros2` a practical ROS2-native runtime layer for VLA
 ## Development Setup
 
 ```bash
-pip install -e ".[dev,cli,server,sim]"
-ruff check .
+pip install -e ".[dev]"
+ruff check src tests ros2
 mypy src/vla_ros2
 pytest
 ```
 
-ROS2 packages are built separately:
+ROS2 packages (see [ros2/WORKSPACE.md](ros2/WORKSPACE.md)):
 
 ```bash
-pip install -e .
-colcon build --base-paths ros2 --symlink-install
+./scripts/bootstrap_ros2_workspace.sh
 source install/setup.bash
+export PYTHONPATH="$PWD/src:$PYTHONPATH"
 ros2 launch vla_ros2 dummy.launch.py
 ```
 
@@ -55,9 +55,11 @@ Do not vendor external model repositories or weights. Keep heavy dependencies be
 Before opening a PR, run:
 
 ```bash
-ruff check .
+ruff check src tests ros2
 mypy src/vla_ros2
 pytest
 ```
 
-If ROS2 files changed, also run a ROS2 smoke build when available. Include the commands you ran in the PR description.
+If ROS2 files changed, also run `./scripts/bootstrap_ros2_workspace.sh` (or the
+manual steps in `ros2/WORKSPACE.md`) and `colcon test --packages-select vla_ros2
+--python-testing pytest` when ROS 2 is available.

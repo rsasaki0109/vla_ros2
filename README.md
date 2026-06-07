@@ -17,6 +17,12 @@ ROS2-native on-robot runtime for Vision-Language-Action (VLA) models.
 > the action stream are real. Reproduce with
 > [`scripts/record_sim_demo.py`](scripts/record_sim_demo.py).
 
+> Optional: [`scripts/record_smolvla_so100_demo.py`](scripts/record_smolvla_so100_demo.py)
+> runs **real SmolVLA inference** (`lerobot/smolvla_base`) in a closed loop on a
+> LeRobot-aligned SO-100 kinematic stand-in initialized from
+> `lerobot/svla_so100_stacking`. The base checkpoint is not fine-tuned for your
+> setup; task success is not guaranteed. Needs `pip install -e ".[smolvla]"` and a GPU.
+
 > VLA models move fast; robots need a stable runtime interface.
 > `vla_ros2` wires **camera + instruction + robot state** to **typed actions**
 > and publishes them on ROS2 topics, running inference locally on the robot.
@@ -63,14 +69,16 @@ vla-ros2 predict --model dummy             # run one local inference (wiring che
 
 ## Run (ROS2 node)
 
+Build the workspace first — see [ros2/WORKSPACE.md](ros2/WORKSPACE.md) or run
+`./scripts/bootstrap_ros2_workspace.sh`.
+
 The runtime node loads an adapter, subscribes to image/instruction/state, runs
 local inference at `control_hz`, and publishes typed actions plus a diagnostics
 record. It defaults to `dry_run: true` for safe bring-up.
 
 ```bash
-# build the colcon workspace (vla_ros2_msgs first, then vla_ros2)
-colcon build --packages-select vla_ros2_msgs vla_ros2
 source install/setup.bash
+export PYTHONPATH="$PWD/src:$PYTHONPATH"
 
 # dummy adapter, no GPU / weights required
 ros2 launch vla_ros2 dummy.launch.py
@@ -81,6 +89,12 @@ ros2 launch vla_ros2 openvla.launch.py dry_run:=false
 
 `ros2 launch vla_ros2 smoke.launch.py` brings up the runtime node plus a
 synthetic-input node, and a real typed `VLAAction` flows on `/vla/action`.
+
+For real-robot wiring (topic remaps, clip calibration, phased `dry_run`
+bring-up), see [ros2/BRINGUP.md](ros2/BRINGUP.md).
+
+For Gazebo Sim (spawn arm, bridge `/vla/action` to `joint_trajectory_controller`),
+see [ros2/SIM.md](ros2/SIM.md).
 
 ### Topics
 
