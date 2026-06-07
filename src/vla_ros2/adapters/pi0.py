@@ -295,9 +295,8 @@ class Pi0Adapter(SmolVLAAdapter):
             msg = (
                 "Local pi0/openpi inference is disabled by default because pi0 checkpoints "
                 "are heavy and checkpoint/config compatibility varies by LeRobot version. "
-                "Use runtime='remote' for robot-side deployment, or call "
-                "load_model('pi0', enable_local=True, pretrained='lerobot/pi0_base') "
-                "in a dedicated GPU environment."
+                "Call load_model('pi0', enable_local=True, pretrained='lerobot/pi0_base') "
+                "in a dedicated GPU environment to enable it."
             )
             raise NotImplementedError(msg)
         return super().predict_observation(observation)
