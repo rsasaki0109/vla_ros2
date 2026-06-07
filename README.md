@@ -5,6 +5,15 @@ ROS2-native on-robot runtime for Vision-Language-Action (VLA) models.
 [![CI](https://github.com/rsasaki0109/vla_ros2/actions/workflows/ci.yml/badge.svg)](https://github.com/rsasaki0109/vla_ros2/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+[![ROS2](https://img.shields.io/badge/ROS2-Jazzy-22314E)](ros2)
+
+![vla_ros2 real ROS2 runtime demo](docs/assets/runtime_demo.gif)
+
+> Recorded from the **real ROS2 runtime** — `ros2 launch vla_ros2 smoke.launch.py`
+> brings up the runtime node + a synthetic input node, and the dummy VLA adapter
+> publishes typed `VLAAction` messages on `/vla/action`. No robot, no GPU, no
+> simulation toy — just the actual node graph. Reproduce with
+> [`scripts/record_runtime_demo.sh`](scripts/record_runtime_demo.sh).
 
 > VLA models move fast; robots need a stable runtime interface.
 > `vla_ros2` wires **camera + instruction + robot state** to **typed actions**

@@ -53,12 +53,10 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "action_chunks": "optional via chunk_size",
             "proprioception": "not required",
             "local_runtime": "supported",
-            "remote_runtime": "supported",
             "dependency_profile": "base install",
             "license_caveat": "none",
             "verification": (
-                "Exercised by unit tests, CLI predict, ROS2 dry-run launch, and PyBullet "
-                "smoke reports."
+                "Exercised by unit tests, CLI predict, and ROS2 dry-run launch."
             ),
         },
     ),
@@ -85,11 +83,10 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "action_chunks": "no",
             "proprioception": "not required",
             "local_runtime": "supported",
-            "remote_runtime": "supported",
             "dependency_profile": "base install",
             "license_caveat": "none",
             "verification": (
-                "Exercised in deterministic PyBullet comparison reports as a seeded baseline."
+                "Deterministic seeded baseline used for tests and ROS2 dry-run sanity checks."
             ),
         },
     ),
@@ -116,12 +113,10 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "action_chunks": "no",
             "proprioception": "not required",
             "local_runtime": "supported",
-            "remote_runtime": "supported",
             "dependency_profile": "base install",
             "license_caveat": "none",
             "verification": (
-                "Exercised in deterministic PyBullet comparison reports as a scripted smoke "
-                "baseline."
+                "Phase-aware scripted baseline used for tests and ROS2 dry-run sanity checks."
             ),
         },
     ),
@@ -147,7 +142,6 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "action_chunks": "no",
             "proprioception": "not required by default adapter",
             "local_runtime": "supported with optional ML dependencies",
-            "remote_runtime": "recommended for robot-side ROS2",
             "dependency_profile": "torch, transformers, HF weights",
             "license_caveat": "external project and model license apply",
             "verification": (
@@ -161,13 +155,13 @@ _BUILTINS: dict[str, AdapterInfo] = {
         target="vla_ros2.adapters.pi0:Pi0Adapter",
         aliases=("openpi", "pi0-fast", "pi05"),
         experimental=True,
-        description="Remote-first pi0/openpi adapter with optional local LeRobot loading.",
+        description="pi0/openpi adapter with optional local LeRobot loading.",
         install_hint='pip install "vla_ros2[openpi]"',
         metadata={
             "upstream_project": "openpi / LeRobot",
             "default_checkpoint": "lerobot/pi0_base",
             "family": "pi-family VLA",
-            "compare_role": "remote-first action-chunk VLA target",
+            "compare_role": "action-chunk VLA target",
             "input_requirements": (
                 "images per policy config",
                 "natural language instruction",
@@ -180,12 +174,12 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "action_chunks": "expected",
             "proprioception": "expected",
             "local_runtime": "disabled by default; enable_local=True in a dedicated GPU env",
-            "remote_runtime": "recommended",
             "dependency_profile": "LeRobot/openpi stack in serving environment",
             "license_caveat": "external project and checkpoint license apply",
             "verification": (
-                "Remote-first adapter path is implemented. Local real-model action probe has "
-                "not completed in this repository; use a dedicated GPU serving environment."
+                "Local LeRobot loading path is implemented behind enable_local=True. The "
+                "real-model action probe has not completed in this repository; use a dedicated "
+                "GPU environment."
             ),
         },
     ),
@@ -213,12 +207,10 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "action_chunks": "internal queue; chunk output optional",
             "proprioception": "required by typical deployments",
             "local_runtime": "supported with optional LeRobot dependencies",
-            "remote_runtime": "recommended",
             "dependency_profile": "lerobot[smolvla], torch, HF weights",
             "license_caveat": "external project, dataset, and checkpoint licenses apply",
             "verification": (
-                "Local CUDA inference-path probe completed with lerobot/smolvla_base, "
-                "including a PyBullet-rendered multi-camera/state observation path. "
+                "Local CUDA inference-path probe completed with lerobot/smolvla_base. "
                 "This is not a robot task-success claim."
             ),
         },
@@ -248,7 +240,6 @@ _BUILTINS: dict[str, AdapterInfo] = {
             "action_chunks": "adapter-specific",
             "proprioception": "expected",
             "local_runtime": "experimental placeholder",
-            "remote_runtime": "recommended",
             "dependency_profile": "Isaac GR00T stack in serving environment",
             "license_caveat": "external NVIDIA project and model license apply",
             "blocked_reason": (
