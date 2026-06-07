@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler, TimerAction
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
@@ -10,6 +10,7 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
     gz_args = LaunchConfiguration("gz_args")
+    controller_spawn_delay_sec = LaunchConfiguration("controller_spawn_delay_sec")
 
     robot_description_content = Command(
         [
@@ -39,15 +40,22 @@ def generate_launch_description():
         arguments=["-topic", "robot_description", "-name", "vla_arm", "-allow_renaming", "true"],
     )
 
-    joint_state_broadcaster_spawner = Node(
+    controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster"],
-    )
-    joint_trajectory_controller_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["joint_trajectory_controller", "--param-file", robot_controllers],
+        arguments=[
+            "joint_state_broadcaster",
+            "joint_trajectory_controller",
+            "--param-file",
+            robot_controllers,
+            "--activate-as-group",
+            "--controller-manager-timeout",
+            "120",
+            "--switch-timeout",
+            "120",
+            "--service-call-timeout",
+            "120",
+        ],
     )
 
     bridge = Node(
@@ -61,6 +69,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("use_sim_time", default_value="true"),
             DeclareLaunchArgument("gz_args", default_value=""),
+            DeclareLaunchArgument("controller_spawn_delay_sec", default_value="5.0"),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     [
@@ -74,13 +83,12 @@ def generate_launch_description():
             RegisterEventHandler(
                 event_handler=OnProcessExit(
                     target_action=gz_spawn_entity,
-                    on_exit=[joint_state_broadcaster_spawner],
-                )
-            ),
-            RegisterEventHandler(
-                event_handler=OnProcessExit(
-                    target_action=joint_state_broadcaster_spawner,
-                    on_exit=[joint_trajectory_controller_spawner],
+                    on_exit=[
+                        TimerAction(
+                            period=controller_spawn_delay_sec,
+                            actions=[controller_spawner],
+                        )
+                    ],
                 )
             ),
             bridge,

@@ -28,6 +28,7 @@ EXPECTED_ENTRY_POINTS = {
     "vla_runtime_node": "vla_ros2_ros.node:main",
     "vla_runtime_recorder": "vla_ros2_ros.log_recorder:main",
     "vla_smoke_input_node": "vla_ros2_ros.smoke_input:main",
+    "vla_controller_bridge_node": "vla_ros2_ros.controller_bridge:main",
 }
 
 EXPECTED_SMOKE_TOPIC_ARGS = {
@@ -231,6 +232,17 @@ def test_bringup_docs_and_example_config_exist() -> None:
     instr_pub = REPO_ROOT / "scripts" / "publish_instruction.py"
     assert instr_pub.is_file()
     assert "instruction_qos" in instr_pub.read_text(encoding="utf-8")
+    gz_validate = REPO_ROOT / "scripts" / "gz_smoke_validate.sh"
+    assert gz_validate.is_file()
+    gz_probe = REPO_ROOT / "scripts" / "gz_smoke_probe.py"
+    assert gz_probe.is_file()
+    assert "joint_trajectory_controller/joint_trajectory" in gz_probe.read_text(encoding="utf-8")
+    bridge_cfg = ROS_PKG / "config" / "controller_bridge.example.yaml"
+    assert bridge_cfg.is_file()
+    assert "enable_actuation: false" in bridge_cfg.read_text(encoding="utf-8")
+    assert (ROS_PKG / "launch" / "controller_bridge.launch.py").is_file()
+    assert (ROS_PKG / "launch" / "bringup_phase_c.launch.py").is_file()
+    assert (ROS_PKG / "vla_ros2_ros" / "controller_bridge.py").is_file()
 
 
 def test_bootstrap_ros2_workspace_script_exists() -> None:

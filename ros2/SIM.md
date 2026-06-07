@@ -59,6 +59,21 @@ Default: `dry_run:=true`, `enable_actuation:=false`. The runtime publishes
 ros2 launch vla_ros2_gz gz_smoke.launch.py
 ```
 
+Headless (recommended for CI/local gates):
+
+```bash
+ros2 launch vla_ros2_gz gz_smoke.launch.py gz_args:="-s"
+```
+
+Automated gate:
+
+```bash
+./scripts/gz_smoke_validate.sh 1    # or `all` for Phase 1 + 2
+```
+
+Uses an isolated `ROS_DOMAIN_ID` by default to avoid collisions with other
+ROS stacks on the same machine.
+
 Verify:
 
 ```bash
@@ -78,6 +93,17 @@ ros2 launch vla_ros2_gz gz_smoke.launch.py \
 ```
 
 Try `model_name:=random` to see the arm move from non-zero actions.
+
+```bash
+ros2 launch vla_ros2_gz gz_smoke.launch.py gz_args:="-s" \
+  enable_actuation:=true dry_run:=false model_name:=random
+```
+
+Automated actuation gate (checks bridge trajectories):
+
+```bash
+./scripts/gz_smoke_validate.sh 2
+```
 
 ### Phase 3 — Gazebo arm only (no VLA graph)
 
@@ -124,6 +150,8 @@ Tune scales in `vla_ros2_gz/config/gz_smoke.yaml` or via launch overrides.
 | Controllers fail to spawn | Ensure `gz_ros2_control` is installed; rebuild after URDF edits |
 | Arm static despite actions | Set `enable_actuation:=true` and `dry_run:=false` |
 | `dummy` produces no motion | Expected — zeros hold position; try `model_name:=random` |
+| Spawner lock / controller timeout | Remove `~/.ros/locks/ros2-control-controller-spawner.lock`; use isolated `ROS_DOMAIN_ID`; see `scripts/gz_smoke_validate.sh` |
+| Controller spawner races Gazebo init | `gz_arm.launch.py` delays spawner 5s and loads both controllers in one `--activate-as-group` call |
 
 ---
 

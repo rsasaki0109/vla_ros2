@@ -209,6 +209,23 @@ provide one value per flattened action element.
 
 ## 5. Controller bridge (your code)
 
+A **reference** parse-only bridge ships in this repo for Phase C:
+
+```bash
+# Synthetic graph (no robot) — automated gate:
+./scripts/bringup_validate.sh c
+
+# Runtime + bridge on your robot params:
+ros2 launch vla_ros2 bringup_phase_c.launch.py params_file:=/path/to/my_robot.yaml
+```
+
+`vla_controller_bridge_node` subscribes to `/vla/action`, logs/publishes parsed fields on
+`/vla/bridge/parsed`, and stays non-actuating until `enable_actuation:=true`. Optional
+`publish_cmd_vel:=true` maps `eef_delta` to `geometry_msgs/Twist` on `/cmd_vel` — only use
+when your stack expects that and E-stop is verified.
+
+Config: `vla_ros2/config/controller_bridge.example.yaml`
+
 `vla_ros2` publishes `vla_ros2_msgs/VLAAction`:
 
 | Field | Meaning |
@@ -309,6 +326,8 @@ already tracks `task_id` and metadata.
 - Example robot config: `vla_ros2/config/robot.example.yaml`
 - Dashcam-only example (no joint_states publisher): `vla_ros2/config/bringup.dashcam.example.yaml`
 - Automated Phase A/B gates: `scripts/bringup_validate.sh`
+- Phase C bridge launch: `vla_ros2/launch/bringup_phase_c.launch.py`
+- Reference bridge node: `vla_ros2_ros/controller_bridge.py`
 - Instruction publisher helper: `scripts/publish_instruction.py`
 - Launch entry points: `vla_ros2/launch/dummy.launch.py`, `openvla.launch.py`, `smoke.launch.py`
 - Launch smoke test: `vla_ros2/tests/test_smoke_launch.py`

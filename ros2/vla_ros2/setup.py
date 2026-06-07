@@ -26,6 +26,7 @@ setup(
             "vla_runtime_node = vla_ros2_ros.node:main",
             "vla_runtime_recorder = vla_ros2_ros.log_recorder:main",
             "vla_smoke_input_node = vla_ros2_ros.smoke_input:main",
+            "vla_controller_bridge_node = vla_ros2_ros.controller_bridge:main",
         ],
     },
 )
