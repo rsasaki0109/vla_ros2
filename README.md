@@ -1,39 +1,39 @@
-# vla_zoo
+# vla_ros2
 
 ROS2-native runtime, benchmark, and adapter hub for Vision-Language-Action models.
 
-[![CI](https://github.com/rsasaki0109/vla_zoo/actions/workflows/ci.yml/badge.svg)](https://github.com/rsasaki0109/vla_zoo/actions/workflows/ci.yml)
+[![CI](https://github.com/rsasaki0109/vla_ros2/actions/workflows/ci.yml/badge.svg)](https://github.com/rsasaki0109/vla_ros2/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![ROS2](https://img.shields.io/badge/ROS2-native-22314E)](docs/ros2_integration.md)
-[![Demo](https://img.shields.io/badge/demo-GitHub%20Pages-0369a1)](https://rsasaki0109.github.io/vla_zoo/)
+[![Demo](https://img.shields.io/badge/demo-GitHub%20Pages-0369a1)](https://rsasaki0109.github.io/vla_ros2/)
 
 > VLA models are moving fast. Robots still need stable runtime interfaces.
-> `vla_zoo` connects camera + instruction + robot state to typed actions through
+> `vla_ros2` connects camera + instruction + robot state to typed actions through
 > Python, ROS2, local GPU inference, and remote GPU servers.
 
-Live demo and reports: https://rsasaki0109.github.io/vla_zoo/
+Live demo and reports: https://rsasaki0109.github.io/vla_ros2/
 
-![vla-zoo quickstart demo](docs/assets/quickstart/quickstart_demo.gif)
+![vla-ros2 quickstart demo](docs/assets/quickstart/quickstart_demo.gif)
 
-> `pip install -e . && vla-zoo quickstart` — runs the real runtime boundary on the
+> `pip install -e . && vla-ros2 quickstart` — runs the real runtime boundary on the
 > pure-Python baselines (no GPU / weights / PyBullet) and writes a local report.
 
-![vla_zoo social preview](docs/assets/social_preview.png)
+![vla_ros2 social preview](docs/assets/social_preview.png)
 
 ## Open First
 
 | What to inspect | Link |
 |---|---|
-| VLA runtime leaderboard | [latency / throughput / memory, ranked](https://rsasaki0109.github.io/vla_zoo/assets/leaderboard/vla_runtime_leaderboard.html) |
+| VLA runtime leaderboard | [latency / throughput / memory, ranked](https://rsasaki0109.github.io/vla_ros2/assets/leaderboard/vla_runtime_leaderboard.html) |
 | Roofline floor vs measured | [analytical latency floor vs recorded probes](docs/assets/roofline/vla_roofline.md) |
-| Runtime truth by model | [VLA evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html) |
-| PyBullet simulation GIFs | [GIF gallery](https://rsasaki0109.github.io/vla_zoo/assets/gif_suite/) |
-| Runtime comparison dashboard | [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
-| ROS2 remote path | [ROS2 remote dummy evidence](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros2_remote_dummy/remote_smoke_check.md) |
+| Runtime truth by model | [VLA evidence matrix](https://rsasaki0109.github.io/vla_ros2/assets/vla_model_evidence_matrix.html) |
+| PyBullet simulation GIFs | [GIF gallery](https://rsasaki0109.github.io/vla_ros2/assets/gif_suite/) |
+| Runtime comparison dashboard | [PyBullet report](https://rsasaki0109.github.io/vla_ros2/assets/sample_compare_suite/pybullet_report.html) |
+| ROS2 remote path | [ROS2 remote dummy evidence](https://rsasaki0109.github.io/vla_ros2/assets/sample_ros2_remote_dummy/remote_smoke_check.md) |
 
 The GIFs below are checked-in PyBullet runtime artifacts generated through
-`vla_zoo` adapters. They demonstrate runtime plumbing and action visualization;
+`vla_ros2` adapters. They demonstrate runtime plumbing and action visualization;
 they are not real-robot skill claims.
 
 | Scripted baseline | Dummy baseline | Random baseline |
@@ -63,7 +63,7 @@ sampled plans at the boundary. [Real-Time Chunking](https://arxiv.org/abs/2506.0
 (Black et al.) fixes this purely at inference time by *freezing* the actions guaranteed to
 execute during inference and inpainting the rest.
 
-`vla-zoo rtc-sim` is a pure CPU simulation of that scheduling layer. On a synthetic chunk
+`vla-ros2 rtc-sim` is a pure CPU simulation of that scheduling layer. On a synthetic chunk
 stream it cuts the mean chunk-boundary jump **~76%** vs naive async swapping
 ([recorded run](docs/assets/rtc_sim/rtc_scheduler_sim.md)). Stacked, the two emitted
 control streams make it obvious — the naive panel snaps at every chunk boundary, the RTC
@@ -75,13 +75,13 @@ It models the freeze-prefix + soft-mask blend, not the diffusion/flow gradient-g
 sampler — a runtime scheduling property, not a policy-quality or task-success claim.
 
 ```bash
-vla-zoo rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4   # numbers
-vla-zoo demo rtc-gif --out rtc.gif                               # the animation above
+vla-ros2 rtc-sim --chunks 14 --horizon 16 --execute 8 --delay 4   # numbers
+vla-ros2 demo rtc-gif --out rtc.gif                               # the animation above
 ```
 
-**Real model, not just simulation.** `vla-zoo rtc-record` drives a real adapter through the
+**Real model, not just simulation.** `vla-ros2 rtc-record` drives a real adapter through the
 PyBullet rollout in action-chunk mode and records every predicted chunk plus its *measured*
-inference latency into a `vla-zoo-rtc-trace/v1` log. Replaying that trace
+inference latency into a `vla-ros2-rtc-trace/v1` log. Replaying that trace
 (`rtc-sim --trace` / `demo rtc-gif --trace`) reproduces exactly what a two-thread async
 executor would emit — so the continuity numbers are a real runtime property of the model's
 own output, not synthetic. On a recorded **SmolVLA** run (81 chunks, horizon 50, 6-DoF, real
@@ -92,13 +92,13 @@ per-cycle delays ~533 ms at 30 Hz), freeze cuts the chunk-boundary jump **87%**
 ![SmolVLA real-model RTC continuity](docs/assets/rtc_sim/smolvla_rtc.gif)
 
 ```bash
-vla-zoo rtc-record --model smolvla --allow-local-heavy --out smolvla_rtc_trace.json
-vla-zoo demo rtc-gif --trace smolvla_rtc_trace.json --out smolvla_rtc.gif
+vla-ros2 rtc-record --model smolvla --allow-local-heavy --out smolvla_rtc_trace.json
+vla-ros2 demo rtc-gif --trace smolvla_rtc_trace.json --out smolvla_rtc.gif
 ```
 
 ### Roofline floor vs measured latency
 
-How much of the recorded latency is the hardware, and how much is overhead? `vla-zoo
+How much of the recorded latency is the hardware, and how much is overhead? `vla-ros2
 compare roofline` computes each model's single-forward, batch-1 memory-bound floor
 (`weight_bytes / bandwidth`, [VLA-Perf](https://arxiv.org/abs/2602.18397) style) and joins
 it with the recorded p50. On the 16 GB VRAM GPU the probes ran on, SmolVLA sits **~285×**
@@ -108,11 +108,11 @@ lower bound, not an achievable target; the gap is optimization headroom, never a
 policy-quality claim ([recorded run](docs/assets/roofline/vla_roofline.md)).
 
 ```bash
-vla-zoo compare roofline --list-hardware
-vla-zoo compare roofline --from-log smolvla.jsonl,openvla.jsonl --hardware local_16gb
+vla-ros2 compare roofline --list-hardware
+vla-ros2 compare roofline --from-log smolvla.jsonl,openvla.jsonl --hardware local_16gb
 ```
 
-## Why vla_zoo?
+## Why vla_ros2?
 
 Most VLA repositories focus on model code, training, checkpoints, or task demos.
 Real robot deployments need a different layer:
@@ -124,7 +124,7 @@ camera + language + robot state + timestamp
   -> ROS2 topic, server response, benchmark step, or report artifact
 ```
 
-`vla_zoo` is that boundary. It does not train models, redistribute weights, or
+`vla_ros2` is that boundary. It does not train models, redistribute weights, or
 command hardware directly. It runs adapters behind a stable interface and makes
 the resulting actions observable, replayable, and comparable.
 
@@ -151,7 +151,7 @@ current verification is runtime-centric and intentionally explicit about what
 did and did not run.
 
 The most direct status page is the
-[VLA model evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html):
+[VLA model evidence matrix](https://rsasaki0109.github.io/vla_ros2/assets/vla_model_evidence_matrix.html):
 it separates adapter contract, GPU inference, remote serving, ROS2 remote logs,
 PyBullet traces, and policy-quality claims for each model family.
 
@@ -164,7 +164,7 @@ PyBullet traces, and policy-quality claims for each model family.
 | `groot` / `gr00t` | Experimental and blocked until the NVIDIA Isaac GR00T stack is wired in | `blocked`, reproducibly probed: adapter raises rather than fabricating, and no GR00T package exists on PyPI (real runtime is the NVIDIA Isaac-GR00T GitHub stack) |
 
 ```bash
-vla-zoo compare tasks \
+vla-ros2 compare tasks \
   --models dummy,scripted,random \
   --tasks all \
   --out results/vla_task_verification/baseline_tasks.json \
@@ -176,10 +176,10 @@ Sample artifacts:
 
 | Pillar | Artifacts |
 |---|---|
-| Visual demos | [Action Playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html), [Local+remote playground](https://rsasaki0109.github.io/vla_zoo/assets/action_playground_with_remote.html), [Action Playground verification](docs/reports/model_comparison.md), [PyBullet GIF gallery](docs/assets/gif_suite/index.html), [GIF QA](docs/assets/gif_suite/gif_check.md), [PyBullet report](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html) |
-| Adapter/runtime truth | [VLA evidence matrix](https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html), [Adapter cards](docs/adapters/README.md), [external adapter status](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/external_adapter_status.html), [robot compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/robot_compatibility.md) |
-| ROS2 / remote deployment | [Remote runtime smoke](docs/reports/remote_runtime_smoke.md), [ROS2 remote dummy evidence](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros2_remote_dummy/remote_smoke_check.md), [ROS2 remote smoke plan](https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md), [ROS2 dashboard](https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html) |
-| Heavy VLA probes | [Real-scene probe comparison](https://rsasaki0109.github.io/vla_zoo/assets/sample_pybullet_compare/runtime_probe_comparison.html), [OpenVLA remote probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/openvla_remote_probe.md), [SmolVLA bf16 dtype-serve probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/smolvla_dtype_serve_probe.md), [pi0 compatibility](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/pi0_compatibility_probe.md), [GR00T block probe](https://rsasaki0109.github.io/vla_zoo/assets/sample_task_verification/groot_block_probe.md) |
+| Visual demos | [Action Playground](https://rsasaki0109.github.io/vla_ros2/assets/action_playground.html), [Local+remote playground](https://rsasaki0109.github.io/vla_ros2/assets/action_playground_with_remote.html), [Action Playground verification](docs/reports/model_comparison.md), [PyBullet GIF gallery](docs/assets/gif_suite/index.html), [GIF QA](docs/assets/gif_suite/gif_check.md), [PyBullet report](https://rsasaki0109.github.io/vla_ros2/assets/sample_compare_suite/pybullet_report.html) |
+| Adapter/runtime truth | [VLA evidence matrix](https://rsasaki0109.github.io/vla_ros2/assets/vla_model_evidence_matrix.html), [Adapter cards](docs/adapters/README.md), [external adapter status](https://rsasaki0109.github.io/vla_ros2/assets/sample_task_verification/external_adapter_status.html), [robot compatibility](https://rsasaki0109.github.io/vla_ros2/assets/sample_compare_suite/robot_compatibility.md) |
+| ROS2 / remote deployment | [Remote runtime smoke](docs/reports/remote_runtime_smoke.md), [ROS2 remote dummy evidence](https://rsasaki0109.github.io/vla_ros2/assets/sample_ros2_remote_dummy/remote_smoke_check.md), [ROS2 remote smoke plan](https://rsasaki0109.github.io/vla_ros2/assets/ros2_remote_smoke_plan.md), [ROS2 dashboard](https://rsasaki0109.github.io/vla_ros2/assets/sample_ros_runtime_dashboard.html) |
+| Heavy VLA probes | [Real-scene probe comparison](https://rsasaki0109.github.io/vla_ros2/assets/sample_pybullet_compare/runtime_probe_comparison.html), [OpenVLA remote probe](https://rsasaki0109.github.io/vla_ros2/assets/sample_task_verification/openvla_remote_probe.md), [SmolVLA bf16 dtype-serve probe](https://rsasaki0109.github.io/vla_ros2/assets/sample_task_verification/smolvla_dtype_serve_probe.md), [pi0 compatibility](https://rsasaki0109.github.io/vla_ros2/assets/sample_task_verification/pi0_compatibility_probe.md), [GR00T block probe](https://rsasaki0109.github.io/vla_ros2/assets/sample_task_verification/groot_block_probe.md) |
 
 ## Quickstart
 
@@ -189,23 +189,23 @@ writes a local report that links on to the recorded real-adapter evidence:
 
 ```bash
 pip install -e .          # or: pip install -e ".[cli,server,sim]" for the full stack
-vla-zoo quickstart        # writes ./vla_zoo_quickstart/report.html and prints the path
+vla-ros2 quickstart        # writes ./vla_ros2_quickstart/report.html and prints the path
 ```
 
 Example output is published at
-[assets/quickstart/report.html](https://rsasaki0109.github.io/vla_zoo/assets/quickstart/report.html).
+[assets/quickstart/report.html](https://rsasaki0109.github.io/vla_ros2/assets/quickstart/report.html).
 This proves the plumbing works locally; it is not a model-quality claim.
 
 ```bash
-git clone https://github.com/rsasaki0109/vla_zoo.git
-cd vla_zoo
+git clone https://github.com/rsasaki0109/vla_ros2.git
+cd vla_ros2
 pip install -e ".[cli,server,sim]"
-vla-zoo doctor --no-ros
-vla-zoo predict --model dummy --instruction "pick up the red block"
+vla-ros2 doctor --no-ros
+vla-ros2 predict --model dummy --instruction "pick up the red block"
 ```
 
 ```python
-from vla_zoo import load_model
+from vla_ros2 import load_model
 
 model = load_model("dummy")
 action = model.predict(image=None, instruction="pick up the red block")
@@ -219,7 +219,7 @@ It is the runtime smoke path for CI, docs, and ROS2 launch validation.
 
 ## SmolVLA On GPU
 
-SmolVLA is a compact VLA from the LeRobot ecosystem. `vla_zoo` loads it lazily
+SmolVLA is a compact VLA from the LeRobot ecosystem. `vla_ros2` loads it lazily
 through LeRobot and exposes the same `predict()` runtime boundary.
 
 ```bash
@@ -244,7 +244,7 @@ isolated environment (the `smolvla` extra pins `transformers`/`torch` versions
 that clash with `openvla`). Generate a reproducible bring-up plan:
 
 ```bash
-vla-zoo smolvla-remote-plan --public-host gpu-box --port 8000 --device cuda:0
+vla-ros2 smolvla-remote-plan --public-host gpu-box --port 8000 --device cuda:0
 ```
 
 See [SmolVLA remote serving](docs/smolvla_remote.md) and the generated
@@ -253,13 +253,13 @@ command plan, not a recorded `/v1/predict` run, and makes no policy-quality clai
 
 ## OpenVLA On GPU
 
-OpenVLA is an external project. `vla_zoo` wraps it behind the runtime API and
+OpenVLA is an external project. `vla_ros2` wraps it behind the runtime API and
 does not redistribute OpenVLA code, checkpoints, or weights.
 
 ```bash
 pip install -e ".[cli,server,sim,gpu,openvla]"
-vla-zoo doctor --no-ros
-vla-zoo gpu smoke --device cuda:0 --dtype float16
+vla-ros2 doctor --no-ros
+vla-ros2 gpu smoke --device cuda:0 --dtype float16
 ```
 
 ```bash
@@ -281,7 +281,7 @@ workstation and keep the robot-side process light:
 
 ```bash
 # GPU workstation
-vla-zoo serve --model openvla \
+vla-ros2 serve --model openvla \
   --host 0.0.0.0 \
   --port 8000 \
   --pretrained openvla/openvla-7b \
@@ -290,14 +290,14 @@ vla-zoo serve --model openvla \
   --unnorm-key bridge_orig
 
 # robot or ROS2 machine
-ros2 launch vla_zoo remote.launch.py remote_url:=http://gpu-box:8000
+ros2 launch vla_ros2 remote.launch.py remote_url:=http://gpu-box:8000
 ```
 
 Before driving the robot-side runtime, run a health-first probe that checks
 `/health` and then records one `/v1/predict` response:
 
 ```bash
-vla-zoo remote-probe --model openvla --remote-url http://gpu-box:8000 \
+vla-ros2 remote-probe --model openvla --remote-url http://gpu-box:8000 \
   --out results/openvla_remote_probe.json --strict
 ```
 
@@ -310,7 +310,7 @@ This is a runtime-path claim, not a task-success claim.
 For multi-model comparisons, generate one GPU-server command per adapter:
 
 ```bash
-vla-zoo serve-plan \
+vla-ros2 serve-plan \
   --models openvla,pi0,smolvla,groot \
   --public-host gpu-box \
   --base-port 8001 \
@@ -318,7 +318,7 @@ vla-zoo serve-plan \
 ```
 
 Sample server plan:
-https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/gpu_server_plan.md
+https://rsasaki0109.github.io/vla_ros2/assets/sample_compare_suite/gpu_server_plan.md
 
 ## pi0 / openpi Remote-First
 
@@ -328,12 +328,12 @@ Pin LeRobot/openpi to the version that matches your checkpoint.
 
 ```bash
 # dedicated serving environment
-vla-zoo serve --model pi0 --host 0.0.0.0 --port 8000 --device cuda:0 \
+vla-ros2 serve --model pi0 --host 0.0.0.0 --port 8000 --device cuda:0 \
   --pretrained lerobot/pi0_base
 
 # robot/client side
 python examples/python/load_pi0_remote.py --remote-url http://gpu-box:8000
-vla-zoo remote-probe --model pi0 --remote-url http://gpu-box:8000 --strict
+vla-ros2 remote-probe --model pi0 --remote-url http://gpu-box:8000 --strict
 ```
 
 See [pi0 / openpi remote-first path](docs/pi0_remote.md) and the generated
@@ -348,8 +348,8 @@ in**. The adapter declares a runtime contract but ships no inference and makes n
 task-success claim; `predict_observation` raises rather than fabricating actions.
 
 ```bash
-vla-zoo info groot          # contract + blocked status
-vla-zoo serve-plan --models groot
+vla-ros2 info groot          # contract + blocked status
+vla-ros2 serve-plan --models groot
 ```
 
 See the [GR00T blocked-status path](docs/groot_remote.md) for the expected
@@ -363,7 +363,7 @@ or `partial` until a real serving adapter and a recorded action probe exist.
 pip install -e .
 colcon build --base-paths ros2 --symlink-install
 source install/setup.bash
-ros2 launch vla_zoo dummy.launch.py
+ros2 launch vla_ros2 dummy.launch.py
 ```
 
 The ROS2 runtime subscribes to camera, instruction, and optional joint state
@@ -372,37 +372,37 @@ default to `dry_run:=true`.
 
 ```text
 /camera/image_raw      sensor_msgs/msg/Image
-/vla/instruction       std_msgs/msg/String or vla_zoo_msgs/msg/VLAInstruction
+/vla/instruction       std_msgs/msg/String or vla_ros2_msgs/msg/VLAInstruction
 /joint_states          sensor_msgs/msg/JointState optional
 
-/vla/action            vla_zoo_msgs/msg/VLAAction
-/vla/action_chunk      vla_zoo_msgs/msg/VLAActionChunk
-/vla/status            vla_zoo_msgs/msg/VLAStatus
+/vla/action            vla_ros2_msgs/msg/VLAAction
+/vla/action_chunk      vla_ros2_msgs/msg/VLAActionChunk
+/vla/status            vla_ros2_msgs/msg/VLAStatus
 /diagnostics           diagnostic_msgs/msg/DiagnosticArray
 ```
 
 Self-contained ROS2 smoke run with synthetic camera input:
 
 ```bash
-ros2 launch vla_zoo smoke.launch.py
+ros2 launch vla_ros2 smoke.launch.py
 ```
 
 Record status, diagnostics, and actions for reports:
 
 ```bash
-vla-zoo ros smoke-report --output-dir results/ros2_smoke
+vla-ros2 ros smoke-report --output-dir results/ros2_smoke
 ```
 
 Remote GPU smoke recording uses the same synthetic camera path but calls a GPU
 server from the robot-side ROS2 node:
 
 ```bash
-vla-zoo ros remote-smoke-report \
+vla-ros2 ros remote-smoke-report \
   --model openvla \
   --remote-url http://gpu-box:8001 \
   --output-dir results/ros2_remote_openvla \
   --duration-sec 30
-vla-zoo ros remote-smoke-plan \
+vla-ros2 ros remote-smoke-plan \
   --model openvla \
   --remote-url http://gpu-box:8001 \
   --markdown-out results/ros2_remote_smoke_plan.md
@@ -412,8 +412,8 @@ The checked sample uses a temporary local dummy HTTP server to prove the ROS2
 remote runtime path without a GPU:
 
 ```bash
-vla-zoo serve --model dummy --host 127.0.0.1 --port 8766
-vla-zoo ros remote-smoke-report \
+vla-ros2 serve --model dummy --host 127.0.0.1 --port 8766
+vla-ros2 ros remote-smoke-report \
   --model dummy \
   --remote-url http://127.0.0.1:8766 \
   --output-dir docs/assets/sample_ros2_remote_dummy \
@@ -421,15 +421,15 @@ vla-zoo ros remote-smoke-report \
 ```
 
 Sample ROS2 remote smoke plan:
-https://rsasaki0109.github.io/vla_zoo/assets/ros2_remote_smoke_plan.md
+https://rsasaki0109.github.io/vla_ros2/assets/ros2_remote_smoke_plan.md
 
 Sample ROS2 remote dummy evidence:
-https://rsasaki0109.github.io/vla_zoo/assets/sample_ros2_remote_dummy/remote_smoke_check.md
+https://rsasaki0109.github.io/vla_ros2/assets/sample_ros2_remote_dummy/remote_smoke_check.md
 
 Replay recorded actions on a separate safe topic:
 
 ```bash
-ros2 launch vla_zoo action_replay.launch.py \
+ros2 launch vla_ros2 action_replay.launch.py \
   action_log_path:=results/ros2_smoke/vla_actions.jsonl
 ```
 
@@ -469,78 +469,78 @@ and `random`.
 | GIFs, manifests, QA reports, and dashboards are reproducible | Hardware safety or calibrated robot deployment |
 
 ```bash
-vla-zoo demo gif-suite \
+vla-ros2 demo gif-suite \
   --models dummy,scripted,random \
   --tasks all \
   --out-dir docs/assets/gif_suite
-vla-zoo demo gif-check docs/assets/gif_suite
-vla-zoo demo gif-report --manifest docs/assets/gif_suite/gif_manifest.json
-vla-zoo demo action-playground \
+vla-ros2 demo gif-check docs/assets/gif_suite
+vla-ros2 demo gif-report --manifest docs/assets/gif_suite/gif_manifest.json
+vla-ros2 demo action-playground \
   --manifest docs/assets/gif_suite/gif_manifest.json \
   --out docs/assets/action_playground.html \
   --trace-out docs/assets/action_playground.json
-vla-zoo demo action-playground-record \
+vla-ros2 demo action-playground-record \
   --model smolvla \
   --runtime remote \
   --remote-url http://gpu-box:8003 \
   --tasks all \
   --out results/smolvla/action_playground.json
-vla-zoo demo action-playground-view \
+vla-ros2 demo action-playground-view \
   --trace docs/assets/action_playground.json,results/openvla/action_playground.json \
   --merged-out results/action_playground_merged.json \
   --out docs/assets/action_playground.html
-vla-zoo demo action-playground-check \
+vla-ros2 demo action-playground-check \
   --trace docs/assets/action_playground.json \
   --out docs/assets/action_playground_check.json \
   --markdown-out docs/reports/model_comparison.md
-vla-zoo demo action-playground-remote-smoke \
+vla-ros2 demo action-playground-remote-smoke \
   --port 8765 \
   --out docs/assets/action_playground_remote_dummy.json \
   --merged-out docs/assets/action_playground_with_remote.json \
   --html-out docs/assets/action_playground_with_remote.html \
   --markdown-out docs/reports/remote_runtime_smoke.md
-vla-zoo compare suite --out-dir results/vla_compare_suite
+vla-ros2 compare suite --out-dir results/vla_compare_suite
 ```
 
 Live artifacts:
 
-- Action Playground: https://rsasaki0109.github.io/vla_zoo/assets/action_playground.html
+- Action Playground: https://rsasaki0109.github.io/vla_ros2/assets/action_playground.html
   task-level adapter cards, action magnitude comparison, and frame-by-frame traces
-- Local+remote Action Playground: https://rsasaki0109.github.io/vla_zoo/assets/action_playground_with_remote.html
+- Local+remote Action Playground: https://rsasaki0109.github.io/vla_ros2/assets/action_playground_with_remote.html
   local baseline traces plus a temporary HTTP dummy server smoke trace
-- Action Playground verification: https://rsasaki0109.github.io/vla_zoo/reports/model_comparison.md
+- Action Playground verification: https://rsasaki0109.github.io/vla_ros2/reports/model_comparison.md
   9/9 recorded PyBullet runtime traces checked for frames, GIF links, and adapter errors
-- VLA evidence matrix: https://rsasaki0109.github.io/vla_zoo/assets/vla_model_evidence_matrix.html
+- VLA evidence matrix: https://rsasaki0109.github.io/vla_ros2/assets/vla_model_evidence_matrix.html
   contract, GPU, remote server, ROS2 remote, PyBullet, and policy-quality evidence by model
-- Remote runtime smoke: https://rsasaki0109.github.io/vla_zoo/reports/remote_runtime_smoke.md
+- Remote runtime smoke: https://rsasaki0109.github.io/vla_ros2/reports/remote_runtime_smoke.md
   3/3 remote dummy PyBullet traces over `/v1/predict` with 24 HTTP predictions
-- PyBullet report: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/pybullet_report.html
-- Runtime dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_compare_suite/runtime_dashboard.html
-- ROS2 dashboard: https://rsasaki0109.github.io/vla_zoo/assets/sample_ros_runtime_dashboard.html
-- ROS2 remote dummy evidence: https://rsasaki0109.github.io/vla_zoo/assets/sample_ros2_remote_dummy/remote_smoke_check.md
+- PyBullet report: https://rsasaki0109.github.io/vla_ros2/assets/sample_compare_suite/pybullet_report.html
+- Runtime dashboard: https://rsasaki0109.github.io/vla_ros2/assets/sample_compare_suite/runtime_dashboard.html
+- ROS2 dashboard: https://rsasaki0109.github.io/vla_ros2/assets/sample_ros_runtime_dashboard.html
+- ROS2 remote dummy evidence: https://rsasaki0109.github.io/vla_ros2/assets/sample_ros2_remote_dummy/remote_smoke_check.md
   ROS2 node to RemoteVLAClient to HTTP dummy server, with 69 typed actions recorded
-- Action trace: https://rsasaki0109.github.io/vla_zoo/assets/sample_action_trace.html
-- Action analysis: https://rsasaki0109.github.io/vla_zoo/assets/sample_action_analysis.md
+- Action trace: https://rsasaki0109.github.io/vla_ros2/assets/sample_action_trace.html
+- Action analysis: https://rsasaki0109.github.io/vla_ros2/assets/sample_action_analysis.md
 
 ## Benchmark Results (Schema + Replay)
 
-Benchmarks emit a **versioned JSONL result schema** (`vla-zoo-benchmark/v1`) so
+Benchmarks emit a **versioned JSONL result schema** (`vla-ros2-benchmark/v1`) so
 latency and action-rate summaries are reproducible. Results are runtime-centric:
 `success` is `null` whenever no honest task-success claim can be made.
 
 ```bash
 # smoke benchmark with schema output
-vla-zoo bench --model dummy --episodes 5 \
+vla-ros2 bench --model dummy --episodes 5 \
   --jsonl-out out/smoke_results.jsonl --summary-md out/smoke_summary.md
 
 # ROS bag replay stub: replays recorded JSONL action logs (native rosbag2 is future work)
-vla-zoo bench-replay \
+vla-ros2 bench-replay \
   --action-log docs/assets/sample_ros2_remote_dummy/vla_actions.jsonl \
   --summary-md docs/assets/sample_benchmark/ros2_replay_summary.md \
   --summary-out docs/assets/sample_benchmark/ros2_replay_summary.json
 
 # render summaries into a comparison report (HTML + Markdown)
-vla-zoo bench-report \
+vla-ros2 bench-report \
   --summaries docs/assets/sample_benchmark/ros2_replay_summary.json \
   --html-out docs/assets/sample_benchmark/benchmark_report.html
 ```
@@ -555,24 +555,24 @@ generated [ROS2 action replay summary](docs/assets/sample_benchmark/ros2_replay_
 Start by comparing adapter contracts without loading model weights:
 
 ```bash
-vla-zoo compare adapters
-vla-zoo compare methods --markdown-out results/vla_method_profiles.md
-vla-zoo compare evidence \
+vla-ros2 compare adapters
+vla-ros2 compare methods --markdown-out results/vla_method_profiles.md
+vla-ros2 compare evidence \
   --models dummy,scripted,random,openvla,pi0,smolvla,groot \
   --markdown-out results/vla_model_evidence_matrix.md \
   --html-out results/vla_model_evidence_matrix.html
-vla-zoo compare compatibility \
+vla-ros2 compare compatibility \
   --robot-profile single-camera-eef \
   --models openvla,pi0,smolvla,groot \
   --markdown-out results/vla_robot_compatibility.md
-vla-zoo compare tasks --models dummy,scripted,random --tasks all
+vla-ros2 compare tasks --models dummy,scripted,random --tasks all
 ```
 
 For real model-to-model checks, run heavyweight policies behind GPU servers and
 compare them from the robot-side runtime:
 
 ```bash
-vla-zoo compare pybullet \
+vla-ros2 compare pybullet \
   --models openvla,pi0,smolvla,groot \
   --runtime remote \
   --remote-map "openvla=http://gpu-box:8001,pi0=http://gpu-box:8002,smolvla=http://gpu-box:8003,groot=http://gpu-box:8004" \
@@ -580,7 +580,7 @@ vla-zoo compare pybullet \
   --html-out results/vla_runtime_comparison.html
 ```
 
-`vla-zoo serve-plan` emits the matching server commands and remote map for the
+`vla-ros2 serve-plan` emits the matching server commands and remote map for the
 GPU side.
 
 The output is runtime-centric: latency, action magnitude, action rate, adapter
@@ -603,7 +603,7 @@ runtime support, dependencies, license caveats, and verification status.
 | `smolvla` | multi-camera/state LeRobot policy path | [card](docs/adapters/smolvla.md) |
 | `groot` / `gr00t` | experimental humanoid/generalist placeholder | [card](docs/adapters/groot.md) |
 
-External projects can register adapters through the `vla_zoo.adapters` entry point.
+External projects can register adapters through the `vla_ros2.adapters` entry point.
 Every serious adapter should declare input requirements, action spec, control
 rate, chunking behavior, dependency status, and license caveats.
 
@@ -626,7 +626,7 @@ flowchart LR
 Core contract:
 
 ```python
-from vla_zoo import load_model
+from vla_ros2 import load_model
 
 model = load_model("openvla", runtime="remote", remote_url="http://gpu-box:8000")
 action = model.predict(image=image, instruction="pick up the red block")
@@ -645,8 +645,8 @@ assert action.spec.action_space in {"eef_delta", "eef_pose", "joint_position", "
 
 ## Known Limitations
 
-- `vla_zoo` does not train VLA models.
-- `vla_zoo` does not guarantee zero-shot success on your robot.
+- `vla_ros2` does not train VLA models.
+- `vla_ros2` does not guarantee zero-shot success on your robot.
 - Real hardware deployment requires robot-specific action bridges and safety checks.
 - Model adapters may require large GPU memory and external model licenses.
 - Action representations differ across VLA families and must be normalized carefully.

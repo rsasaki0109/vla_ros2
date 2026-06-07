@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from vla_zoo.core.types import ActionSpec, VLAAction, VLAActionChunk
-from vla_zoo.runtime.guard import (
+from vla_ros2.core.types import ActionSpec, VLAAction, VLAActionChunk
+from vla_ros2.runtime.guard import (
     ActionClipGuard,
     WatchdogConfig,
     clip_action_report,

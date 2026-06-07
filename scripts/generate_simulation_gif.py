@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from vla_zoo.demo.pybullet import PyBulletDemoConfig, render_pybullet_demo
+from vla_ros2.demo.pybullet import PyBulletDemoConfig, render_pybullet_demo
 
 
 def main() -> None:

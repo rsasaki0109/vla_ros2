@@ -5,8 +5,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from vla_zoo.core.types import ActionSpec, VLAAction
-from vla_zoo.runtime.diagnostics import (
+from vla_ros2.core.types import ActionSpec, VLAAction
+from vla_ros2.runtime.diagnostics import (
     DIAGNOSTICS_SCHEMA_VERSION,
     RuntimeDiagnostics,
     SchemaVersionError,
@@ -18,7 +18,7 @@ from vla_zoo.runtime.diagnostics import (
     summarize_diagnostics,
     write_diagnostics_jsonl,
 )
-from vla_zoo.runtime.guard import ActionClipGuard, evaluate_watchdog
+from vla_ros2.runtime.guard import ActionClipGuard, evaluate_watchdog
 
 
 def _action(values: list[float]) -> VLAAction:
@@ -89,7 +89,7 @@ def test_round_trip_dict() -> None:
 
 def test_from_dict_rejects_unknown_schema() -> None:
     payload = _record().to_dict()
-    payload["schema_version"] = "vla-zoo-diagnostics/v999"
+    payload["schema_version"] = "vla-ros2-diagnostics/v999"
 
     with pytest.raises(SchemaVersionError):
         RuntimeDiagnostics.from_dict(payload)
@@ -229,7 +229,7 @@ def _diagnostic_array_payload(record: RuntimeDiagnostics, *, name: str) -> dict[
 
 def test_native_records_from_diagnostics_payload_reconstructs() -> None:
     record = _record()
-    payload = _diagnostic_array_payload(record, name="vla_zoo/vla_runtime_node")
+    payload = _diagnostic_array_payload(record, name="vla_ros2/vla_runtime_node")
 
     restored = native_records_from_diagnostics_payload(payload)
 
@@ -245,7 +245,7 @@ def test_native_records_skip_non_schema_and_filter_by_name() -> None:
             # a foreign DiagnosticStatus without our schema_version is ignored
             {"name": "other/node", "values": [{"key": "cpu", "value": "0.5"}]},
             {
-                "name": "vla_zoo/vla_runtime_node",
+                "name": "vla_ros2/vla_runtime_node",
                 "values": [{"key": k, "value": v} for k, v in record.to_key_values()],
             },
         ]

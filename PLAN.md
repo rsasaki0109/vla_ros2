@@ -1,13 +1,13 @@
-# vla_zoo Plan and Claude Handoff
+# vla_ros2 Plan and Claude Handoff
 
 Updated: 2026-06-03 JST
 
-This file is the handoff document for continuing `vla_zoo` development with another
+This file is the handoff document for continuing `vla_ros2` development with another
 agent. Read this before making changes.
 
 ## 0. Current Position
 
-`vla_zoo` is a ROS2-native runtime, benchmark, and adapter hub for
+`vla_ros2` is a ROS2-native runtime, benchmark, and adapter hub for
 Vision-Language-Action models. The project is intentionally runtime-first:
 
 ```text
@@ -79,7 +79,7 @@ What not to optimize for yet:
 Do not claim:
 
 - "OpenVLA/pi0/SmolVLA/GR00T are all benchmarked successfully."
-- "vla_zoo proves real robot task success."
+- "vla_ros2 proves real robot task success."
 - "zero-shot deployment is safe."
 - "the VLA output should directly drive hardware."
 
@@ -108,12 +108,12 @@ For hardware:
 Key source modules:
 
 ```text
-src/vla_zoo/core/
+src/vla_ros2/core/
   types.py              Typed observation/action/action spec dataclasses.
   model.py              BaseVLA predict wrapper.
   registry.py           Adapter registry, aliases, metadata, entry points.
 
-src/vla_zoo/adapters/
+src/vla_ros2/adapters/
   dummy.py              Always-working neutral baseline.
   baselines.py          scripted/random simulation baselines.
   openvla.py            Lazy Hugging Face OpenVLA adapter.
@@ -121,7 +121,7 @@ src/vla_zoo/adapters/
   smolvla.py            Lazy LeRobot SmolVLA adapter.
   groot.py              Experimental GR00T placeholder.
 
-src/vla_zoo/runtime/
+src/vla_ros2/runtime/
   server.py             FastAPI serving app.
   remote.py             Remote client with BaseVLA-compatible predict().
   schemas.py            Request/response schema helpers.
@@ -130,24 +130,24 @@ src/vla_zoo/runtime/
   ros_plan.py           ROS2 remote smoke plan generation.
   server_plan.py        Heavy VLA server plan generation.
 
-src/vla_zoo/demo/
+src/vla_ros2/demo/
   pybullet.py           PyBullet simulation renderer/comparison.
   gif_suite.py          GIF suite generation, QA, gallery renderer.
   action_playground.py  Action trace/playground static artifacts.
 
-src/vla_zoo/compare/
+src/vla_ros2/compare/
   evidence.py           VLA evidence matrix JSON/Markdown/HTML renderer.
   profiles.py           Adapter method profile comparison.
   cards.py              Adapter card generation.
   compatibility.py      Robot profile compatibility report.
   suite.py              Compare-suite artifact README.
 
-src/vla_zoo/benchmark/
+src/vla_ros2/benchmark/
   base.py               BenchmarkEnv and BenchmarkRunner contracts.
 
 ros2/
-  vla_zoo/              ROS2 node, launch files, config.
-  vla_zoo_msgs/         ROS2 message definitions.
+  vla_ros2/              ROS2 node, launch files, config.
+  vla_ros2_msgs/         ROS2 message definitions.
 
 tests/
   pytest suite for registry, adapters, CLI, schemas, demos, dashboard, ROS smoke.
@@ -231,23 +231,23 @@ Core checks:
 
 ```bash
 rtk proxy env PYTHONPATH=src pytest -q
-rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests ros2/vla_zoo/vla_zoo_ros
-rtk proxy env PYTHONPATH=src mypy src/vla_zoo
+rtk proxy env PYTHONPATH=src ruff check src/vla_ros2 tests ros2/vla_ros2/vla_ros2_ros
+rtk proxy env PYTHONPATH=src mypy src/vla_ros2
 rtk proxy git diff --check
 ```
 
 CLI smoke:
 
 ```bash
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main list
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main predict --model dummy --instruction "hello"
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main doctor --no-ros
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main list
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main predict --model dummy --instruction "hello"
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main doctor --no-ros
 ```
 
 Regenerate VLA evidence matrix:
 
 ```bash
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare evidence \
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main compare evidence \
   --models dummy,scripted,random,openvla,pi0,smolvla,groot \
   --out docs/assets/vla_model_evidence_matrix.json \
   --markdown-out docs/assets/vla_model_evidence_matrix.md \
@@ -257,7 +257,7 @@ rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare evidence \
 Regenerate GIF gallery from existing GIF manifest:
 
 ```bash
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main demo gif-report \
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main demo gif-report \
   --manifest docs/assets/gif_suite/gif_manifest.json \
   --html-out docs/assets/gif_suite/index.html \
   --check-json-out docs/assets/gif_suite/gif_check.json
@@ -266,7 +266,7 @@ rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main demo gif-report \
 Validate GIF suite:
 
 ```bash
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main demo gif-check \
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main demo gif-check \
   docs/assets/gif_suite \
   --link-files README.md,docs/index.html,docs/assets/gif_suite/README.md \
   --strict
@@ -275,23 +275,23 @@ rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main demo gif-check \
 Regenerate runtime dashboard:
 
 ```bash
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare dashboard \
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main compare dashboard \
   --results docs/assets/sample_compare_suite/pybullet_results.json \
   --out docs/assets/sample_compare_suite/runtime_dashboard.html \
-  --title "vla_zoo Comparison Suite"
+  --title "vla_ros2 Comparison Suite"
 ```
 
 Run compare suite:
 
 ```bash
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare suite \
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main compare suite \
   --out-dir results/vla_compare_suite
 ```
 
 Run PyBullet task verification:
 
 ```bash
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare tasks \
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main compare tasks \
   --models dummy,scripted,random \
   --tasks all \
   --out results/vla_task_verification/baseline_tasks.json \
@@ -302,13 +302,13 @@ rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main compare tasks \
 Remote dummy smoke:
 
 ```bash
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main demo action-playground-remote-smoke
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main demo action-playground-remote-smoke
 ```
 
 ROS2 remote smoke evidence check:
 
 ```bash
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main ros remote-smoke-check \
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main ros remote-smoke-check \
   --status-log docs/assets/sample_ros2_remote_dummy/vla_status.jsonl \
   --diagnostics-log docs/assets/sample_ros2_remote_dummy/vla_diagnostics.jsonl \
   --action-log docs/assets/sample_ros2_remote_dummy/vla_actions.jsonl
@@ -320,7 +320,7 @@ Recommended next sequence for Claude.
 
 ### 7.1 Add a Docs/Pages Link Verifier (DONE)
 
-Status: implemented in `src/vla_zoo/docs/links.py` + CLI `vla-zoo report link-check`.
+Status: implemented in `src/vla_ros2/docs/links.py` + CLI `vla-ros2 report link-check`.
 Parses Markdown/HTML links, skips external/anchors, resolves repo-relative and
 `/`-rooted paths, emits a human table plus `--out` JSON, and supports `--strict`.
 Verified over README/Pages: 79 local links OK, 0 broken. Tests in
@@ -328,17 +328,17 @@ Verified over README/Pages: 79 local links OK, 0 broken. Tests in
 
 Original spec for reference:
 
-- New module, likely `src/vla_zoo/docs/links.py` or `src/vla_zoo/runtime/links.py`.
+- New module, likely `src/vla_ros2/docs/links.py` or `src/vla_ros2/runtime/links.py`.
 - CLI command, for example:
 
 ```bash
-vla-zoo docs link-check README.md docs/index.html docs/assets/gif_suite/index.html
+vla-ros2 docs link-check README.md docs/index.html docs/assets/gif_suite/index.html
 ```
 
 or, if avoiding a new Typer app:
 
 ```bash
-vla-zoo report link-check --paths README.md,docs/index.html
+vla-ros2 report link-check --paths README.md,docs/index.html
 ```
 
 Requirements:
@@ -355,14 +355,14 @@ Acceptance:
 
 ```bash
 rtk proxy env PYTHONPATH=src pytest -q tests/test_docs_links.py tests/test_cli.py
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main report link-check \
   --paths README.md,docs/index.html \
   --strict
 ```
 
 ### 7.2 Add a README/Pages Artifact Index (DONE)
 
-Status: implemented in `src/vla_zoo/docs/artifact_index.py` + CLI `vla-zoo report index`.
+Status: implemented in `src/vla_ros2/docs/artifact_index.py` + CLI `vla-ros2 report index`.
 Curated 16-entry catalog (title/path/category/status/kind/source command/caveat) across
 all six categories, verifies on-disk existence vs `--root`, emits `--out` JSON and
 `--html-out` HTML (hrefs relative to the output dir) plus a status table, and supports
@@ -376,7 +376,7 @@ Original spec for reference:
 - CLI:
 
 ```bash
-vla-zoo report index --out docs/assets/artifact_index.json --html-out docs/assets/artifact_index.html
+vla-ros2 report index --out docs/assets/artifact_index.json --html-out docs/assets/artifact_index.html
 ```
 
 Include:
@@ -414,10 +414,10 @@ Remaining/next useful tasks:
 - Add a non-ROS syntax/lint test for launch files and package metadata.
 - Add `tests/test_ros2_package_metadata.py`.
 - Parse/check:
-  - `ros2/vla_zoo/package.xml`
-  - `ros2/vla_zoo/setup.py`
-  - `ros2/vla_zoo/launch/*.launch.py`
-  - `ros2/vla_zoo_msgs/msg/*.msg`
+  - `ros2/vla_ros2/package.xml`
+  - `ros2/vla_ros2/setup.py`
+  - `ros2/vla_ros2/launch/*.launch.py`
+  - `ros2/vla_ros2_msgs/msg/*.msg`
 - Assert expected topics and launch args are present.
 - Optionally add a GitHub Actions placeholder job that is commented/documented, not enabled.
 
@@ -434,7 +434,7 @@ Reproducible via `scripts/measure_lerobot_runtime.py --model smolvla` (artifact
 `local_runtime`/`gpu_inference` cells carry measured numbers. Runtime-path claim on a
 synthetic frame, not task success; `policy_quality` stays `not_verified`.
 
-Remote serving (verified): a real `vla-zoo serve --model smolvla` FastAPI server passed a
+Remote serving (verified): a real `vla-ros2 serve --model smolvla` FastAPI server passed a
 health-first probe and returned a typed 6-DoF action over HTTP `/v1/predict`, recorded
 end-to-end (`docs/assets/sample_task_verification/smolvla_remote_probe.{md,json}`). This is
 the first real-model (non-dummy) remote `/v1/predict` recording in the repo, so the SmolVLA
@@ -442,7 +442,7 @@ the first real-model (non-dummy) remote `/v1/predict` recording in the repo, so 
 
 ROS2 remote (verified): the real `VLARuntimeNode` was driven in `runtime=remote` mode
 against the live SmolVLA server, recording 14 `RemoteVLAClient` actions + 106
-status/diagnostics with 0 inference errors (`vla-zoo ros remote-smoke-check` passed,
+status/diagnostics with 0 inference errors (`vla-ros2 ros remote-smoke-check` passed,
 `docs/assets/sample_ros2_remote_smolvla/`). The SmolVLA `ros2_remote` cell is now
 `verified`. Note: this host's loopback has no `MULTICAST` flag, so cross-process DDS
 discovery (the 3-process `smoke_record.launch.py`) does not work; `smoke_record.launch.py`
@@ -452,8 +452,8 @@ to record the identical node -> RemoteVLAClient -> server path without that depe
 
 
 
-Status: `vla-zoo smolvla-remote-plan` generates a reproducible isolated-env bring-up
-plan (`src/vla_zoo/runtime/smolvla_plan.py`): venv create, `pip install -e ".[cli,server,smolvla]"`,
+Status: `vla-ros2 smolvla-remote-plan` generates a reproducible isolated-env bring-up
+plan (`src/vla_ros2/runtime/smolvla_plan.py`): venv create, `pip install -e ".[cli,server,smolvla]"`,
 server command, `/health` check, robot-side `runtime=remote` probe
 (`examples/python/smolvla_remote_client.py`), `compare pybullet --runtime remote`, and a
 ROS2 remote smoke report command. `docs/smolvla_remote.md` documents why the `smolvla`
@@ -488,7 +488,7 @@ page `docs/openvla_local_runtime.md`); the `local_runtime` and `gpu_inference` c
 
 
 
-Status: `vla-zoo remote-probe` (`src/vla_zoo/runtime/remote_probe.py`) checks a server's
+Status: `vla-ros2 remote-probe` (`src/vla_ros2/runtime/remote_probe.py`) checks a server's
 `/health` first and only then records one `/v1/predict` response, with three statuses
 (`ok`/`unreachable`/`predict_failed`) and `--out`/`--markdown-out`/`--strict`. The Python
 entry point is `examples/python/openvla_remote_probe.py`. `docs/openvla_remote.md`
@@ -505,14 +505,14 @@ remote GPU server is still the recommended deployment path for the heavy stack.
 
 Remote serving (verified): the `serve` command now exposes `--load-in-4bit` (threaded
 through `_model_load_kwargs` -> `run_server` -> the adapter), so OpenVLA-7b fits a 16 GB
-card on the server side too. A real `vla-zoo serve --model openvla --load-in-4bit` server
+card on the server side too. A real `vla-ros2 serve --model openvla --load-in-4bit` server
 passed a health-first probe and returned a typed 7-DoF action over HTTP `/v1/predict`,
 recorded end-to-end (`docs/assets/sample_task_verification/openvla_remote_probe.{md,json}`).
 The OpenVLA `remote_server` cell is now `verified`.
 
 ROS2 remote (verified): the real `VLARuntimeNode` was driven in `runtime=remote` mode
 against the live OpenVLA-7b (4-bit) server, recording 7 `RemoteVLAClient` actions + 143
-status/diagnostics with 0 inference errors (`vla-zoo ros remote-smoke-check` passed,
+status/diagnostics with 0 inference errors (`vla-ros2 ros remote-smoke-check` passed,
 `docs/assets/sample_ros2_remote_openvla/`, via `scripts/record_ros2_remote_trace.py`). The
 OpenVLA `ros2_remote` cell is now `verified` — OpenVLA is verified across contract / local /
 gpu / remote / ros2.
@@ -525,7 +525,7 @@ Remaining/next useful tasks:
 
 Status: `examples/python/load_pi0_remote.py` (lightweight robot-side remote client),
 a generated pi0 server plan artifact (`docs/assets/pi0_server_plan.{md,json}` and
-`examples/serve/pi0_server_plan.{md,json}` via `vla-zoo serve-plan --models pi0`), and
+`examples/serve/pi0_server_plan.{md,json}` via `vla-ros2 serve-plan --models pi0`), and
 `docs/pi0_remote.md` documenting LeRobot/openpi version compatibility (config-decode
 mismatches, checkpoint-specific action shapes, dedicated `.venv-pi0`) plus the
 health-first remote-probe usage. The pi0 `remote_server` evidence cell stays `planned`
@@ -601,20 +601,20 @@ Remaining/next useful tasks:
 - LIBERO smoke runner when deps are installed. (DONE — dependency-gated honest runner
   in `benchmark/libero.py`; emits the schema, raises MissingDependencyError without deps.)
 - SimplerEnv runner. (DONE — dependency-gated honest runner in `benchmark/simpler.py`.)
-- JSONL benchmark result schema. (DONE — `vla-zoo-benchmark/v1` in
+- JSONL benchmark result schema. (DONE — `vla-ros2-benchmark/v1` in
   `benchmark/results.py`.)
 - Latency and action-rate summary reports. (DONE — `BenchmarkSummary` +
-  `vla-zoo bench --summary-md` / `vla-zoo bench-replay`.)
-- Benchmark summaries on the report/Pages surface. (DONE — `vla-zoo bench-report`
+  `vla-ros2 bench --summary-md` / `vla-ros2 bench-replay`.)
+- Benchmark summaries on the report/Pages surface. (DONE — `vla-ros2 bench-report`
   renders an HTML/Markdown comparison table; sample at
   `docs/assets/sample_benchmark/benchmark_report.html`.)
 
 - LIBERO / SimplerEnv honest dependency-gated smoke runners. (DONE — `benchmark/libero.py`
   and `benchmark/simpler.py` declare their contract, gate on upstream deps, and emit the
-  schema via an env-agnostic loop; `vla-zoo bench --benchmark libero|simpler`.)
+  schema via an env-agnostic loop; `vla-ros2 bench --benchmark libero|simpler`.)
 
 Status: the versioned JSONL result schema, the latency/action-rate summary, the ROS bag
-replay stub (over vla_zoo JSONL action logs), the benchmark comparison report on the Pages
+replay stub (over vla_ros2 JSONL action logs), the benchmark comparison report on the Pages
 surface, and the dependency-gated LIBERO / SimplerEnv smoke runners are all done.
 Acceptance passed: 195 tests, ruff/mypy clean, link-check 240 ok / 0 broken, git diff
 --check clean.
@@ -629,7 +629,7 @@ Remaining/next useful tasks:
 
 - Lifecycle node design.
 - Diagnostics improvements. (DONE — pure, versioned `RuntimeDiagnostics`
-  (`vla-zoo-diagnostics/v1`) in `runtime/diagnostics.py` merges the `ActionClipGuard`
+  (`vla-ros2-diagnostics/v1`) in `runtime/diagnostics.py` merges the `ActionClipGuard`
   counters, the `WatchdogStatus`, and latency into one schema with JSONL + Markdown +
   `to_key_values()` surfaces; the ROS2 node's `/diagnostics` payload is built from it.)
 - Watchdog node/example. (DONE — pure `evaluate_watchdog` in `runtime/guard.py`; the ROS2
@@ -688,7 +688,7 @@ Report/UI issues:
 Current repo remote:
 
 ```text
-git@github.com:rsasaki0109/vla_zoo.git
+git@github.com:rsasaki0109/vla_ros2.git
 ```
 
 The current workflow has been direct pushes to `main`. If continuing that style:
@@ -748,16 +748,16 @@ Section 7 (adapter hardening), the v0.3 benchmark-credibility track, and the v0.
 robot-readiness track are done: the pure clip + watchdog guards (`runtime/guard.py`), both
 hardware-bridge examples (`runtime/servo_bridge.py`, `runtime/control_bridge.py` + dry-run
 examples), the Jetson + remote-GPU deployment guide (`docs/deployment.md`), and the pure,
-versioned `RuntimeDiagnostics` schema (`runtime/diagnostics.py`, `vla-zoo-diagnostics/v1`)
+versioned `RuntimeDiagnostics` schema (`runtime/diagnostics.py`, `vla-ros2-diagnostics/v1`)
 that the ROS2 node's `/diagnostics` payload is built from are all in. The `diag-report`
 CLI command that surfaces the diagnostics schema is now also done (DONE):
 
 ```text
-add a vla-zoo diag-report CLI command for the runtime diagnostics schema (v0.4)  [DONE]
+add a vla-ros2 diag-report CLI command for the runtime diagnostics schema (v0.4)  [DONE]
 ```
 
-What landed: `vla-zoo diag-report` mirrors `bench-report`. It reads either a native
-`vla-zoo-diagnostics/v1` JSONL (`--log`) or a recorded ROS2 `/diagnostics` DiagnosticArray
+What landed: `vla-ros2 diag-report` mirrors `bench-report`. It reads either a native
+`vla-ros2-diagnostics/v1` JSONL (`--log`) or a recorded ROS2 `/diagnostics` DiagnosticArray
 JSONL (`--from-ros-log`, selecting `--status-name`) and renders the latest record's Markdown
 snapshot to stdout / `--markdown-out`, with `--jsonl-out` to persist the reconstructed native
 log and `--json` for machine output. The `--from-ros-log` path uses a new pure inverse,
@@ -793,7 +793,7 @@ show the diagnostics time-series summary in the runtime dashboard (v0.4)  [DONE]
 
 What landed: `compare dashboard` / `report bundle` now render a server-side diagnostics
 summary band above the toolbar. `load_diagnostics_summaries` reconstructs native
-`vla-zoo-diagnostics/v1` records from a `--diagnostics-log` (handling both the flat native
+`vla-ros2-diagnostics/v1` records from a `--diagnostics-log` (handling both the flat native
 JSONL and ROS2 DiagnosticArray KeyValue payloads), groups by model, and reduces each with
 `summarize_diagnostics`; `_render_diagnostics_summary_band` emits one `scope-card` per model
 whose severity follows the worst level (`ok-scope`/`warn`/`error`), surfacing the transient
@@ -805,14 +805,14 @@ Unit-tested with written fixtures; runtime-path claims only.
 The diagnostics-surface loop is now closed — the recorder has a native emit path (DONE):
 
 ```text
-have the ROS2 log recorder also write a native vla-zoo-diagnostics/v1 JSONL (v0.4)  [DONE]
+have the ROS2 log recorder also write a native vla-ros2-diagnostics/v1 JSONL (v0.4)  [DONE]
 ```
 
 What landed: `RuntimeLogRecorder` gained an optional native sink
 (`record_native_diagnostics`, default on; `native_diagnostics_log_path`,
 `native_diagnostics_status_name`). Its `/diagnostics` callback now also reconstructs native
 records via the new pure `native_records_from_diagnostics_payload` (in `runtime/diagnostics.py`,
-no ROS dep) and writes them to a `vla-zoo-diagnostics/v1` JSONL, so one recording emits both
+no ROS dep) and writes them to a `vla-ros2-diagnostics/v1` JSONL, so one recording emits both
 the raw ROS dump and the native log — removing the `diag-report --from-ros-log` re-derivation
 step. The pure transform is unit-tested with written fixtures; it is byte-identical to the
 checked-in native logs (verified against both real runs). The recorder wiring was also
@@ -825,7 +825,7 @@ The real-scene task-level probe is now done — verified cells no longer run onl
 record a real-scene action probe on PyBullet frames (no policy-quality claim) (v0.4)  [DONE]
 ```
 
-What landed: `vla-zoo demo action-probe` drives an adapter through the existing PyBullet
+What landed: `vla-ros2 demo action-probe` drives an adapter through the existing PyBullet
 pick-and-place rollout and records, for every fresh query, the *full* action vector the
 adapter produced from a genuinely rendered camera frame. `run_simulation` gained an optional
 `prediction_sink` (and `predict_adapter_action` now also returns the raw prediction) so the
@@ -864,7 +864,7 @@ The real-scene runtime evidence now covers both heavy adapters — OpenVLA also 
 record an OpenVLA real-scene action probe on PyBullet frames (no policy-quality claim) (v0.4)  [DONE]
 ```
 
-What landed: `vla-zoo demo action-probe` gained a generic `--adapter-kwarg key=value` option
+What landed: `vla-ros2 demo action-probe` gained a generic `--adapter-kwarg key=value` option
 (coerced to bool/int/float/str) so adapter-specific load args flow through without per-adapter
 flags. A real OpenVLA-7b (4-bit) run — `--model openvla --allow-local-heavy --adapter-kwarg
 load_in_4bit=true --adapter-kwarg unnorm_key=bridge_orig`, executed in the timm<1.0 openvla venv
@@ -884,7 +884,7 @@ render a real-scene runtime comparison report from the SmolVLA + OpenVLA action 
 What landed: `bench-replay` gained `--source` / `--note` overrides (default to the ROS
 replay-stub values) so a non-ROS log is labeled honestly; `frames_to_records` takes a `source`
 kwarg. Each probe log was replayed with `--source pybullet-action-probe` into a
-`vla-zoo-benchmark/v1` summary (`success=None`), and `bench-report` rendered the side-by-side
+`vla-ros2-benchmark/v1` summary (`success=None`), and `bench-report` rendered the side-by-side
 comparison at `docs/assets/sample_pybullet_compare/runtime_probe_comparison.{html,md}`
 (SmolVLA p50 ~382 ms vs OpenVLA-7b 4-bit p50 ~2.0 s, blank success rate). Artifact-index entries
 were added and both runtime docs link the comparison. The `--source` override is unit-tested;
@@ -961,7 +961,7 @@ Docs-only, runtime-centric, no policy-quality claim.
 The "serve cannot pass dtype" follow-up turned out to be a doc error, not a code gap — corrected (DONE):
 
 ```text
-correct the deployment.md dtype-serve note: vla-zoo serve --dtype already threads through (v0.4)  [DONE]
+correct the deployment.md dtype-serve note: vla-ros2 serve --dtype already threads through (v0.4)  [DONE]
 ```
 
 What landed: inspecting the code before writing the planned `serve --dtype` passthrough showed it
@@ -970,17 +970,17 @@ What landed: inspecting the code before writing the planned `serve --dtype` pass
 LeRobot adapter (the live `load_model("pi0", dtype="bfloat16")` path already accepts it, raising the
 gated-tokenizer `AdapterError` rather than a `TypeError`). The previous commit's deployment.md note
 ("serve does not expose a `dtype` flag yet") was therefore wrong; this commit corrects the table and
-prose to show `vla-zoo serve --model pi0 --pretrained lerobot/pi0_base --dtype bfloat16` and
+prose to show `vla-ros2 serve --model pi0 --pretrained lerobot/pi0_base --dtype bfloat16` and
 strengthens `test_model_load_kwargs_threads_quantization_flags` to lock the `dtype` threading. No
 new feature; an honest correction backed by a test.
 
 The dtype-serve path now has a recorded artifact, not just a unit test (DONE):
 
 ```text
-record a remote probe against vla-zoo serve --model smolvla --dtype bfloat16 (dtype-serve evidence) (v0.4)  [DONE]
+record a remote probe against vla-ros2 serve --model smolvla --dtype bfloat16 (dtype-serve evidence) (v0.4)  [DONE]
 ```
 
-What landed: a real `vla-zoo serve --model smolvla --pretrained lerobot/smolvla_base --device cuda
+What landed: a real `vla-ros2 serve --model smolvla --pretrained lerobot/smolvla_base --device cuda
 --dtype bfloat16` server (run in `.venv-smolvla`; SmolVLA params confirmed `torch.bfloat16` in a
 local load of the same config) passed a health-first `remote-probe --strict` and returned a typed
 6-DoF action over HTTP. The recorded result is checked in at
@@ -1072,15 +1072,15 @@ compatibility, and GR00T block probes. Every changed claim was checked against a
 The first v0.5 capability — a ranked benchmark aggregate — is in (DONE):
 
 ```text
-add a benchmark aggregation command that merges multiple vla-zoo-benchmark/v1 summaries into a ranked latency/action-rate table (v0.5)  [DONE]
+add a benchmark aggregation command that merges multiple vla-ros2-benchmark/v1 summaries into a ranked latency/action-rate table (v0.5)  [DONE]
 ```
 
 What landed: a new pure `benchmark/aggregate.py` (`rank_summaries` → `AggregateReport` /
-`RankedSummary`, `format_aggregate_markdown`) ranks several `vla-zoo-benchmark/v1` summaries by a
+`RankedSummary`, `format_aggregate_markdown`) ranks several `vla-ros2-benchmark/v1` summaries by a
 runtime metric — latency p50/p95/mean (lower is better) or action_rate_hz (higher is better) — using
 competition ranking (ties share a rank) and listing metric-less summaries unranked at the end rather
-than dropping them. It emits a schema-versioned `vla-zoo-benchmark-aggregate/v1` JSON and a ranked
-Markdown table. A new `vla-zoo bench-aggregate` CLI (`--summaries/--metric/--out/--markdown-out/
+than dropping them. It emits a schema-versioned `vla-ros2-benchmark-aggregate/v1` JSON and a ranked
+Markdown table. A new `vla-ros2 bench-aggregate` CLI (`--summaries/--metric/--out/--markdown-out/
 --json`) drives it. A recorded example over the two real-scene probe summaries is checked in at
 `docs/assets/sample_pybullet_compare/runtime_probe_aggregate.{json,md}` (SmolVLA #1 ~382 ms,
 OpenVLA #2 ~2.0 s, blank success rate), with two artifact-index entries and a Pages-index tile. 7
@@ -1098,7 +1098,7 @@ What landed: `rank_summaries` now also groups summaries by model and attaches a 
 per model (run_count + best/worst/median of the ranking metric, best/worst following the metric
 direction; all `None` when a model's runs lack the metric). Groups are ordered best-first and
 metric-less models last; ties keep insertion order. The roll-up is a non-breaking addition to the
-`vla-zoo-benchmark-aggregate/v1` schema (new optional `groups` block) and renders as a "Per-model
+`vla-ros2-benchmark-aggregate/v1` schema (new optional `groups` block) and renders as a "Per-model
 roll-up" Markdown section. The recorded example artifact was regenerated (single-run groups,
 run_count 1). 5 new unit tests cover multi-run best/median/worst, the action-rate direction, the
 metric-less group, the Markdown section, and the `groups` payload. `success_rate` stays honest;
@@ -1124,7 +1124,7 @@ add a bench-aggregate --from-log mode that replays vla_actions.jsonl logs into r
 ```
 
 What landed: `bench-aggregate` gained a `--from-log` option taking comma-separated
-`vla_actions.jsonl` action logs; each is replayed into a `vla-zoo-benchmark/v1` summary on the fly
+`vla_actions.jsonl` action logs; each is replayed into a `vla-ros2-benchmark/v1` summary on the fly
 and ranked alongside any `--summaries` JSONs (the two sources are combined). The replay reuses a new
 pure helper `summarize_action_log` in `benchmark/replay.py` (the `load_action_log` →
 `frames_to_records` → `summarize_records` chain that `bench-replay` ran inline), so `success_rate`
@@ -1144,7 +1144,7 @@ shareable, honest **VLA runtime leaderboard** (DONE):
 add a compare leaderboard: rank adapters by runtime metric + memory into a shareable page (v0.6)  [DONE]
 ```
 
-What landed: new pure module `compare/leaderboard.py` (`vla-zoo-leaderboard/v1`) that joins ranked
+What landed: new pure module `compare/leaderboard.py` (`vla-ros2-leaderboard/v1`) that joins ranked
 benchmark summaries (via `rank_summaries`) with a curated `RUNTIME_PROFILES` table of *recorded*
 metadata — measured memory footprint, runtime-evidence status, and a probe link per adapter — into
 one scannable artifact. `build_leaderboard` ranks measured adapters and appends adapters with no
@@ -1162,17 +1162,17 @@ sourced from a checked-in artifact; ranking is latency/throughput, never task-su
 The frictionless quickstart + bare-install fix landed next (DONE):
 
 ```text
-add vla-zoo quickstart (zero-dep local runtime-boundary smoke) + fix bare-install CLI deps (v0.6)  [DONE]
+add vla-ros2 quickstart (zero-dep local runtime-boundary smoke) + fix bare-install CLI deps (v0.6)  [DONE]
 ```
 
 What landed: two things. (1) **Install fix** — `typer`/`rich` moved from the optional `[cli]` extra
-into the core `dependencies` in `pyproject.toml`, because the `vla-zoo` console script imports
-`typer` at module load; `pip install vla_zoo` now yields a working CLI on its own (`[cli]` kept as a
-back-compat alias). (2) **`vla-zoo quickstart`** — a new top-level command + pure module
-`demo/quickstart.py` (`vla-zoo-quickstart/v1`). It loads the pure-Python baselines
+into the core `dependencies` in `pyproject.toml`, because the `vla-ros2` console script imports
+`typer` at module load; `pip install vla_ros2` now yields a working CLI on its own (`[cli]` kept as a
+back-compat alias). (2) **`vla-ros2 quickstart`** — a new top-level command + pure module
+`demo/quickstart.py` (`vla-ros2-quickstart/v1`). It loads the pure-Python baselines
 (dummy/scripted/random — no GPU/weights/PyBullet), drives each through `run_smoke_episode_records`
 → `predict()`, records latency + a real typed action, and writes `report.{html,md,json}` to
-`--out-dir` (default `./vla_zoo_quickstart/`), printing the absolute path. `run_quickstart` turns a
+`--out-dir` (default `./vla_ros2_quickstart/`), printing the absolute path. `run_quickstart` turns a
 failed adapter into an error row (no fabricated latency) rather than aborting; `--json` prints only.
 The HTML is a friendly "✅ runtime boundary works on your machine" page that routes on to the
 recorded real-adapter evidence (leaderboard, evidence matrix, GIF gallery). A recorded example is at
@@ -1190,8 +1190,8 @@ add an animated quickstart terminal-demo GIF for the README hero (PIL-rendered, 
 
 What landed: new pure module `demo/terminal_cast.py` renders a terminal "cast" (a typed command +
 progressively-revealed output) straight to an animated GIF using only Pillow — no asciinema/agg
-toolchain. `build_quickstart_cast()` scripts the `vla-zoo quickstart` session (type `pip install`,
-type `vla-zoo quickstart`, reveal the table line-by-line, end on a green `✓ runtime boundary works`
+toolchain. `build_quickstart_cast()` scripts the `vla-ros2 quickstart` session (type `pip install`,
+type `vla-ros2 quickstart`, reveal the table line-by-line, end on a green `✓ runtime boundary works`
 + the report path); `render_cast_gif()` draws each frame (dark terminal, traffic-light title bar,
 monospace via a DejaVuSansMono lookup with a `load_default(size=)` fallback) and writes a looping
 GIF with per-frame durations. CLI `demo quickstart-gif --out ... --width ...`. The 24-frame
@@ -1244,7 +1244,7 @@ unchanged: open-loop, action units, what each policy commanded — not a real-EE
 
 This is a good point to **pause for direction**. Remaining high-leverage moves:
 
-1. **PyPI publish** so `pip install vla_zoo` actually works for non-clone users (not yet on PyPI);
+1. **PyPI publish** so `pip install vla_ros2` actually works for non-clone users (not yet on PyPI);
    the metadata is now install-correct, so this is mostly packaging + a release workflow.
 2. More "fun"/visual extensions: a 3D-ish isometric trajectory projection, or overlaying a
    trajectory on the PyBullet scene render.
@@ -1256,11 +1256,11 @@ Acceptance:
 
 ```bash
 rtk proxy env PYTHONPATH=src pytest -q tests/test_leaderboard.py tests/test_cli.py
-rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
-rtk proxy env PYTHONPATH=src mypy src/vla_zoo
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
+rtk proxy env PYTHONPATH=src ruff check src/vla_ros2 tests
+rtk proxy env PYTHONPATH=src mypy src/vla_ros2
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main report link-check \
   --paths docs/index.html,README.md --strict
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report index --json
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main report index --json
 ```
 
 ## v0.7 — research-aligned runtime capabilities
@@ -1268,15 +1268,15 @@ rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report index --json
 Before this track the user asked to survey current VLA papers/OSS first. Key findings
 (2025-2026): model landscape is SmolVLA(450M) / pi0 / GR00T **N1.7** / OpenVLA, split
 between single-model-forward and dual-system (VLM + diffusion action expert) designs;
-X-VLA (ICLR 2026) uses a server-client split that validates vla_zoo's remote-first stance.
-Two papers land squarely on vla_zoo's runtime-boundary niche:
+X-VLA (ICLR 2026) uses a server-client split that validates vla_ros2's remote-first stance.
+Two papers land squarely on vla_ros2's runtime-boundary niche:
 
 - **VLA-Perf** (NVIDIA, `NVlabs/vla-perf`, arXiv:2602.18397): an analytical roofline model
   that *predicts* VLA inference latency/throughput from model config + hardware
   (`latency = max(FLOPs/peak_compute, Bytes/bw)`), component-split across vision/VLM/action
   expert. Real-time target is 10-100 ms; edge ~19 Hz vs datacenter ~314 Hz; diffusion is
   1-2 orders faster than AR with chunking. Candidate: add a predicted-vs-measured latency
-  view to the leaderboard, validated against vla_zoo's recorded probes.
+  view to the leaderboard, validated against vla_ros2's recorded probes.
 - **Real-Time Chunking (RTC)** (Physical Intelligence, arXiv:2506.07339): a model-agnostic,
   training-free inference-time scheduler that runs the next action chunk's inference in the
   background, freezes the actions guaranteed to execute during inference, and inpaints the
@@ -1285,10 +1285,10 @@ Two papers land squarely on vla_zoo's runtime-boundary niche:
 The first capability — an RTC-style scheduler simulation — is in (DONE):
 
 ```text
-add vla-zoo rtc-sim: a latency-aware action-chunk scheduler simulation (Real-Time Chunking) (v0.7)  [DONE]
+add vla-ros2 rtc-sim: a latency-aware action-chunk scheduler simulation (Real-Time Chunking) (v0.7)  [DONE]
 ```
 
-What landed: a new pure module `runtime/realtime_chunking.py` (`vla-zoo-rtc-sim/v1`).
+What landed: a new pure module `runtime/realtime_chunking.py` (`vla-ros2-rtc-sim/v1`).
 `RealtimeChunkingConfig(horizon H, execute_horizon s, inference_delay_ticks d)` validates
 the real-time feasibility constraint `d + s <= H`. `simulate_emission(chunks, config,
 freeze=…)` rolls a stream of pre-computed chunks into a control trajectory under two
@@ -1299,7 +1299,7 @@ decaying soft mask — Eq. 5 — returning later actions to the raw prediction).
 degenerates to naive when `d == 0` (no stale prefix). `compare_strategies` reports
 chunk-boundary continuity; `synthetic_chunk_stream` builds a deterministic seeded stress
 input (smooth reference + per-chunk mode offset), and `chunks_from_action_log` windows a
-recorded `vla_actions.jsonl`. CLI `vla-zoo rtc-sim` (`--chunks/--horizon/--execute/--delay/
+recorded `vla_actions.jsonl`. CLI `vla-ros2 rtc-sim` (`--chunks/--horizon/--execute/--delay/
 --dims/--mode-strength/--seed/--action-log/--out/--markdown-out/--json`). Recorded artifact
 at `docs/assets/rtc_sim/rtc_scheduler_sim.{json,md}` shows a **76.3% boundary-jump
 reduction** (naive 1.33 → RTC 0.32). Surfaced as a README section (with the RTC arXiv link)
@@ -1311,7 +1311,7 @@ task-success claim: continuity is a runtime scheduling property.
 The RTC continuity is now also *visible* (DONE — recommended next, "osusumete"):
 
 ```text
-add vla-zoo demo rtc-gif: animate the naive vs RTC-freeze emitted control streams (v0.7)  [DONE]
+add vla-ros2 demo rtc-gif: animate the naive vs RTC-freeze emitted control streams (v0.7)  [DONE]
 ```
 
 What landed: new pure module `demo/rtc_chunking_gif.py` reusing the trajectory renderer's
@@ -1330,10 +1330,10 @@ property, not a policy-quality claim.
 The analytical-vs-measured latency view is in (DONE — "tudukeru"):
 
 ```text
-add vla-zoo compare roofline: VLA-Perf-style latency floor vs recorded probes + real-time band (v0.7)  [DONE]
+add vla-ros2 compare roofline: VLA-Perf-style latency floor vs recorded probes + real-time band (v0.7)  [DONE]
 ```
 
-What landed: new pure module `compare/roofline.py` (`vla-zoo-roofline/v1`). It computes each
+What landed: new pure module `compare/roofline.py` (`vla-ros2-roofline/v1`). It computes each
 model's **single-forward, batch-1 memory-bound roofline floor** (`weight_bytes / bandwidth`,
 VLA-Perf style, arXiv:2602.18397) from declared params × dtype on a chosen `HardwareProfile`
 (presets: 16 GB VRAM GPU / 4090 / Jetson AGX Orin / GPU, nominal vendor specs), and joins
@@ -1353,7 +1353,7 @@ The RTC sim was then promoted from synthetic to a **real-model verified runtime 
 "hard challenge" the user picked (DONE):
 
 ```text
-add vla-zoo rtc-record: record a real adapter's chunk stream + latency, replay RTC from it (v0.7)  [DONE]
+add vla-ros2 rtc-record: record a real adapter's chunk stream + latency, replay RTC from it (v0.7)  [DONE]
 ```
 
 What landed: the key insight is that a two-thread async chunk executor's emitted control
@@ -1363,7 +1363,7 @@ we record those two real inputs once and replay both strategies deterministicall
 `runtime/realtime_chunking.py` gained `simulate_emission_variable` (per-cycle delays, with a
 clamp + late-cycle counter when a chunk arrives too late to cover the cycle), refactored from
 the constant-delay path via a shared `_emit_with_delays`. New `runtime/rtc_executor.py`
-(`vla-zoo-rtc-trace/v1`): `RTCChunkEvent`/`RTCTrace` (+ `to_dict`/`from_dict`),
+(`vla-ros2-rtc-trace/v1`): `RTCChunkEvent`/`RTCTrace` (+ `to_dict`/`from_dict`),
 `record_rtc_trace(adapter, observations, *, clock=…)` (injectable clock → deterministic CPU
 tests), `build_trace_from_chunks` (shared assembly used by the PyBullet sink path),
 `trace_delays_ticks`, and `compare_trace_strategies(trace) → RTCSimReport` using the real
@@ -1392,11 +1392,11 @@ Acceptance (this feature):
 
 ```bash
 rtk proxy env PYTHONPATH=src pytest -q tests/test_realtime_chunking.py tests/test_cli.py
-rtk proxy env PYTHONPATH=src ruff check src/vla_zoo tests
-rtk proxy env PYTHONPATH=src mypy src/vla_zoo
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report link-check \
+rtk proxy env PYTHONPATH=src ruff check src/vla_ros2 tests
+rtk proxy env PYTHONPATH=src mypy src/vla_ros2
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main report link-check \
   --paths docs/index.html,README.md --strict
-rtk proxy env PYTHONPATH=src python3 -m vla_zoo.cli.main report index --json
+rtk proxy env PYTHONPATH=src python3 -m vla_ros2.cli.main report index --json
 ```
 
 ## 14. One-Screen Claude Brief

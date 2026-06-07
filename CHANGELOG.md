@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `vla_zoo` are documented here.
+All notable changes to `vla_ros2` are documented here.
 
 ## [0.1.0] - Unreleased
 

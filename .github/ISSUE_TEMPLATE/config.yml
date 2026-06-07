@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Architecture and safety docs
-    url: https://github.com/rsasaki0109/vla_zoo/tree/main/docs
+    url: https://github.com/rsasaki0109/vla_ros2/tree/main/docs
     about: Read the runtime, adapter, ROS2, benchmark, and safety design notes.
