@@ -1,0 +1,44 @@
+# Example parameter file for real-robot bring-up.
+# Copy to your workspace, edit topic names and clip bounds, then pass via launch:
+#   ros2 launch vla_ros2 dummy.launch.py params_file:=/path/to/my_robot.yaml
+#
+# Start with dry_run: true. Only set dry_run: false after camera, instruction,
+# joint_states, action clip bounds, and your downstream controller bridge are verified.
+
+vla_runtime_node:
+  ros__parameters:
+    model_name: "dummy"          # swap to openvla / smolvla when ready
+    runtime: "local"
+    dry_run: true
+    publish_actions_in_dry_run: false
+
+    # --- Robot I/O (remap to your stack) ---
+    image_topic: "/camera/color/image_raw"
+    instruction_topic: "/vla/instruction"
+    joint_state_topic: "/joint_states"
+    instruction_msg_type: "vla_instruction"   # or "string"
+
+    # --- Outputs (usually keep defaults) ---
+    action_topic: "/vla/action"
+    action_chunk_topic: "/vla/action_chunk"
+    status_topic: "/vla/status"
+    diagnostics_topic: "/diagnostics"
+    publish_action_chunk: true
+    publish_diagnostics: true
+
+    # --- Timing / watchdog ---
+    control_hz: 5.0
+    max_queue_size: 1
+    require_image: true
+    stale_image_timeout_sec: 1.0
+    stale_instruction_timeout_sec: 5.0
+
+    # --- Action safety (7-DoF eef_delta example; tune to your adapter + controller) ---
+    clip_actions: true
+    action_low: "-0.05,-0.05,-0.05,-0.2,-0.2,-0.2,0.0"
+    action_high: "0.05,0.05,0.05,0.2,0.2,0.2,1.0"
+
+    # --- Learned-model knobs (ignored by dummy) ---
+    device: "cuda:0"
+    pretrained: "openvla/openvla-7b"
+    unnorm_key: "bridge_orig"

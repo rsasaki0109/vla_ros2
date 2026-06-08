@@ -1,0 +1,24 @@
+vla_runtime_node:
+  ros__parameters:
+    model_name: "dummy"
+    runtime: "local"
+    dry_run: true
+    publish_actions_in_dry_run: true
+    instruction_msg_type: "vla_instruction"
+    image_topic: "/camera/image_raw"
+    instruction_topic: "/vla/instruction"
+    joint_state_topic: "/joint_states"
+    require_image: true
+    control_hz: 5.0
+    clip_actions: true
+    action_low: "-1,-1,-1,-1,-1,-1,-1"
+    action_high: "1,1,1,1,1,1,1"
+
+vla_action_bridge_node:
+  ros__parameters:
+    action_topic: "/vla/action"
+    trajectory_topic: "/joint_trajectory_controller/joint_trajectory"
+    joint_names: ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "gripper"]
+    joint_scales: "0.15,0.15,0.15,0.35,0.35,0.35,0.01"
+    trajectory_time_sec: 0.2
+    enable_actuation: false

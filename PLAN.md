@@ -1,6 +1,6 @@
 # vla_ros2 — Plan and Handoff
 
-Updated: 2026-06-08 JST
+Updated: 2026-06-08 JST (integration wave: smoke test, bring-up, Gazebo, workspace, SmolVLA demo)
 
 This document is the working handoff for `vla_ros2`. Read it before making
 changes. It captures the mission, what the codebase looks like today, the
@@ -87,6 +87,8 @@ src/vla_ros2/                    Python package (the adapter runtime)
     diagnostics.py               RuntimeDiagnostics record schema (vla-ros2-diagnostics/v1)
   cli/
     main.py                      minimal off-robot CLI: `vla-ros2 list` / `predict`
+  sim/
+    so100_kinematic.py           SO-100 kinematic stand-in for SmolVLA closed-loop demo
 
 ros2/vla_ros2/                   ROS2 ament_python package
   vla_ros2_ros/
@@ -98,22 +100,37 @@ ros2/vla_ros2/                   ROS2 ament_python package
     log_recorder.py              vla_runtime_recorder: records action/status/diagnostics to JSONL
     action_replay.py             vla_action_replay_node: replays recorded actions
   launch/                        action_replay, dummy, log_recorder, openvla, smoke, smoke_record
-  config/                        dummy.yaml, openvla.yaml (node parameter files)
+  config/                        dummy.yaml, openvla.yaml, robot.example.yaml
+  tests/                         test_smoke_launch.py (launch_testing; needs ROS2 + colcon)
   package.xml, setup.py, setup.cfg
+
+ros2/vla_ros2_gz/                Gazebo Sim integration (optional `gz` profile)
+  vla_ros2_gz_ros/
+    action_bridge.py             vla_action_bridge_node: /vla/action -> joint_trajectory_controller
+  urdf/vla_arm.urdf.xacro         7-DoF arm + gz_ros2_control
+  launch/                        gz_arm.launch.py, gz_smoke.launch.py
+  config/                        vla_arm_controllers.yaml, gz_smoke.yaml
 
 ros2/vla_ros2_msgs/              ROS2 messages (ament_cmake)
   msg/VLAAction.msg, VLAActionChunk.msg, VLAInstruction.msg, VLAStatus.msg
   package.xml, CMakeLists.txt
 
+ros2/BRINGUP.md                  real-robot phased bring-up guide
+ros2/SIM.md                      Gazebo Sim graph + action bridge
+ros2/WORKSPACE.md                colcon / rosdep workspace bootstrap
+
 scripts/
+  bootstrap_ros2_workspace.sh    one-shot ROS2 workspace setup (core or gz profile)
   record_sim_demo.py             PyBullet pick-and-place GIF, driven via the runtime (README hero)
+  record_smolvla_so100_demo.py   SmolVLA closed-loop on SO-100 kinematic stand-in
   measure_openvla_runtime.py     local OpenVLA latency capture (needs GPU + [openvla])
   measure_lerobot_runtime.py     local LeRobot/SmolVLA latency capture
 
-tests/                           10 stdlib/pytest tests (no GPU, no ROS2 install required)
-docs/assets/sim_demo.gif         README hero GIF
+tests/                           pytest (no GPU, no ROS2 install required for most tests)
+docs/assets/sim_demo.gif         README hero GIF (scripted / PyBullet)
+docs/assets/smolvla_so100_demo.gif  optional SmolVLA kinematic demo GIF
 README.md, PLAN.md, CHANGELOG.md, CITATION.cff, pyproject.toml
-.github/workflows/ci.yml         install [dev], ruff (src tests ros2), mypy, pytest
+.github/workflows/ci.yml         Python matrix + ros2-smoke (Jazzy launch test)
 ```
 
 ---
@@ -219,6 +236,9 @@ you reintroduce a non-local runtime you must re-add its plumbing here AND in
 `smoke_record.launch.py` (smoke + JSONL recorder),
 `log_recorder.launch.py`, `action_replay.launch.py`.
 
+`vla_ros2_gz`: `gz_arm.launch.py` (Gazebo arm only), `gz_smoke.launch.py` (runtime +
+smoke input + action bridge). See `ros2/SIM.md`.
+
 ---
 
 ## 7. CLI
@@ -231,19 +251,30 @@ ROS2 node):
 
 ---
 
-## 8. Simulator demo (README hero GIF)
+## 8. Simulator demos
+
+### PyBullet hero GIF (`scripted` baseline)
 
 `scripts/record_sim_demo.py` renders `docs/assets/sim_demo.gif`: a Franka Panda
 performing pick-and-place in a **real PyBullet physics sim**. Every control tick
 builds a `VLAObservation` and calls `load_model("scripted")`; the returned
-`VLAAction` end-effector delta + gripper channel command the arm via IK. A fixed
-constraint models the grasp; the scene props are placed where the scripted
-policy's integrated trajectory lands, so the runtime's own action stream produces
-a coherent pick-and-place.
+`VLAAction` end-effector delta + gripper channel command the arm via IK.
 
 Honesty note: it is the **`scripted` baseline** (not a learned VLA), but the loop,
 the physics, and the action stream are real. Needs `[sim]` (pybullet) + Pillow.
 Reproduce: `.venv/bin/python scripts/record_sim_demo.py`.
+
+### SmolVLA closed-loop kinematic demo (`smolvla` adapter)
+
+`scripts/record_smolvla_so100_demo.py` renders `docs/assets/smolvla_so100_demo.gif`:
+a **real SmolVLA inference loop** (`lerobot/smolvla_base`) on a minimal SO-100-style
+kinematic stand-in initialized from `lerobot/svla_so100_stacking`. Observations use
+LeRobot-aligned keys (6D state, three 256×256 camera slots).
+
+Honesty note: this is **not** the official SO-100 physics sim; `smolvla_base` is a
+**base** checkpoint and task success is not guaranteed without fine-tuning. Needs
+`[smolvla]`, a GPU, and a LeRobot dataset download on first run.
+Reproduce: `.venv-smolvla/bin/python scripts/record_smolvla_so100_demo.py`.
 
 ---
 
@@ -254,36 +285,48 @@ Reproduce: `.venv/bin/python scripts/record_sim_demo.py`.
 pip install -e ".[dev]"          # core + test/lint
 ruff check src tests ros2
 mypy src/vla_ros2
-pytest                           # 10 files; no GPU, no ROS2 needed
+pytest                           # unit + metadata tests; no GPU for most
 ```
 Optional extras: `[openvla]`, `[smolvla]`, `[openpi]`, `[gpu]`, `[sim]`.
 
-### ROS2 (this machine: ROS2 Jazzy at /opt/ros/jazzy)
+### ROS2 workspace (Jazzy)
+
+Quick path:
+
 ```bash
-source /opt/ros/jazzy/setup.bash
-colcon build --packages-select vla_ros2_msgs vla_ros2
+./scripts/bootstrap_ros2_workspace.sh              # core: msgs + vla_ros2
+VLA_ROS2_PROFILE=gz ./scripts/bootstrap_ros2_workspace.sh   # + vla_ros2_gz
 source install/setup.bash
-export PYTHONPATH="$PWD/src:$PYTHONPATH"   # so the node imports our pip package
-ros2 launch vla_ros2 dummy.launch.py        # or smoke.launch.py for a full graph
+export PYTHONPATH="$PWD/src:$PYTHONPATH"
+ros2 launch vla_ros2 smoke.launch.py
+```
+
+Manual path and `rosdep` notes: `ros2/WORKSPACE.md`. Real-robot wiring:
+`ros2/BRINGUP.md`. Gazebo graph: `ros2/SIM.md`.
+
+Launch smoke test (local or CI):
+
+```bash
+colcon test --packages-select vla_ros2 --python-testing pytest --event-handlers console_direct+
+colcon test-result --verbose
 ```
 
 **Environment notes / gotchas**
-- System `python3` (3.12) already has `rclpy` + `numpy`, `pydantic`, `pillow`,
-  `typer`, `rich` — enough to run the node. Set `PYTHONPATH=$PWD/src` because the
-  ament_python package installs only `vla_ros2_ros`, not our `vla_ros2` pip pkg.
+- Use `colcon build --base-paths ros2` (not `--paths`).
+- `rosdep install` must pass `--skip-keys "ament_python"` (provided by the ROS underlay).
+- System `python3` (3.12) already has `rclpy` + common deps on this machine. Set
+  `PYTHONPATH=$PWD/src` because the ament_python package installs only `vla_ros2_ros`,
+  not our `vla_ros2` pip pkg (bootstrap runs `pip install -e .` as well).
 - `converters.py` uses numpy directly; **`cv_bridge` is not required**.
 - Do NOT `set -u` in shell scripts that `source` ROS2 setup files (they reference
   unbound vars and will abort).
 - `build/`, `install/`, `log/`, `results/` are gitignored (colcon outputs).
-- A 16 GB VRAM GPU + `torch` (CUDA) is available for openvla/smolvla;
-  `.venv-smolvla` has LeRobot installed. (Never name the specific GPU model.)
+- A CUDA GPU is available for openvla/smolvla; `.venv-smolvla` has LeRobot installed.
 
 ### CI (`.github/workflows/ci.yml`)
-Python 3.10/3.11/3.12 matrix: `pip install -e ".[dev]"`,
-`ruff check src tests ros2`, `mypy src/vla_ros2`, `pytest`.
-`tests/test_ros2_package_metadata.py` validates the `ros2/` package shape
-(package.xml, setup.py entry points, messages, launch files) without a ROS2
-install, so CI guards the integration on every push.
+- **test** — Python 3.10/3.11/3.12: `pip install -e ".[dev]"`, ruff, mypy, pytest.
+- **ros2-smoke** — Jazzy: colcon build + `launch_testing` smoke test on `vla_ros2`.
+- `tests/test_ros2_package_metadata.py` guards ROS2 package shape without a ROS2 install.
 
 ---
 
@@ -301,23 +344,21 @@ install, so CI guards the integration on every push.
 ---
 
 ## 11. Known limitations / debt
-- The sim hero GIF is driven by the `scripted` baseline, not a learned VLA. A
-  genuine closed-loop with smolvla/openvla is possible but the action space of
-  the public checkpoints is not aligned to a PyBullet Panda, so a coherent task
-  is not guaranteed without the policy's training env.
+- The README hero GIF is still the **`scripted` PyBullet** demo. The SmolVLA GIF uses
+  a kinematic stand-in; task success is not guaranteed with `smolvla_base` alone.
 - `openvla` / `smolvla` / `pi0` are not exercised end-to-end in CI (no GPU);
-  only their load/guard/metadata paths are tested.
-- No live ROS2 node test (the metadata test parses files; it does not spin rclpy).
+  only metadata, guard, and kinematic-unit paths are tested locally.
+- Gazebo (`vla_ros2_gz`) is not in CI; validate with `ros2 launch vla_ros2_gz gz_smoke.launch.py`.
+- The Gazebo action bridge maps `eef_delta` to joint increments for sim convenience;
+  real robots need their own Cartesian IK / controller bridge (`ros2/BRINGUP.md`).
 - Some adapter `metadata` strings are descriptive only and may drift.
 
 ## 12. Possible next steps
-- A real-robot bring-up / hardware integration guide under `ros2/` (URDF, camera
-  topic remaps, controller wiring, `action_low/high` calibration).
-- A `launch_testing` smoke test that actually spins `vla_runtime_node` + the
-  synthetic input node and asserts a `VLAAction` is published.
-- Optional Gazebo (gz sim) integration: spawn an arm, bridge `/vla/action` to a
-  joint controller, for a ROS2-native sim path alongside the PyBullet script.
-- A closed-loop smolvla sim demo using a LeRobot-aligned environment (so the
-  learned policy actually performs the task), if a "real VLA" GIF is wanted.
-- Package the messages + node for a binary/colcon release and document a
-  `rosdep`/workspace setup for users without this machine's environment.
+- **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware; ship a reference
+  controller bridge if a common arm stack emerges.
+- **README polish**: surface `smolvla_so100_demo.gif` alongside the PyBullet hero.
+- **SmolVLA fine-tune**: train on `lerobot/svla_so100_stacking` so the kinematic
+  or real SO-100 demo actually completes the stacking task.
+- **Bloom / rosdistro**: release `vla_ros2_msgs` and `vla_ros2` (see `WORKSPACE.md` §7).
+- **Gazebo CI** (optional): nightly or self-hosted `gz_smoke` launch test.
+- **GPU adapter smoke** on a self-hosted runner (load + one `predict`, not task metrics).
