@@ -1,0 +1,37 @@
+vla_runtime_node:
+  ros__parameters:
+    model_name: "smolvla"
+    runtime: "local"
+    dry_run: true
+    publish_actions_in_dry_run: true
+    instruction_msg_type: "vla_instruction"
+    image_topic: "/camera/image_raw"
+    instruction_topic: "/vla/instruction"
+    joint_state_topic: "/joint_states"
+    require_image: true
+    control_hz: 2.0
+    clip_actions: true
+    action_low: ""
+    action_high: ""
+    device: "cuda:0"
+    pretrained: "lerobot/smolvla_base"
+
+vla_smolvla_joint_bridge_node:
+  ros__parameters:
+    action_topic: "/vla/action"
+    trajectory_topic: "/joint_trajectory_controller/joint_trajectory"
+    joint_names: ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "gripper"]
+    trajectory_time_sec: 0.25
+    enable_actuation: false
+    action_blend: 0.35
+    expected_action_dim: 6
+
+vla_smolvla_input_node:
+  ros__parameters:
+    image_topic: "/camera/image_raw"
+    instruction_topic: "/vla/instruction"
+    joint_state_topic: "/joint_states"
+    publish_hz: 5.0
+    image_size: 256
+    instruction: "stack the red block on the blue block"
+    task_id: "gz_smolvla_stack"

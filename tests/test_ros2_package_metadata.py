@@ -21,6 +21,7 @@ MSG_DIR = MSGS_PKG / "msg"
 
 EXPECTED_GZ_ENTRY_POINTS = {
     "vla_action_bridge_node": "vla_ros2_gz_ros.action_bridge:main",
+    "vla_smolvla_joint_bridge_node": "vla_ros2_gz_ros.smolvla_joint_bridge:main",
 }
 
 EXPECTED_ENTRY_POINTS = {
@@ -29,6 +30,7 @@ EXPECTED_ENTRY_POINTS = {
     "vla_runtime_recorder": "vla_ros2_ros.log_recorder:main",
     "vla_smoke_input_node": "vla_ros2_ros.smoke_input:main",
     "vla_controller_bridge_node": "vla_ros2_ros.controller_bridge:main",
+    "vla_smolvla_input_node": "vla_ros2_ros.smolvla_input:main",
 }
 
 EXPECTED_SMOKE_TOPIC_ARGS = {
@@ -243,6 +245,10 @@ def test_bringup_docs_and_example_config_exist() -> None:
     assert (ROS_PKG / "launch" / "controller_bridge.launch.py").is_file()
     assert (ROS_PKG / "launch" / "bringup_phase_c.launch.py").is_file()
     assert (ROS_PKG / "vla_ros2_ros" / "controller_bridge.py").is_file()
+    assert (GZ_PKG / "launch" / "gz_smolvla.launch.py").is_file()
+    assert (GZ_PKG / "config" / "gz_smolvla.yaml").is_file()
+    gz_smolvla_validate = REPO_ROOT / "scripts" / "gz_smolvla_validate.sh"
+    assert gz_smolvla_validate.is_file()
 
 
 def test_bootstrap_ros2_workspace_script_exists() -> None:
@@ -261,6 +267,21 @@ def test_smolvla_so100_demo_script_exists() -> None:
     assert "load_model" in source
     assert "svla_so100_stacking" in source
     assert (REPO_ROOT / "src" / "vla_ros2" / "sim" / "so100_kinematic.py").is_file()
+
+
+def test_smolvla_finetune_and_playground_scripts_exist() -> None:
+    finetune = REPO_ROOT / "scripts" / "finetune_smolvla_so100.sh"
+    assert finetune.is_file()
+    assert "lerobot/svla_so100_stacking" in finetune.read_text(encoding="utf-8")
+    gz_demo = REPO_ROOT / "scripts" / "record_gz_smolvla_demo.py"
+    assert gz_demo.is_file()
+    assert "gz_smolvla.launch.py" in gz_demo.read_text(encoding="utf-8")
+    playground = REPO_ROOT / "scripts" / "vla_playground.py"
+    assert playground.is_file()
+    assert "gradio" in playground.read_text(encoding="utf-8")
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "docs/assets/gz_smolvla_demo.gif" in readme
+    assert (REPO_ROOT / "docs" / "assets" / "gz_smolvla_demo.gif").is_file()
 
 
 def test_vla_ros2_gz_package_xml() -> None:

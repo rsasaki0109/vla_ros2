@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image, ImageDraw
 
 JOINT_LIMITS_LOW = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
@@ -17,9 +18,9 @@ JOINT_LIMITS_HIGH = np.array([180.0, 180.0, 180.0, 180.0, 180.0, 1.0], dtype=np.
 
 @dataclass
 class SO100Scene:
-    joint_state: np.ndarray
-    red_cube_xy: np.ndarray
-    blue_cube_xy: np.ndarray
+    joint_state: NDArray[np.float32]
+    red_cube_xy: NDArray[np.float32]
+    blue_cube_xy: NDArray[np.float32]
 
     def copy(self) -> SO100Scene:
         return SO100Scene(
@@ -29,17 +30,17 @@ class SO100Scene:
         )
 
 
-def clip_joint_state(state: np.ndarray) -> np.ndarray:
+def clip_joint_state(state: NDArray[np.float32]) -> NDArray[np.float32]:
     clipped = np.asarray(state, dtype=np.float32).reshape(6)
     return np.clip(clipped, JOINT_LIMITS_LOW, JOINT_LIMITS_HIGH)
 
 
 def apply_joint_action(
-    state: np.ndarray,
-    action: np.ndarray,
+    state: NDArray[np.float32],
+    action: NDArray[np.float32],
     *,
     blend: float = 0.35,
-) -> np.ndarray:
+) -> NDArray[np.float32]:
     """Blend toward the commanded joint target (SO-100 datasets use absolute targets)."""
 
     current = clip_joint_state(state)
@@ -48,7 +49,7 @@ def apply_joint_action(
     return clip_joint_state(updated)
 
 
-def forward_kinematics_2d(joint_deg: np.ndarray) -> tuple[float, float]:
+def forward_kinematics_2d(joint_deg: NDArray[np.float32]) -> tuple[float, float]:
     """Planar end-effector position from the first three joint angles (degrees)."""
 
     angles = np.deg2rad(joint_deg[:3])
@@ -61,13 +62,13 @@ def forward_kinematics_2d(joint_deg: np.ndarray) -> tuple[float, float]:
     return x, y
 
 
-def render_top_view(scene: SO100Scene, *, size: int = 256) -> np.ndarray:
+def render_top_view(scene: SO100Scene, *, size: int = 256) -> NDArray[np.uint8]:
     img = Image.new("RGB", (size, size), (235, 238, 242))
     draw = ImageDraw.Draw(img)
     table_y = int(size * 0.72)
     draw.rectangle((0, table_y, size, size), fill=(150, 158, 168))
 
-    def cube(xy: np.ndarray, color: tuple[int, int, int]) -> None:
+    def cube(xy: NDArray[np.float32], color: tuple[int, int, int]) -> None:
         px = int(np.clip(xy[0], 0.0, 1.0) * (size - 40)) + 20
         py = int(np.clip(xy[1], 0.0, 1.0) * (table_y - 50)) + 20
         draw.rectangle((px, py, px + 22, py + 22), fill=color)
@@ -87,7 +88,7 @@ def render_top_view(scene: SO100Scene, *, size: int = 256) -> np.ndarray:
     return np.asarray(img, dtype=np.uint8)
 
 
-def render_wrist_view(scene: SO100Scene, *, size: int = 256) -> np.ndarray:
+def render_wrist_view(scene: SO100Scene, *, size: int = 256) -> NDArray[np.uint8]:
     grip = float(scene.joint_state[5])
     open_amt = int(180 + grip * 60)
     img = Image.new("RGB", (size, size), (open_amt, open_amt, open_amt + 10))
@@ -100,7 +101,7 @@ def render_wrist_view(scene: SO100Scene, *, size: int = 256) -> np.ndarray:
 
 
 def scene_from_dataset_state(
-    state: np.ndarray,
+    state: NDArray[np.float32],
     *,
     red_cube_xy: tuple[float, float] = (0.62, 0.55),
     blue_cube_xy: tuple[float, float] = (0.62, 0.35),
@@ -112,7 +113,7 @@ def scene_from_dataset_state(
     )
 
 
-def observation_images(scene: SO100Scene, *, size: int = 256) -> dict[str, np.ndarray]:
+def observation_images(scene: SO100Scene, *, size: int = 256) -> dict[str, NDArray[np.uint8]]:
     top = render_top_view(scene, size=size)
     wrist = render_wrist_view(scene, size=size)
     return {"camera1": top, "camera2": wrist, "camera3": top}

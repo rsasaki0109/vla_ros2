@@ -16,6 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from numpy.typing import NDArray
 
 from vla_ros2.core.types import ActionSpec, VLAAction, VLAActionChunk
 
@@ -36,7 +37,7 @@ def _resolve_bound(
     bound: str,
     override: tuple[float, ...] | None,
     flat_size: int,
-) -> np.ndarray | None:
+) -> NDArray[np.float32] | None:
     """Resolve a low/high bound array, preferring a configured override over the spec.
 
     A length-1 override broadcasts across the action. An override whose length matches

@@ -44,6 +44,7 @@ openvla = [
 ]
 openpi = ["lerobot>=0.5.1,<0.6.0"]
 smolvla = ["lerobot[smolvla]>=0.5.1,<0.6.0"]
+playground = ["gradio>=4.0"]
 groot = []
 # Optional: PyBullet sim used only by scripts/record_sim_demo.py (the README GIF).
 sim = ["pybullet>=3.2"]

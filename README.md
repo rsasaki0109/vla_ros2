@@ -49,6 +49,38 @@ setup; task success is not guaranteed. Needs `pip install -e ".[smolvla]"` and a
 
 Reproduce: [`scripts/record_smolvla_so100_demo.py`](scripts/record_smolvla_so100_demo.py)
 
+Fine-tune on the same dataset (optional; improves task fit vs `smolvla_base` alone):
+
+```bash
+./scripts/finetune_smolvla_so100.sh
+CKPT="$(./scripts/finetune_smolvla_so100.sh --print-checkpoint)"
+.venv-smolvla/bin/python scripts/record_smolvla_so100_demo.py --pretrained "$CKPT"
+```
+
+### SmolVLA × Gazebo actuation (ROS2 closed loop)
+
+![SmolVLA inference driving Gazebo arm actuation](docs/assets/gz_smolvla_demo.gif)
+
+**Real SmolVLA inference** through the ROS2 runtime, SO-100-style camera rendered from
+live `joint_states`, and 6D joint commands into `joint_trajectory_controller`.
+Camera views are synthetic (not Gazebo RGB); joint motion is from the real sim graph.
+
+Reproduce: [`scripts/record_gz_smolvla_demo.sh`](scripts/record_gz_smolvla_demo.sh)
+
+Launch manually: [ros2/SIM.md](ros2/SIM.md) (`gz_smolvla.launch.py`; GPU required).
+
+### VLA Playground (browser)
+
+Try adapters locally before wiring ROS2:
+
+```bash
+pip install -e ".[playground,smolvla]"
+python scripts/vla_playground.py
+# open http://127.0.0.1:7860
+```
+
+Upload an image, enter an instruction, pick an adapter, and inspect the predicted action.
+
 ## Layout
 
 ```text
@@ -67,6 +99,7 @@ ros2/vla_ros2_msgs/   ROS2 messages: VLAAction, VLAActionChunk, VLAStatus, VLAIn
 pip install -e .                 # core runtime + minimal CLI
 pip install -e ".[openvla]"      # + OpenVLA dependencies
 pip install -e ".[smolvla]"      # + SmolVLA (LeRobot) dependencies
+pip install -e ".[playground]"   # + Gradio browser playground
 pip install -e ".[dev]"          # + test/lint tooling
 ```
 
