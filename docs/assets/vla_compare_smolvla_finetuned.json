@@ -1,0 +1,50 @@
+[
+  {
+    "name": "smolvla",
+    "ok": true,
+    "error": null,
+    "load_ms": 33060.84198690951,
+    "infer_ms": 1224.10649782978,
+    "action_space": "custom",
+    "action_shape": [
+      6
+    ],
+    "action_names": [
+      "a0",
+      "a1",
+      "a2",
+      "a3",
+      "a4",
+      "a5"
+    ],
+    "action_values": [
+      2.6290574073791504,
+      95.38533782958984,
+      111.52969360351562,
+      43.737037658691406,
+      57.34539031982422,
+      5.9472808837890625
+    ],
+    "compare_role": "multi-camera/state/action-chunk compact VLA target",
+    "default_checkpoint": "lerobot/smolvla_base",
+    "experimental": true,
+    "metadata": {
+      "model": "checkpoints/smolvla_so100_stacking_20k/checkpoints/020000/pretrained_model",
+      "adapter": "SmolVLAAdapter",
+      "image_keys": [
+        "observation.images.camera1",
+        "observation.images.camera2",
+        "observation.images.camera3",
+        "observation.images.empty_camera_0"
+      ],
+      "state_key": "observation.state",
+      "filled_images": [
+        "observation.images.camera1<=camera1",
+        "observation.images.camera2<=camera1",
+        "observation.images.camera3<=camera1",
+        "observation.images.empty_camera_0<=camera1"
+      ],
+      "state_filled_or_resized": false
+    }
+  }
+]

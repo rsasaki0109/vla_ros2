@@ -1,0 +1,164 @@
+[
+  {
+    "name": "dummy",
+    "ok": true,
+    "error": null,
+    "load_ms": 0.6235300097614527,
+    "infer_ms": 0.02516503445804119,
+    "action_space": "eef_delta",
+    "action_shape": [
+      7
+    ],
+    "action_names": [
+      "x",
+      "y",
+      "z",
+      "roll",
+      "pitch",
+      "yaw",
+      "gripper"
+    ],
+    "action_values": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "compare_role": "CI/runtime smoke sanity check",
+    "default_checkpoint": "none",
+    "experimental": false,
+    "metadata": {
+      "model": "dummy",
+      "adapter": "DummyAdapter",
+      "instruction": "stack the red block on the blue block",
+      "dry_run": true
+    }
+  },
+  {
+    "name": "random",
+    "ok": true,
+    "error": null,
+    "load_ms": 0.5148579366505146,
+    "infer_ms": 0.06327405571937561,
+    "action_space": "eef_delta",
+    "action_shape": [
+      7
+    ],
+    "action_names": [
+      "x",
+      "y",
+      "z",
+      "roll",
+      "pitch",
+      "yaw",
+      "gripper"
+    ],
+    "action_values": [
+      0.06848084181547165,
+      -0.11510664224624634,
+      -0.2295132428407669,
+      -0.24173618853092194,
+      0.156635120511055,
+      0.2063777893781662,
+      0.05331788957118988
+    ],
+    "compare_role": "action plumbing and visualization stress check",
+    "default_checkpoint": "none",
+    "experimental": false,
+    "metadata": {
+      "model": "random",
+      "adapter": "RandomAdapter",
+      "baseline": "random",
+      "instruction": "stack the red block on the blue block",
+      "scale": 0.25
+    }
+  },
+  {
+    "name": "scripted",
+    "ok": true,
+    "error": null,
+    "load_ms": 0.029274029657244682,
+    "infer_ms": 0.08525117300450802,
+    "action_space": "eef_delta",
+    "action_shape": [
+      7
+    ],
+    "action_names": [
+      "x",
+      "y",
+      "z",
+      "roll",
+      "pitch",
+      "yaw",
+      "gripper"
+    ],
+    "action_values": [
+      0.20000000298023224,
+      -0.10000000149011612,
+      0.20000000298023224,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "compare_role": "upper-bound sanity check for the scripted smoke scene",
+    "default_checkpoint": "none",
+    "experimental": false,
+    "metadata": {
+      "model": "scripted",
+      "adapter": "ScriptedAdapter",
+      "baseline": "scripted",
+      "phase": "",
+      "instruction": "stack the red block on the blue block"
+    }
+  },
+  {
+    "name": "smolvla",
+    "ok": true,
+    "error": null,
+    "load_ms": 40588.73332501389,
+    "infer_ms": 1013.513534097001,
+    "action_space": "custom",
+    "action_shape": [
+      6
+    ],
+    "action_names": [
+      "a0",
+      "a1",
+      "a2",
+      "a3",
+      "a4",
+      "a5"
+    ],
+    "action_values": [
+      -0.2910442650318146,
+      0.146994948387146,
+      0.22400730848312378,
+      0.26732712984085083,
+      1.6691027879714966,
+      -0.08190419524908066
+    ],
+    "compare_role": "multi-camera/state/action-chunk compact VLA target",
+    "default_checkpoint": "lerobot/smolvla_base",
+    "experimental": true,
+    "metadata": {
+      "model": "lerobot/smolvla_base",
+      "adapter": "SmolVLAAdapter",
+      "image_keys": [
+        "observation.images.camera1",
+        "observation.images.camera2",
+        "observation.images.camera3"
+      ],
+      "state_key": "observation.state",
+      "filled_images": [
+        "observation.images.camera1<=camera1",
+        "observation.images.camera2<=camera1",
+        "observation.images.camera3<=camera1"
+      ],
+      "state_filled_or_resized": false
+    }
+  }
+]

@@ -12,6 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 from vla_ros2 import list_models, load_model
+from vla_ros2.compare import compare_models
 from vla_ros2.core.errors import VLARos2Error
 
 app = typer.Typer(
@@ -56,6 +57,53 @@ def predict(
 
     console.print(f"[green]ok[/green] {model} -> {type(action).__name__}")
     console.print(action)
+
+
+@app.command("compare")
+def compare(
+    models: list[str] = typer.Option(
+        ["dummy", "random", "scripted"],
+        "--model",
+        "-m",
+        help="Adapter names to compare (repeatable).",
+    ),
+    instruction: str = typer.Option(
+        "pick up the red block",
+        "--instruction",
+        "-i",
+        help="Task instruction shared by all adapters.",
+    ),
+    device: str = typer.Option("auto", "--device", help="Device passed to each adapter."),
+) -> None:
+    """Compare adapters on the same observation (load + one inference each)."""
+
+    from vla_ros2.core.types import VLAObservation
+
+    observation = VLAObservation(
+        instruction=instruction,
+        metadata={"source": "vla_ros2_cli_compare"},
+    )
+    try:
+        results = compare_models(models, observation, device=device)
+    except VLARos2Error as exc:
+        console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    table = Table(title="adapter comparison")
+    table.add_column("model", style="bold")
+    table.add_column("ok")
+    table.add_column("load_ms", justify="right")
+    table.add_column("infer_ms", justify="right")
+    table.add_column("action_preview")
+    for item in results:
+        load_ms = f"{item.load_ms:.1f}" if item.load_ms is not None else "-"
+        infer_ms = f"{item.infer_ms:.1f}" if item.infer_ms is not None else "-"
+        preview = item.action_preview or (item.error or "")
+        table.add_row(item.name, str(item.ok), load_ms, infer_ms, preview)
+    console.print(table)
+
+    if not all(item.ok for item in results):
+        raise typer.Exit(code=1)
 
 
 def main() -> None:

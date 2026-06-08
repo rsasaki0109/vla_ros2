@@ -31,6 +31,7 @@ class VLASmolVLAInputNode(Node):
         self.declare_parameter("instruction", "stack the red block on the blue block")
         self.declare_parameter("task_id", "gz_smolvla_stack")
         self.declare_parameter("metadata_json", "")
+        self.declare_parameter("publish_instruction", True)
 
         self.image_topic = str(self.get_parameter("image_topic").value)
         self.instruction_topic = str(self.get_parameter("instruction_topic").value)
@@ -40,6 +41,7 @@ class VLASmolVLAInputNode(Node):
         self.instruction = str(self.get_parameter("instruction").value)
         self.task_id = str(self.get_parameter("task_id").value)
         self.metadata_json = self._metadata_json(str(self.get_parameter("metadata_json").value))
+        self.publish_instruction = bool(self.get_parameter("publish_instruction").value)
 
         if publish_hz <= 0:
             raise ValueError("publish_hz must be positive")
@@ -82,7 +84,8 @@ class VLASmolVLAInputNode(Node):
         stamp = self.get_clock().now().to_msg()
         image = self._render_image()
         self.image_pub.publish(self._numpy_to_image(image, stamp))
-        self.instruction_pub.publish(self._make_instruction(stamp))
+        if self.publish_instruction:
+            self.instruction_pub.publish(self._make_instruction(stamp))
 
     def _render_image(self) -> np.ndarray:
         msg = self._latest_joint_state
