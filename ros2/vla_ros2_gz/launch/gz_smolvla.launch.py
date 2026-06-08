@@ -30,6 +30,7 @@ def generate_launch_description():
     pretrained = LaunchConfiguration("pretrained")
     gz_args = LaunchConfiguration("gz_args")
     action_blend = LaunchConfiguration("action_blend")
+    publish_instruction = LaunchConfiguration("publish_instruction")
 
     return LaunchDescription(
         [
@@ -47,6 +48,7 @@ def generate_launch_description():
             DeclareLaunchArgument("pretrained", default_value="lerobot/smolvla_base"),
             DeclareLaunchArgument("gz_args", default_value="-s"),
             DeclareLaunchArgument("action_blend", default_value="0.35"),
+            DeclareLaunchArgument("publish_instruction", default_value="true"),
             SetEnvironmentVariable("PYTHONPATH", _pythonpath_for_vla_ros2()),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -82,7 +84,10 @@ def generate_launch_description():
                 executable="vla_smolvla_input_node",
                 name="vla_smolvla_input_node",
                 output="screen",
-                parameters=[params_file],
+                parameters=[
+                    params_file,
+                    {"publish_instruction": publish_instruction},
+                ],
             ),
             Node(
                 package="vla_ros2_gz",

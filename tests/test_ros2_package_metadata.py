@@ -279,6 +279,23 @@ def test_smolvla_finetune_and_playground_scripts_exist() -> None:
     playground = REPO_ROOT / "scripts" / "vla_playground.py"
     assert playground.is_file()
     assert "gradio" in playground.read_text(encoding="utf-8")
+    assert "--ros" in playground.read_text(encoding="utf-8")
+    launch_pg = REPO_ROOT / "scripts" / "launch_playground_gz.sh"
+    assert launch_pg.is_file()
+    launch_pg_text = launch_pg.read_text(encoding="utf-8")
+    assert "publish_instruction:=false" in launch_pg_text
+    assert (REPO_ROOT / "scripts" / "vla_playground_ros_bridge.py").is_file()
+    compare_script = REPO_ROOT / "scripts" / "compare_vla_models.py"
+    assert compare_script.is_file()
+    assert "compare_models" in compare_script.read_text(encoding="utf-8")
+    playground_text = playground.read_text(encoding="utf-8")
+    assert "Compare adapters" in playground_text
+    assert (REPO_ROOT / "docs" / "assets" / "vla_compare_summary.json").is_file()
+    assert (REPO_ROOT / "docs" / "assets" / "vla_compare_local.json").is_file()
+    smolvla_input = ROS_PKG / "vla_ros2_ros" / "smolvla_input.py"
+    assert "publish_instruction" in smolvla_input.read_text(encoding="utf-8")
+    gz_launch = (GZ_PKG / "launch" / "gz_smolvla.launch.py").read_text(encoding="utf-8")
+    assert "publish_instruction" in gz_launch
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     assert "docs/assets/gz_smolvla_demo.gif" in readme
     assert (REPO_ROOT / "docs" / "assets" / "gz_smolvla_demo.gif").is_file()

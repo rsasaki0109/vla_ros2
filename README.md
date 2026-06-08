@@ -73,15 +73,63 @@ Launch manually: [ros2/SIM.md](ros2/SIM.md) (`gz_smolvla.launch.py`; GPU require
 
 ### VLA Playground (browser)
 
-Try adapters locally before wiring ROS2:
+Try adapters locally or drive a **Gazebo sim graph** (no real robot):
 
 ```bash
 pip install -e ".[playground,smolvla]"
+
+# Local inference or side-by-side adapter comparison (first tab)
 python scripts/vla_playground.py
-# open http://127.0.0.1:7860
+
+# Gazebo closed loop + browser (two terminals)
+./scripts/launch_playground_gz.sh
+python scripts/vla_playground.py --ros
+# open http://127.0.0.1:7860 → "ROS2 live" tab → Send instruction
 ```
 
-Upload an image, enter an instruction, pick an adapter, and inspect the predicted action.
+## Adapter comparison (measured locally)
+
+Same synthetic input through each adapter: instruction
+`stack the red block on the blue block`, state `[0, 45, 90, 0, 0, 0.5]`,
+256×256 RGB frame (seed 0). Measured on **GPU** with
+`.venv-smolvla` on **2026-06-08**.
+
+This compares **runtime wiring and latency**, not robot task success. Action
+dimensions differ by adapter (7-DoF eef delta vs 6-DoF joint-style SmolVLA).
+
+| model | checkpoint | ok | load | infer | shape | action (preview) |
+|---|---|---:|---:|---:|---|---|
+| `dummy` | — | yes | 0.6 ms | 0.0 ms | 7 | all zeros |
+| `random` | — | yes | 0.5 ms | 0.1 ms | 7 | seeded random eef delta |
+| `scripted` | — | yes | 0.0 ms | 0.1 ms | 7 | `[0.2, -0.1, 0.2, 0, 0, 0, 1]` |
+| `smolvla` | `lerobot/smolvla_base` | yes | 40.6 s | 1014 ms | 6 | `[-0.29, 0.15, 0.22, 0.27, 1.67, -0.08]` |
+| `smolvla` | fine-tuned 20k | yes | 33.1 s | 1224 ms | 6 | `[2.63, 95.39, 111.53, 43.74, 57.35, 5.95]` |
+| `pi0` | `lerobot/pi0_base` | no | — | — | — | gated HF repo (token required) |
+| `openvla` | `openvla/openvla-7b` | no | — | — | — | `[openvla]` extra not installed |
+
+Fine-tuned SmolVLA outputs larger-magnitude 6D actions on this synthetic frame
+than `smolvla_base`; that reflects checkpoint fit, not a sim/robot success rate.
+
+Reproduce:
+
+```bash
+.venv-smolvla/bin/python scripts/compare_vla_models.py \
+  --models dummy random scripted smolvla \
+  --instruction "stack the red block on the blue block" \
+  --state-json '{"state": [0, 45, 90, 0, 0, 0.5]}' \
+  --device cuda \
+  --out docs/assets/vla_compare_local.json
+
+.venv-smolvla/bin/python scripts/compare_vla_models.py \
+  --models smolvla \
+  --pretrained smolvla=checkpoints/smolvla_so100_stacking_20k/checkpoints/020000/pretrained_model \
+  --instruction "stack the red block on the blue block" \
+  --state-json '{"state": [0, 45, 90, 0, 0, 0.5]}' \
+  --device cuda \
+  --out docs/assets/vla_compare_smolvla_finetuned.json
+```
+
+Full summary: [`docs/assets/vla_compare_summary.json`](docs/assets/vla_compare_summary.json)
 
 ## Layout
 
@@ -110,6 +158,8 @@ Sanity-check adapters off-robot, without ROS2:
 ```bash
 vla-ros2 list                              # list registered adapters
 vla-ros2 predict --model dummy             # run one local inference (wiring check)
+vla-ros2 compare -m dummy -m random -m scripted   # same input, side-by-side actions
+python scripts/compare_vla_models.py --models dummy smolvla --device cuda
 ```
 
 ## Run (ROS2 node)

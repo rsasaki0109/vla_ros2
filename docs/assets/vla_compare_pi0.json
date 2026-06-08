@@ -1,0 +1,17 @@
+[
+  {
+    "name": "pi0",
+    "ok": false,
+    "error": "pi0 local load aborted: the processor tokenizer 'google/paligemma-3b-pt-224' is a gated Hugging Face repo (access restricted). Accept its license at https://huggingface.co/google/paligemma-3b-pt-224 and run with an authorized HF token (huggingface-cli login, or set HF_TOKEN), then retry.",
+    "load_ms": null,
+    "infer_ms": null,
+    "action_space": "",
+    "action_shape": [],
+    "action_names": [],
+    "action_values": [],
+    "compare_role": "action-chunk VLA target",
+    "default_checkpoint": "lerobot/pi0_base",
+    "experimental": true,
+    "metadata": {}
+  }
+]

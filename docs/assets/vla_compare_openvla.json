@@ -1,0 +1,17 @@
+[
+  {
+    "name": "openvla",
+    "ok": false,
+    "error": "OpenVLA adapter requires optional ML dependencies. Install them with: pip install \"vla_ros2[openvla]\"",
+    "load_ms": null,
+    "infer_ms": null,
+    "action_space": "",
+    "action_shape": [],
+    "action_names": [],
+    "action_values": [],
+    "compare_role": "single-image VLA reference adapter",
+    "default_checkpoint": "openvla/openvla-7b",
+    "experimental": false,
+    "metadata": {}
+  }
+]

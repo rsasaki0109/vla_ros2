@@ -1,0 +1,80 @@
+{
+  "captured_at": "2026-06-08",
+  "host_gpu": "NVIDIA GeForce GPU",
+  "python_env": ".venv-smolvla",
+  "instruction": "stack the red block on the blue block",
+  "state": [0, 45, 90, 0, 0, 0.5],
+  "image": "synthetic 256x256 RGB (seed=0)",
+  "note": "Runtime wiring comparison on a synthetic frame. Not a robot task-success claim.",
+  "command": "python scripts/compare_vla_models.py --models dummy random scripted smolvla --device cuda",
+  "artifacts": {
+    "local_baselines_and_smolvla_base": "docs/assets/vla_compare_local.json",
+    "smolvla_finetuned_20k": "docs/assets/vla_compare_smolvla_finetuned.json",
+    "pi0_probe": "docs/assets/vla_compare_pi0.json",
+    "openvla_probe": "docs/assets/vla_compare_openvla.json"
+  },
+  "results": [
+    {
+      "model": "dummy",
+      "checkpoint": "none",
+      "ok": true,
+      "load_ms": 0.6,
+      "infer_ms": 0.0,
+      "action_shape": [7],
+      "action_space": "eef_delta",
+      "action_values": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    {
+      "model": "random",
+      "checkpoint": "none",
+      "ok": true,
+      "load_ms": 0.5,
+      "infer_ms": 0.1,
+      "action_shape": [7],
+      "action_space": "eef_delta",
+      "action_values": [0.068, -0.115, -0.230, -0.242, 0.157, 0.206, 0.053]
+    },
+    {
+      "model": "scripted",
+      "checkpoint": "none",
+      "ok": true,
+      "load_ms": 0.0,
+      "infer_ms": 0.1,
+      "action_shape": [7],
+      "action_space": "eef_delta",
+      "action_values": [0.2, -0.1, 0.2, 0.0, 0.0, 0.0, 1.0]
+    },
+    {
+      "model": "smolvla",
+      "checkpoint": "lerobot/smolvla_base",
+      "ok": true,
+      "load_ms": 40588.7,
+      "infer_ms": 1013.5,
+      "action_shape": [6],
+      "action_space": "custom",
+      "action_values": [-0.291, 0.147, 0.224, 0.267, 1.669, -0.082]
+    },
+    {
+      "model": "smolvla",
+      "checkpoint": "checkpoints/smolvla_so100_stacking_20k/checkpoints/020000/pretrained_model",
+      "ok": true,
+      "load_ms": 33060.8,
+      "infer_ms": 1224.1,
+      "action_shape": [6],
+      "action_space": "custom",
+      "action_values": [2.629, 95.385, 111.530, 43.737, 57.345, 5.947]
+    },
+    {
+      "model": "pi0",
+      "checkpoint": "lerobot/pi0_base",
+      "ok": false,
+      "error": "gated Hugging Face repo google/paligemma-3b-pt-224 (HF token required)"
+    },
+    {
+      "model": "openvla",
+      "checkpoint": "openvla/openvla-7b",
+      "ok": false,
+      "error": "openvla extra not installed in .venv-smolvla"
+    }
+  ]
+}

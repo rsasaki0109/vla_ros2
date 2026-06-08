@@ -215,5 +215,6 @@ absolute Gazebo joint positions with optional blending (`action_blend`).
 - SmolVLA × Gazebo GIF: [`scripts/record_gz_smolvla_demo.sh`](../scripts/record_gz_smolvla_demo.sh)
 - SmolVLA fine-tune: [`scripts/finetune_smolvla_so100.sh`](../scripts/finetune_smolvla_so100.sh)
 - Browser playground: [`scripts/vla_playground.py`](../scripts/vla_playground.py)
+- Playground × Gazebo (no real robot): [`scripts/launch_playground_gz.sh`](../scripts/launch_playground_gz.sh)
 - Launch smoke test (no Gazebo): `vla_ros2/tests/test_smoke_launch.py`
 - Architecture handoff: `/PLAN.md`
