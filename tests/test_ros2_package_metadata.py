@@ -292,6 +292,11 @@ def test_smolvla_finetune_and_playground_scripts_exist() -> None:
     assert "Compare adapters" in playground_text
     assert (REPO_ROOT / "docs" / "assets" / "vla_compare_summary.json").is_file()
     assert (REPO_ROOT / "docs" / "assets" / "vla_compare_local.json").is_file()
+    assert (REPO_ROOT / "docs" / "assets" / "gz_smolvla_compare_metrics.json").is_file()
+    assert (REPO_ROOT / "docs" / "assets" / "gz_smolvla_offline_base.gif").is_file()
+    compare_sh = REPO_ROOT / "scripts" / "record_gz_smolvla_compare.sh"
+    assert compare_sh.is_file()
+    assert (REPO_ROOT / "scripts" / "vla_gz_env.sh").is_file()
     smolvla_input = ROS_PKG / "vla_ros2_ros" / "smolvla_input.py"
     assert "publish_instruction" in smolvla_input.read_text(encoding="utf-8")
     gz_launch = (GZ_PKG / "launch" / "gz_smolvla.launch.py").read_text(encoding="utf-8")

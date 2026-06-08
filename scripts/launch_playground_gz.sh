@@ -9,30 +9,16 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+# shellcheck disable=SC1091
+source "${REPO_ROOT}/scripts/vla_gz_env.sh"
 
-if [[ -f /opt/ros/jazzy/setup.bash ]]; then
-  set +u
-  # shellcheck disable=SC1091
-  source /opt/ros/jazzy/setup.bash
-  set -u
-fi
+vla_gz_prepare_env "${REPO_ROOT}"
 
 PRETRAINED="${PRETRAINED:-}"
 if [[ -z "${PRETRAINED}" ]]; then
   PRETRAINED="$(OUTPUT_DIR=checkpoints/smolvla_so100_stacking_20k ./scripts/finetune_smolvla_so100.sh --print-checkpoint 2>/dev/null || true)"
   PRETRAINED="${PRETRAINED:-lerobot/smolvla_base}"
 fi
-
-colcon build --base-paths ros2 --packages-select vla_ros2_msgs vla_ros2 vla_ros2_gz \
-  --allow-overriding vla_ros2 vla_ros2_gz >/tmp/playground_gz_build.log 2>&1
-set +u
-# shellcheck disable=SC1091
-source install/setup.bash
-set -u
-
-export PYTHONPATH="${REPO_ROOT}/src:${PYTHONPATH:-}"
-export ROS_DOMAIN_ID="${GZ_SMOLVLA_ROS_DOMAIN_ID:-92}"
-rm -f "${ROS_HOME:-$HOME/.ros}/locks/ros2-control-controller-spawner.lock"
 
 echo "=== Playground × Gazebo ==="
 echo "pretrained=${PRETRAINED}"

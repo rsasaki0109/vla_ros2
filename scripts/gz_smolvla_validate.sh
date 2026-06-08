@@ -24,26 +24,15 @@ cleanup() {
     kill "${LAUNCH_PID}" 2>/dev/null || true
     wait "${LAUNCH_PID}" 2>/dev/null || true
   fi
-  pkill -f 'gz sim.launch.py|vla_smolvla|vla_runtime_node' 2>/dev/null || true
+  pkill -f 'gz sim.launch.py|vla_runtime_node|vla_smolvla_input_node|vla_smolvla_joint_bridge' 2>/dev/null || true
 }
 trap cleanup EXIT
 
 prepare() {
-  if ! python3 - <<'PY'
-import sys
-try:
-    import torch
-    from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy  # noqa: F401
-except ImportError:
-    sys.exit(1)
-if not torch.cuda.is_available():
-    sys.exit(2)
-sys.exit(0)
-PY
-  then
-    echo "Installing SmolVLA extras into the active Python environment..."
-    pip install -e ".[smolvla]" >/tmp/gz_smolvla_pip.log 2>&1 || fail "pip install -e '.[smolvla]' failed"
-    python3 - <<'PY' || fail "SmolVLA extras + CUDA required after pip install"
+  local root="${REPO_ROOT}"
+  # shellcheck disable=SC1091
+  source "${root}/scripts/vla_gz_env.sh"
+  if ! "${root}/.venv-smolvla/bin/python" - <<'PY' 2>/dev/null
 import sys
 import torch
 from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy  # noqa: F401
@@ -51,17 +40,13 @@ if not torch.cuda.is_available():
     sys.exit(2)
 sys.exit(0)
 PY
+  then
+    echo "Installing SmolVLA extras into .venv-smolvla..."
+    "${root}/.venv-smolvla/bin/pip" install -e "${root}[smolvla]" >/tmp/gz_smolvla_pip.log 2>&1 \
+      || fail "pip install -e '.[smolvla]' into .venv-smolvla failed"
   fi
-  colcon build --base-paths ros2 --packages-select vla_ros2_msgs vla_ros2 vla_ros2_gz \
-    --allow-overriding vla_ros2 vla_ros2_gz >/tmp/gz_smolvla_build.log 2>&1
-  set +u
-  # shellcheck disable=SC1091
-  source install/setup.bash
-  set -u
-  export PYTHONPATH="${REPO_ROOT}/src:${PYTHONPATH:-}"
-  export ROS_DOMAIN_ID="${GZ_SMOLVLA_ROS_DOMAIN_ID:-92}"
-  rm -f "${LOCK_FILE}"
-  pkill -9 -f 'gz sim.launch.py|vla_smolvla|vla_runtime_node' 2>/dev/null || true
+  vla_gz_prepare_env "${root}"
+  vla_gz_kill_stacks
   sleep 2
 }
 
