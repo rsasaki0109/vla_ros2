@@ -15,15 +15,14 @@ Gazebo Sim 閉ループ検証 **Phase 1 + Phase 2 PASS**。
 
 ## 未確認/要確認項目
 
-- [ ] Gazebo CI（nightly / self-hosted）への組み込み
+- [x] Gazebo nightly CI（`.github/workflows/gazebo-nightly.yml`）
 - [ ] GUI モード（`-s` なし）での目視確認
 - [ ] 他 ROS stack 稼働中の default domain での安定性
 
 ## 次アクション
 
-1. `git push`（未 push commits あり）
-2. controller bridge 雛形（実機 Phase C 用）
-3. SmolVLA fine-tune または実機 bring-up Phase C
+1. SmolVLA fine-tune（20k steps）→ GIF 差し替え
+2. 実機 bring-up Phase C（`/joint_states` 接続後）
 
 ## 実行コマンド
 

@@ -284,6 +284,14 @@ def test_smolvla_finetune_and_playground_scripts_exist() -> None:
     assert (REPO_ROOT / "docs" / "assets" / "gz_smolvla_demo.gif").is_file()
 
 
+def test_gazebo_nightly_workflow_exists() -> None:
+    workflow = REPO_ROOT / ".github" / "workflows" / "gazebo-nightly.yml"
+    assert workflow.is_file()
+    source = workflow.read_text(encoding="utf-8")
+    assert "gz_smoke_validate.sh all" in source
+    assert "gz_smolvla_validate.sh infer" in source
+
+
 def test_vla_ros2_gz_package_xml() -> None:
     meta = _parse_package_xml(GZ_PKG / "package.xml")
     assert meta["name"] == "vla_ros2_gz"
