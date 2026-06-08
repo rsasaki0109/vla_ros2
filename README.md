@@ -44,8 +44,8 @@ Reproduce: [`scripts/record_sim_demo.py`](scripts/record_sim_demo.py)
 
 **Real SmolVLA inference** (`lerobot/smolvla_base`) in a closed loop on a
 LeRobot-aligned SO-100 kinematic stand-in initialized from
-`lerobot/svla_so100_stacking`. The base checkpoint is not fine-tuned for your
-setup; task success is not guaranteed. Needs `pip install -e ".[smolvla]"` and a GPU.
+`lerobot/svla_so100_stacking`. When available, the demo uses a fine-tuned checkpoint
+under `checkpoints/smolvla_so100_stacking_20k/` instead of the base model.
 
 Reproduce: [`scripts/record_smolvla_so100_demo.py`](scripts/record_smolvla_so100_demo.py)
 
@@ -65,6 +65,7 @@ Quick wiring check: `./scripts/finetune_smolvla_so100.sh` (200 steps).
 **Real SmolVLA inference** through the ROS2 runtime, SO-100-style camera rendered from
 live `joint_states`, and 6D joint commands into `joint_trajectory_controller`.
 Camera views are synthetic (not Gazebo RGB); joint motion is from the real sim graph.
+Demo GIF uses a fine-tuned checkpoint (`checkpoints/smolvla_so100_stacking_20k/`).
 
 Reproduce: [`scripts/record_gz_smolvla_demo.sh`](scripts/record_gz_smolvla_demo.sh)
 
