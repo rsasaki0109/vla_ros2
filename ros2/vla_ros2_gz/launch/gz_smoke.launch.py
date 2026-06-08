@@ -28,6 +28,7 @@ def generate_launch_description():
     model_name = LaunchConfiguration("model_name")
     control_hz = LaunchConfiguration("control_hz")
     publish_hz = LaunchConfiguration("publish_hz")
+    gz_args = LaunchConfiguration("gz_args")
 
     return LaunchDescription(
         [
@@ -43,6 +44,7 @@ def generate_launch_description():
             DeclareLaunchArgument("enable_actuation", default_value="false"),
             DeclareLaunchArgument("control_hz", default_value="5.0"),
             DeclareLaunchArgument("publish_hz", default_value="5.0"),
+            DeclareLaunchArgument("gz_args", default_value="-s"),
             SetEnvironmentVariable("PYTHONPATH", _pythonpath_for_vla_ros2()),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -52,6 +54,7 @@ def generate_launch_description():
                         )
                     ]
                 ),
+                launch_arguments={"gz_args": gz_args}.items(),
             ),
             Node(
                 package="vla_ros2",

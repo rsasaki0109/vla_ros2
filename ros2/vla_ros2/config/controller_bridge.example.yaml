@@ -1,0 +1,12 @@
+# Reference controller bridge for Phase C bring-up (parse/log only by default).
+# Pair with runtime publish_actions_in_dry_run:=true before enable_actuation:=true.
+
+vla_controller_bridge_node:
+  ros__parameters:
+    action_topic: "/vla/action"
+    parsed_topic: "/vla/bridge/parsed"
+    cmd_vel_topic: "/cmd_vel"
+    enable_actuation: false
+    publish_parsed: true
+    publish_cmd_vel: false
+    log_every_n: 5

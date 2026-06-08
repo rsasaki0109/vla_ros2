@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase A/B gate checks from ros2/BRINGUP.md (no actuation).
+# Phase A/B/C gate checks from ros2/BRINGUP.md (C = parse-only bridge, no actuation).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,6 +18,8 @@ PARAMS_FILE="${BRINGUP_PARAMS_FILE:-${REPO_ROOT}/ros2/vla_ros2/config/bringup.da
 INSTRUCTION="${BRINGUP_INSTRUCTION:-pick up the cup}"
 READY_TIMEOUT_SEC="${BRINGUP_READY_TIMEOUT_SEC:-45}"
 INSTR_PID=""
+SMOKE_PID=""
+BRIDGE_PID=""
 
 pass() { printf 'PASS: %s\n' "$*"; }
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
@@ -97,15 +99,83 @@ phase_b() {
   wait_for_ready_status "$READY_TIMEOUT_SEC"
 }
 
+phase_c() {
+  echo "=== Phase C: controller bridge parse (smoke graph, no actuation) ==="
+  if [[ -f /opt/ros/jazzy/setup.bash ]]; then
+    set +u
+    # shellcheck disable=SC1091
+    source /opt/ros/jazzy/setup.bash
+    set -u
+  fi
+  colcon build --base-paths ros2 --packages-select vla_ros2_msgs vla_ros2 \
+    --allow-overriding vla_ros2 >/tmp/vla_bringup_phase_c_build.log 2>&1
+  set +u
+  # shellcheck disable=SC1091
+  source install/setup.bash
+  set -u
+  export PYTHONPATH="${REPO_ROOT}/src:${PYTHONPATH:-}"
+  export ROS_DOMAIN_ID="${BRINGUP_ROS_DOMAIN_ID:-88}"
+
+  ros2 launch vla_ros2 smoke.launch.py \
+    dry_run:=true publish_actions_in_dry_run:=true &
+  SMOKE_PID=$!
+  ros2 launch vla_ros2 controller_bridge.launch.py \
+    enable_actuation:=false publish_cmd_vel:=false &
+  BRIDGE_PID=$!
+
+  cleanup() {
+    if [[ -n "${SMOKE_PID}" ]]; then
+      kill "${SMOKE_PID}" 2>/dev/null || true
+    fi
+    if [[ -n "${BRIDGE_PID}" ]]; then
+      kill "${BRIDGE_PID}" 2>/dev/null || true
+    fi
+    wait "${SMOKE_PID}" "${BRIDGE_PID}" 2>/dev/null || true
+  }
+  trap cleanup EXIT
+
+  wait_for_topic /vla/bridge/parsed 45 || fail "/vla/bridge/parsed did not appear"
+  python3 - <<'PY' || fail "bridge did not publish parsed action"
+import sys
+import time
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class Probe(Node):
+    def __init__(self):
+        super().__init__("phase_c_probe")
+        self.payload = ""
+        self.create_subscription(String, "/vla/bridge/parsed", self.cb, 10)
+
+    def cb(self, msg: String) -> None:
+        self.payload = msg.data
+
+rclpy.init()
+node = Probe()
+end = time.time() + 20.0
+while time.time() < end and not node.payload:
+    rclpy.spin_once(node, timeout_sec=0.2)
+ok = "action_space" in node.payload
+node.destroy_node()
+if rclpy.ok():
+    rclpy.shutdown()
+sys.exit(0 if ok else 1)
+PY
+  pass "Phase C bridge parsed VLAAction"
+}
+
 case "$PHASE" in
   a|A) phase_a ;;
   b|B) phase_b ;;
+  c|C) phase_c ;;
   all)
     phase_a
     phase_b
     ;;
   *)
-    echo "usage: $0 [a|b|all]" >&2
+    echo "usage: $0 [a|b|c|all]" >&2
     exit 2
     ;;
 esac

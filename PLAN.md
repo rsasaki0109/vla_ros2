@@ -348,18 +348,19 @@ colcon test-result --verbose
   a kinematic stand-in; task success is not guaranteed with `smolvla_base` alone.
 - `openvla` / `smolvla` / `pi0` are not exercised end-to-end in CI (no GPU);
   only metadata, guard, and kinematic-unit paths are tested locally.
-- Gazebo (`vla_ros2_gz`) is not in CI; validate with `ros2 launch vla_ros2_gz gz_smoke.launch.py`.
+- Gazebo (`vla_ros2_gz`) is not in CI; validate with `./scripts/gz_smoke_validate.sh`
+  (see `notes/2026-06-08_gazebo_closed_loop.md`).
 - The Gazebo action bridge maps `eef_delta` to joint increments for sim convenience;
   real robots need their own Cartesian IK / controller bridge (`ros2/BRINGUP.md`).
 - Some adapter `metadata` strings are descriptive only and may drift.
 
 ## 12. Possible next steps
-- **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware; ship a reference
-  controller bridge if a common arm stack emerges. Phase A/B gates:
-  `./scripts/bringup_validate.sh` (see `notes/2026-06-08_real_robot_bringup.md`).
+- **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware. Reference bridge:
+  `vla_controller_bridge_node` + Phase C gate `./scripts/bringup_validate.sh c`
+  (see `notes/2026-06-08_real_robot_bringup.md`).
 - ~~**README polish**: surface `smolvla_so100_demo.gif` alongside the PyBullet hero.~~ Done.
 - **SmolVLA fine-tune**: train on `lerobot/svla_so100_stacking` so the kinematic
   or real SO-100 demo actually completes the stacking task.
 - **Bloom / rosdistro**: release `vla_ros2_msgs` and `vla_ros2` (see `WORKSPACE.md` §7).
-- **Gazebo CI** (optional): nightly or self-hosted `gz_smoke` launch test.
+- **Gazebo CI** (optional): nightly or self-hosted `./scripts/gz_smoke_validate.sh` (local gates done).
 - **GPU adapter smoke** on a self-hosted runner (load + one `predict`, not task metrics).
