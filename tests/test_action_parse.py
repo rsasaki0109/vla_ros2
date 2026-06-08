@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from vla_ros2_ros.action_parse import eef_delta_named_values, parse_action_fields
-from vla_ros2_ros.controller_bridge import parsed_twist_from_eef_delta
+from vla_ros2_ros.action_parse import (
+    eef_delta_named_values,
+    parse_action_fields,
+    parsed_twist_from_eef_delta,
+)
 
 
 def test_parse_action_fields_builds_named_values() -> None:
@@ -39,6 +42,6 @@ def test_parsed_twist_from_eef_delta_maps_linear_and_angular() -> None:
     )
     twist = parsed_twist_from_eef_delta(parsed)
     assert twist is not None
-    assert twist.linear.x == 0.1
-    assert twist.linear.z == 0.3
-    assert twist.angular.z == 0.6
+    assert twist.linear_x == 0.1
+    assert twist.linear_z == 0.3
+    assert twist.angular_z == 0.6

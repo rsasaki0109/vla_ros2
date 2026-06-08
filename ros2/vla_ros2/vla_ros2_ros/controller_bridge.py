@@ -15,7 +15,11 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from vla_ros2_msgs.msg import VLAAction
 
-from vla_ros2_ros.action_parse import ParsedVLAAction, eef_delta_named_values, parse_action_fields
+from vla_ros2_ros.action_parse import (
+    ParsedVLAAction,
+    parse_action_fields,
+    parsed_twist_from_eef_delta,
+)
 from vla_ros2_ros.qos import action_qos
 
 
@@ -25,20 +29,18 @@ def _bool_param(value: object) -> bool:
     return bool(value)
 
 
-def parsed_twist_from_eef_delta(parsed: ParsedVLAAction) -> Twist | None:
-    if parsed.action_space and parsed.action_space != "eef_delta":
+def _twist_msg_from_parsed(parsed: ParsedVLAAction) -> Twist | None:
+    twist = parsed_twist_from_eef_delta(parsed)
+    if twist is None:
         return None
-    delta = eef_delta_named_values(parsed.named_values)
-    if not delta:
-        return None
-    twist = Twist()
-    twist.linear.x = delta.get("x", 0.0)
-    twist.linear.y = delta.get("y", 0.0)
-    twist.linear.z = delta.get("z", 0.0)
-    twist.angular.x = delta.get("roll", 0.0)
-    twist.angular.y = delta.get("pitch", 0.0)
-    twist.angular.z = delta.get("yaw", 0.0)
-    return twist
+    msg = Twist()
+    msg.linear.x = twist.linear_x
+    msg.linear.y = twist.linear_y
+    msg.linear.z = twist.linear_z
+    msg.angular.x = twist.angular_x
+    msg.angular.y = twist.angular_y
+    msg.angular.z = twist.angular_z
+    return msg
 
 
 class VLAControllerBridgeNode(Node):
@@ -113,7 +115,7 @@ class VLAControllerBridgeNode(Node):
         if not self._enable_actuation:
             return
 
-        twist = parsed_twist_from_eef_delta(parsed)
+        twist = _twist_msg_from_parsed(parsed)
         if twist is None:
             self.get_logger().warning(
                 f"enable_actuation=true but action_space={parsed.action_space!r} "
