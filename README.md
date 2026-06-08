@@ -7,13 +7,15 @@ ROS2-native on-robot runtime for Vision-Language-Action (VLA) models.
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![ROS2](https://img.shields.io/badge/ROS2-Jazzy-22314E)](ros2)
 
-![vla_ros2 real ROS2 runtime demo](docs/assets/runtime_demo.gif)
+![vla_ros2 PyBullet pick-and-place driven by the runtime](docs/assets/sim_demo.gif)
 
-> Recorded from the **real ROS2 runtime** — `ros2 launch vla_ros2 smoke.launch.py`
-> brings up the runtime node + a synthetic input node, and the dummy VLA adapter
-> publishes typed `VLAAction` messages on `/vla/action`. No robot, no GPU, no
-> simulation toy — just the actual node graph. Reproduce with
-> [`scripts/record_runtime_demo.sh`](scripts/record_runtime_demo.sh).
+> A **Franka Panda in a PyBullet physics sim** performing pick-and-place, driven
+> through the real `vla_ros2` runtime: every control tick builds a
+> `VLAObservation`, calls `load_model("scripted")`, and the returned
+> `VLAAction` end-effector delta + gripper channel command the arm. It is the
+> `scripted` baseline adapter (not a learned VLA), but the loop, the physics, and
+> the action stream are real. Reproduce with
+> [`scripts/record_sim_demo.py`](scripts/record_sim_demo.py).
 
 > VLA models move fast; robots need a stable runtime interface.
 > `vla_ros2` wires **camera + instruction + robot state** to **typed actions**
@@ -76,6 +78,13 @@ ros2 launch vla_ros2 dummy.launch.py
 # OpenVLA local inference (needs a GPU and openvla extras)
 ros2 launch vla_ros2 openvla.launch.py dry_run:=false
 ```
+
+The full ROS2 graph in action — `ros2 launch vla_ros2 smoke.launch.py` brings up
+the runtime node plus a synthetic-input node, and a real typed `VLAAction` flows
+on `/vla/action` (reproduce with
+[`scripts/record_runtime_demo.sh`](scripts/record_runtime_demo.sh)):
+
+![vla_ros2 live ROS2 topics](docs/assets/runtime_demo.gif)
 
 ### Topics
 
