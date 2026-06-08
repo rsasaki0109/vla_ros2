@@ -21,7 +21,7 @@ Gazebo Sim 閉ループ検証 **Phase 1 + Phase 2 PASS**。
 
 ## 次アクション
 
-1. SmolVLA fine-tune（20k steps）→ GIF 差し替え
+1. ~~SmolVLA fine-tune（20k steps）→ GIF 差し替え~~ 5k checkpoint で GIF 更新済み（20k 完走後に `./scripts/record_finetuned_gz_demo.sh` で再録画可）
 2. 実機 bring-up Phase C（`/joint_states` 接続後）
 
 ## 実行コマンド
