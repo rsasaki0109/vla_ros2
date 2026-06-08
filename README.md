@@ -79,12 +79,8 @@ ros2 launch vla_ros2 dummy.launch.py
 ros2 launch vla_ros2 openvla.launch.py dry_run:=false
 ```
 
-The full ROS2 graph in action — `ros2 launch vla_ros2 smoke.launch.py` brings up
-the runtime node plus a synthetic-input node, and a real typed `VLAAction` flows
-on `/vla/action` (reproduce with
-[`scripts/record_runtime_demo.sh`](scripts/record_runtime_demo.sh)):
-
-![vla_ros2 live ROS2 topics](docs/assets/runtime_demo.gif)
+`ros2 launch vla_ros2 smoke.launch.py` brings up the runtime node plus a
+synthetic-input node, and a real typed `VLAAction` flows on `/vla/action`.
 
 ### Topics
 
