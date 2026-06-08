@@ -23,3 +23,4 @@ build_ros/
 
 # Local ROS2/benchmark run outputs (canonical evidence lives in docs/assets/)
 results/
+checkpoints/

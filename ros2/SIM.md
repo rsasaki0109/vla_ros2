@@ -71,6 +71,10 @@ Automated gate:
 ./scripts/gz_smoke_validate.sh 1    # or `all` for Phase 1 + 2
 ```
 
+Nightly CI (GitHub Actions): `.github/workflows/gazebo-nightly.yml` runs the same
+`gz_smoke_validate.sh all` on a schedule. SmolVLA GPU infer is available via manual
+`workflow_dispatch` on a self-hosted GPU runner.
+
 Uses an isolated `ROS_DOMAIN_ID` by default to avoid collisions with other
 ROS stacks on the same machine.
 

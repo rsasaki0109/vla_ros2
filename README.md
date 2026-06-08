@@ -52,10 +52,11 @@ Reproduce: [`scripts/record_smolvla_so100_demo.py`](scripts/record_smolvla_so100
 Fine-tune on the same dataset (optional; improves task fit vs `smolvla_base` alone):
 
 ```bash
-./scripts/finetune_smolvla_so100.sh
-CKPT="$(./scripts/finetune_smolvla_so100.sh --print-checkpoint)"
-.venv-smolvla/bin/python scripts/record_smolvla_so100_demo.py --pretrained "$CKPT"
+STEPS=20000 BATCH_SIZE=16 OUTPUT_DIR=checkpoints/smolvla_so100_stacking_20k ./scripts/finetune_smolvla_so100.sh
+./scripts/record_finetuned_gz_demo.sh   # after training; rewrites gz_smolvla_demo.gif
 ```
+
+Quick wiring check: `./scripts/finetune_smolvla_so100.sh` (200 steps).
 
 ### SmolVLA × Gazebo actuation (ROS2 closed loop)
 

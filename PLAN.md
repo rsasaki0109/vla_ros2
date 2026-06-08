@@ -136,6 +136,7 @@ docs/assets/smolvla_so100_demo.gif  SmolVLA kinematic demo GIF
 docs/assets/gz_smolvla_demo.gif  SmolVLA × Gazebo actuation demo GIF
 README.md, PLAN.md, CHANGELOG.md, CITATION.cff, pyproject.toml
 .github/workflows/ci.yml         Python matrix + ros2-smoke (Jazzy launch test)
+.github/workflows/gazebo-nightly.yml  daily Gazebo smoke (Phase 1+2); optional GPU SmolVLA infer
 ```
 
 ---
@@ -368,5 +369,5 @@ colcon test-result --verbose
 - ~~**SmolVLA fine-tune**: `./scripts/finetune_smolvla_so100.sh` on `svla_so100_stacking`.~~ Done.
 - ~~**VLA Playground**: `scripts/vla_playground.py` (`pip install -e ".[playground]"`).~~ Done.
 - **Bloom / rosdistro**: release `vla_ros2_msgs` and `vla_ros2` (see `WORKSPACE.md` §7).
-- **Gazebo CI** (optional): nightly or self-hosted `./scripts/gz_smoke_validate.sh` (local gates done).
-- **GPU adapter smoke** on a self-hosted runner (load + one `predict`, not task metrics).
+- ~~**Gazebo CI**: `.github/workflows/gazebo-nightly.yml` (daily `gz_smoke_validate.sh all`).~~ Done.
+- **GPU adapter smoke** on a self-hosted runner (load + one `predict`, not task metrics); optional `workflow_dispatch` SmolVLA infer gate in the same workflow.
