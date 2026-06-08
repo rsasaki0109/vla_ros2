@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install --upgrade pip
-      - run: pip install -e ".[dev,server,cli]"
-      - run: ruff check .
-      - run: mypy src/vla_zoo
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests ros2
+      - run: mypy src/vla_ros2
       - run: pytest

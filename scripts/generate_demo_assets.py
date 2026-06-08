@@ -98,7 +98,7 @@ def generate_dashboard_preview(records: list[dict[str, Any]]) -> None:
     image = Image.new("RGB", (width, height), "#f4f7fb")
     draw = ImageDraw.Draw(image)
 
-    draw.text((54, 42), "vla_zoo Runtime Dashboard", fill="#172033", font=FONT_48)
+    draw.text((54, 42), "vla_ros2 Runtime Dashboard", fill="#172033", font=FONT_48)
     draw_text_block(
         draw,
         (56, 106),
@@ -210,7 +210,7 @@ def generate_dashboard_preview(records: list[dict[str, Any]]) -> None:
 
     rounded_panel(draw, (54, 842, 1346, 884), fill="#0f172a", outline="#1f2937")
     command = (
-        "vla-zoo compare dashboard --results results/vla_runtime_comparison.json "
+        "vla-ros2 compare dashboard --results results/vla_runtime_comparison.json "
         "  --out results/vla_runtime_dashboard.html"
     )
     draw.text((78, 854), command, fill="#e5e7eb", font=MONO_15)
@@ -230,7 +230,7 @@ def generate_social_preview(records: list[dict[str, Any]]) -> None:
         draw.rectangle((0, 0, width, height), fill=(3, 7, 18, 166))
 
     draw.rounded_rectangle((54, 52, 1146, 578), radius=28, fill=(248, 250, 252, 235))
-    draw.text((92, 92), "vla_zoo", fill="#0f172a", font=FONT_76)
+    draw.text((92, 92), "vla_ros2", fill="#0f172a", font=FONT_76)
     draw_text_block(
         draw,
         (96, 186),
@@ -264,7 +264,7 @@ def generate_social_preview(records: list[dict[str, Any]]) -> None:
         draw.text((778, y + 5), item, fill="#172033", font=FONT_22)
         y += 62
 
-    draw.text((96, 520), "rsasaki0109.github.io/vla_zoo", fill="#0369a1", font=FONT_22)
+    draw.text((96, 520), "rsasaki0109.github.io/vla_ros2", fill="#0369a1", font=FONT_22)
     image.save(SOCIAL_PREVIEW, optimize=True)
 
 

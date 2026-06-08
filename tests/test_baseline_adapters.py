@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from vla_zoo import load_model
-from vla_zoo.core.types import VLAAction, VLAObservation
+from vla_ros2 import load_model
+from vla_ros2.core.types import VLAAction, VLAObservation
 
 
 def test_random_adapter_is_seeded() -> None:

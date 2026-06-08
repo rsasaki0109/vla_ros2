@@ -1,8 +1,8 @@
-"""Record a single-process ROS2 remote runtime trace against a real vla-zoo server.
+"""Record a single-process ROS2 remote runtime trace against a real vla-ros2 server.
 
 This hosts the real ``VLARuntimeNode`` (in ``runtime=remote`` mode), the synthetic input
 node, and the log recorder under one executor, then writes the action/status/diagnostics
-JSONL logs that ``vla-zoo ros remote-smoke-check`` consumes.
+JSONL logs that ``vla-ros2 ros remote-smoke-check`` consumes.
 
 Why single-process: the standard flow is the 3-process ``smoke_record.launch.py``. That
 needs cross-process DDS discovery, which relies on multicast. On hosts whose loopback
@@ -91,9 +91,9 @@ def main() -> None:
 
     import rclpy
     from rclpy.executors import MultiThreadedExecutor
-    from vla_zoo_ros.log_recorder import RuntimeLogRecorder
-    from vla_zoo_ros.node import VLARuntimeNode
-    from vla_zoo_ros.smoke_input import VLASmokeInputNode
+    from vla_ros2_ros.log_recorder import RuntimeLogRecorder
+    from vla_ros2_ros.node import VLARuntimeNode
+    from vla_ros2_ros.smoke_input import VLASmokeInputNode
 
     rclpy.init(args=["--ros-args", "--params-file", params_file])
     runtime = VLARuntimeNode()

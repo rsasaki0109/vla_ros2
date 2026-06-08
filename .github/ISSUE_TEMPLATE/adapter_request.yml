@@ -46,6 +46,6 @@ body:
     attributes:
       label: Dependencies and license caveats
       description: Heavy packages, model weights, upstream license, hardware assumptions.
-      placeholder: "Requires torch/transformers; weights are not redistributed by vla_zoo."
+      placeholder: "Requires torch/transformers; weights are not redistributed by vla_ros2."
     validations:
       required: true
