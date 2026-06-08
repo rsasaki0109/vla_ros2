@@ -105,7 +105,47 @@ Automated actuation gate (checks bridge trajectories):
 ./scripts/gz_smoke_validate.sh 2
 ```
 
-### Phase 3 — Gazebo arm only (no VLA graph)
+### Phase 3 — SmolVLA closed-loop (learned policy → Gazebo)
+
+**Real SmolVLA inference** through `vla_runtime_node`, SO-100-style rendered camera
+from live `joint_states`, and a 6D joint bridge into `joint_trajectory_controller`.
+
+Requires GPU + SmolVLA extras:
+
+```bash
+pip install -e ".[smolvla]"    # same Python env that runs the ROS nodes
+export PYTHONPATH="$PWD/src:$PYTHONPATH"
+ros2 launch vla_ros2_gz gz_smolvla.launch.py \
+  dry_run:=false enable_actuation:=true control_hz:=2.0
+```
+
+Inference-only gate (no arm motion):
+
+```bash
+./scripts/gz_smolvla_validate.sh infer
+```
+
+Honesty note: the Gazebo arm is a stand-in, not the SO-100 URDF; task success is not
+guaranteed with `smolvla_base` alone. The loop, inference, and ROS graph are real.
+
+Demo GIF (recorded from the live graph; synthetic camera, real joint actuation):
+
+![SmolVLA × Gazebo actuation demo](../../docs/assets/gz_smolvla_demo.gif)
+
+```bash
+./scripts/record_gz_smolvla_demo.sh
+# kinematic fallback (no Gazebo): python scripts/record_gz_smolvla_demo.py --offline
+```
+
+Fine-tune on `lerobot/svla_so100_stacking` and point the launch at the checkpoint:
+
+```bash
+./scripts/finetune_smolvla_so100.sh
+CKPT="$(./scripts/finetune_smolvla_so100.sh --print-checkpoint)"
+ros2 launch vla_ros2_gz gz_smolvla.launch.py pretrained:=$CKPT enable_actuation:=true
+```
+
+### Phase 4 — Gazebo arm only (no VLA graph)
 
 ```bash
 ros2 launch vla_ros2_gz gz_arm.launch.py
@@ -127,6 +167,9 @@ their own bridge (see [BRINGUP.md](BRINGUP.md)).
 
 Tune scales in `vla_ros2_gz/config/gz_smoke.yaml` or via launch overrides.
 
+`vla_smolvla_joint_bridge_node` maps 6D SmolVLA joint targets (degrees + gripper) to
+absolute Gazebo joint positions with optional blending (`action_blend`).
+
 ---
 
 ## Files
@@ -138,7 +181,11 @@ Tune scales in `vla_ros2_gz/config/gz_smoke.yaml` or via launch overrides.
 | `vla_ros2_gz/config/gz_smoke.yaml` | Runtime + bridge defaults |
 | `vla_ros2_gz/launch/gz_arm.launch.py` | Gazebo + controllers |
 | `vla_ros2_gz/launch/gz_smoke.launch.py` | Full VLA + sim graph |
-| `vla_ros2_gz/vla_ros2_gz_ros/action_bridge.py` | `/vla/action` → trajectory |
+| `vla_ros2_gz/launch/gz_smolvla.launch.py` | SmolVLA + SO-100 render + joint bridge |
+| `vla_ros2_gz/config/gz_smolvla.yaml` | SmolVLA runtime + bridge defaults |
+| `vla_ros2_gz/vla_ros2_gz_ros/action_bridge.py` | `eef_delta` → trajectory |
+| `vla_ros2_gz/vla_ros2_gz_ros/smolvla_joint_bridge.py` | 6D SmolVLA → trajectory |
+| `vla_ros2/vla_ros2_ros/smolvla_input.py` | Render 256² camera from `joint_states` |
 
 ---
 
@@ -152,6 +199,7 @@ Tune scales in `vla_ros2_gz/config/gz_smoke.yaml` or via launch overrides.
 | `dummy` produces no motion | Expected — zeros hold position; try `model_name:=random` |
 | Spawner lock / controller timeout | Remove `~/.ros/locks/ros2-control-controller-spawner.lock`; use isolated `ROS_DOMAIN_ID`; see `scripts/gz_smoke_validate.sh` |
 | Controller spawner races Gazebo init | `gz_arm.launch.py` delays spawner 5s and loads both controllers in one `--activate-as-group` call |
+| SmolVLA inference fails / OOM | Lower `control_hz`; confirm `pip install -e ".[smolvla]"` and CUDA; try `device:=cuda:0` |
 
 ---
 
@@ -160,5 +208,8 @@ Tune scales in `vla_ros2_gz/config/gz_smoke.yaml` or via launch overrides.
 - Workspace bootstrap: [WORKSPACE.md](WORKSPACE.md)
 - Real-robot bring-up: [BRINGUP.md](BRINGUP.md)
 - SmolVLA closed-loop kinematic demo: [`scripts/record_smolvla_so100_demo.py`](../scripts/record_smolvla_so100_demo.py)
+- SmolVLA × Gazebo GIF: [`scripts/record_gz_smolvla_demo.sh`](../scripts/record_gz_smolvla_demo.sh)
+- SmolVLA fine-tune: [`scripts/finetune_smolvla_so100.sh`](../scripts/finetune_smolvla_so100.sh)
+- Browser playground: [`scripts/vla_playground.py`](../scripts/vla_playground.py)
 - Launch smoke test (no Gazebo): `vla_ros2/tests/test_smoke_launch.py`
 - Architecture handoff: `/PLAN.md`

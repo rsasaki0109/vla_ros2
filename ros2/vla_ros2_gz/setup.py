@@ -24,6 +24,7 @@ setup(
     entry_points={
         "console_scripts": [
             "vla_action_bridge_node = vla_ros2_gz_ros.action_bridge:main",
+            "vla_smolvla_joint_bridge_node = vla_ros2_gz_ros.smolvla_joint_bridge:main",
         ],
     },
 )

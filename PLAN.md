@@ -123,12 +123,17 @@ scripts/
   bootstrap_ros2_workspace.sh    one-shot ROS2 workspace setup (core or gz profile)
   record_sim_demo.py             PyBullet pick-and-place GIF, driven via the runtime (README hero)
   record_smolvla_so100_demo.py   SmolVLA closed-loop on SO-100 kinematic stand-in
+  record_gz_smolvla_demo.sh      SmolVLA × Gazebo actuation GIF (live ROS graph)
+  finetune_smolvla_so100.sh      Fine-tune smolvla_base on svla_so100_stacking
+  vla_playground.py              Gradio browser playground for adapters
+  gz_smolvla_validate.sh         GPU gate for gz_smolvla closed-loop
   measure_openvla_runtime.py     local OpenVLA latency capture (needs GPU + [openvla])
   measure_lerobot_runtime.py     local LeRobot/SmolVLA latency capture
 
 tests/                           pytest (no GPU, no ROS2 install required for most tests)
 docs/assets/sim_demo.gif         README hero GIF (scripted / PyBullet)
-docs/assets/smolvla_so100_demo.gif  optional SmolVLA kinematic demo GIF
+docs/assets/smolvla_so100_demo.gif  SmolVLA kinematic demo GIF
+docs/assets/gz_smolvla_demo.gif  SmolVLA × Gazebo actuation demo GIF
 README.md, PLAN.md, CHANGELOG.md, CITATION.cff, pyproject.toml
 .github/workflows/ci.yml         Python matrix + ros2-smoke (Jazzy launch test)
 ```
@@ -359,8 +364,9 @@ colcon test-result --verbose
   `vla_controller_bridge_node` + Phase C gate `./scripts/bringup_validate.sh c`
   (see `notes/2026-06-08_real_robot_bringup.md`).
 - ~~**README polish**: surface `smolvla_so100_demo.gif` alongside the PyBullet hero.~~ Done.
-- **SmolVLA fine-tune**: train on `lerobot/svla_so100_stacking` so the kinematic
-  or real SO-100 demo actually completes the stacking task.
+- ~~**SmolVLA × Gazebo closed-loop**: `gz_smolvla.launch.py` + `gz_smolvla_demo.gif`.~~ Done.
+- ~~**SmolVLA fine-tune**: `./scripts/finetune_smolvla_so100.sh` on `svla_so100_stacking`.~~ Done.
+- ~~**VLA Playground**: `scripts/vla_playground.py` (`pip install -e ".[playground]"`).~~ Done.
 - **Bloom / rosdistro**: release `vla_ros2_msgs` and `vla_ros2` (see `WORKSPACE.md` §7).
 - **Gazebo CI** (optional): nightly or self-hosted `./scripts/gz_smoke_validate.sh` (local gates done).
 - **GPU adapter smoke** on a self-hosted runner (load + one `predict`, not task metrics).

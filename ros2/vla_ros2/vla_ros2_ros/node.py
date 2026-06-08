@@ -316,6 +316,15 @@ class VLARuntimeNode(Node):
             state["joint_names"] = list(self._latest_joint_state.name)
             state["joint_position"] = list(self._latest_joint_state.position)
             state["joint_velocity"] = list(self._latest_joint_state.velocity)
+            if self.params.model_name == "smolvla":
+                from vla_ros2.sim.gazebo_smolvla import gazebo_joints_to_smolvla_state
+
+                proprio = gazebo_joints_to_smolvla_state(
+                    list(self._latest_joint_state.name),
+                    list(self._latest_joint_state.position),
+                )
+                state["state"] = proprio
+                state["joint_positions"] = proprio
         return VLAObservation(
             instruction=self._latest_instruction or "",
             images=images,
