@@ -366,7 +366,7 @@ colcon test-result --verbose
   (see `notes/2026-06-08_real_robot_bringup.md`).
 - ~~**README polish**: surface `smolvla_so100_demo.gif` alongside the PyBullet hero.~~ Done.
 - ~~**SmolVLA × Gazebo closed-loop**: `gz_smolvla.launch.py` + `gz_smolvla_demo.gif`.~~ Done.
-- ~~**SmolVLA fine-tune**: `./scripts/finetune_smolvla_so100.sh` on `svla_so100_stacking`.~~ Done.
+- ~~**SmolVLA fine-tune**: `./scripts/finetune_smolvla_so100.sh` on `svla_so100_stacking`.~~ Done (20k steps → demo GIFs).
 - ~~**VLA Playground**: `scripts/vla_playground.py` (`pip install -e ".[playground]"`).~~ Done.
 - **Bloom / rosdistro**: release `vla_ros2_msgs` and `vla_ros2` (see `WORKSPACE.md` §7).
 - ~~**Gazebo CI**: `.github/workflows/gazebo-nightly.yml` (daily `gz_smoke_validate.sh all`).~~ Done.
