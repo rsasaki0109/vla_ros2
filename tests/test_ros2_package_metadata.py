@@ -223,6 +223,14 @@ def test_bringup_docs_and_example_config_exist() -> None:
     text = example.read_text(encoding="utf-8")
     assert "dry_run: true" in text
     assert "action_low:" in text
+    dashcam = ROS_PKG / "config" / "bringup.dashcam.example.yaml"
+    assert dashcam.is_file()
+    assert "require_image: true" in dashcam.read_text(encoding="utf-8")
+    bringup_script = REPO_ROOT / "scripts" / "bringup_validate.sh"
+    assert bringup_script.is_file()
+    instr_pub = REPO_ROOT / "scripts" / "publish_instruction.py"
+    assert instr_pub.is_file()
+    assert "instruction_qos" in instr_pub.read_text(encoding="utf-8")
 
 
 def test_bootstrap_ros2_workspace_script_exists() -> None:

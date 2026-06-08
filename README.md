@@ -7,22 +7,6 @@ ROS2-native on-robot runtime for Vision-Language-Action (VLA) models.
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 [![ROS2](https://img.shields.io/badge/ROS2-Jazzy-22314E)](ros2)
 
-![vla_ros2 PyBullet pick-and-place driven by the runtime](docs/assets/sim_demo.gif)
-
-> A **Franka Panda in a PyBullet physics sim** performing pick-and-place, driven
-> through the real `vla_ros2` runtime: every control tick builds a
-> `VLAObservation`, calls `load_model("scripted")`, and the returned
-> `VLAAction` end-effector delta + gripper channel command the arm. It is the
-> `scripted` baseline adapter (not a learned VLA), but the loop, the physics, and
-> the action stream are real. Reproduce with
-> [`scripts/record_sim_demo.py`](scripts/record_sim_demo.py).
-
-> Optional: [`scripts/record_smolvla_so100_demo.py`](scripts/record_smolvla_so100_demo.py)
-> runs **real SmolVLA inference** (`lerobot/smolvla_base`) in a closed loop on a
-> LeRobot-aligned SO-100 kinematic stand-in initialized from
-> `lerobot/svla_so100_stacking`. The base checkpoint is not fine-tuned for your
-> setup; task success is not guaranteed. Needs `pip install -e ".[smolvla]"` and a GPU.
-
 > VLA models move fast; robots need a stable runtime interface.
 > `vla_ros2` wires **camera + instruction + robot state** to **typed actions**
 > and publishes them on ROS2 topics, running inference locally on the robot.
@@ -38,6 +22,32 @@ This project was previously `vla_zoo`, a broad runtime/benchmark/adapter hub.
 It has been refocused into a single job: **run a VLA policy on a robot through
 ROS2**. Benchmarking, comparison reports, PyBullet demos, and the remote-GPU
 HTTP path have been removed.
+
+## Demos
+
+### Scripted PyBullet (baseline runtime loop)
+
+![vla_ros2 PyBullet pick-and-place driven by the runtime](docs/assets/sim_demo.gif)
+
+A **Franka Panda in a PyBullet physics sim** performing pick-and-place, driven
+through the real `vla_ros2` runtime: every control tick builds a
+`VLAObservation`, calls `load_model("scripted")`, and the returned
+`VLAAction` end-effector delta + gripper channel command the arm. It is the
+`scripted` baseline adapter (not a learned VLA), but the loop, the physics, and
+the action stream are real.
+
+Reproduce: [`scripts/record_sim_demo.py`](scripts/record_sim_demo.py)
+
+### SmolVLA closed-loop (learned policy)
+
+![SmolVLA inference on a LeRobot-aligned SO-100 kinematic stand-in](docs/assets/smolvla_so100_demo.gif)
+
+**Real SmolVLA inference** (`lerobot/smolvla_base`) in a closed loop on a
+LeRobot-aligned SO-100 kinematic stand-in initialized from
+`lerobot/svla_so100_stacking`. The base checkpoint is not fine-tuned for your
+setup; task success is not guaranteed. Needs `pip install -e ".[smolvla]"` and a GPU.
+
+Reproduce: [`scripts/record_smolvla_so100_demo.py`](scripts/record_smolvla_so100_demo.py)
 
 ## Layout
 

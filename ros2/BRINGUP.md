@@ -238,9 +238,18 @@ adapter-focused.
 
 ### `std_msgs/String`
 
+Prefer the helper (matches `instruction_qos()` — `TRANSIENT_LOCAL` + `RELIABLE`):
+
+```bash
+python3 scripts/publish_instruction.py --text "pick up the red block"
+```
+
+Or with `ros2 topic pub` (must match durability):
+
 ```bash
 ros2 topic pub /vla/instruction std_msgs/msg/String \
-  "{data: 'pick up the red block'}" --once
+  "{data: 'pick up the red block'}" --once \
+  --qos-durability transient_local --qos-reliability reliable
 ```
 
 Set `instruction_msg_type:=string`.
@@ -277,6 +286,7 @@ already tracks `task_id` and metadata.
 | `ready: false`, stale image | Camera topic mismatch or slow driver | Fix `image_topic`; check `ros2 topic hz`; increase `stale_image_timeout_sec` temporarily |
 | `ready: false`, waiting for instruction | No publisher on instruction topic | Publish instruction; check `instruction_msg_type` matches message type |
 | No `/vla/action` in dry-run | Expected — set `publish_actions_in_dry_run:=true` or `dry_run:=false` | See Phase C/D |
+| QoS warnings on `/vla/instruction` | `ros2 topic pub` defaults to volatile durability | Use `scripts/publish_instruction.py` or `--qos-durability transient_local` |
 | QoS warnings on `/vla/status` | Status uses **best effort** | Match `status_qos()` in subscribers (see `tests/test_smoke_launch.py`) |
 | High clip rate in diagnostics | Bounds too tight or wrong action space | Recalibrate §4; verify adapter/controller alignment |
 | Inference slow / GPU OOM | Model too large for onboard GPU | Use a smaller adapter (`smolvla`), lower `control_hz`, or reduce image size upstream |
@@ -297,6 +307,9 @@ already tracks `task_id` and metadata.
 ## 10. Related files
 
 - Example robot config: `vla_ros2/config/robot.example.yaml`
+- Dashcam-only example (no joint_states publisher): `vla_ros2/config/bringup.dashcam.example.yaml`
+- Automated Phase A/B gates: `scripts/bringup_validate.sh`
+- Instruction publisher helper: `scripts/publish_instruction.py`
 - Launch entry points: `vla_ros2/launch/dummy.launch.py`, `openvla.launch.py`, `smoke.launch.py`
 - Launch smoke test: `vla_ros2/tests/test_smoke_launch.py`
 - Architecture handoff: `/PLAN.md`
