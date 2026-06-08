@@ -12,16 +12,16 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-ROS_PKG = REPO_ROOT / "ros2" / "vla_zoo"
-MSGS_PKG = REPO_ROOT / "ros2" / "vla_zoo_msgs"
+ROS_PKG = REPO_ROOT / "ros2" / "vla_ros2"
+MSGS_PKG = REPO_ROOT / "ros2" / "vla_ros2_msgs"
 LAUNCH_DIR = ROS_PKG / "launch"
 MSG_DIR = MSGS_PKG / "msg"
 
 EXPECTED_ENTRY_POINTS = {
-    "vla_action_replay_node": "vla_zoo_ros.action_replay:main",
-    "vla_runtime_node": "vla_zoo_ros.node:main",
-    "vla_runtime_recorder": "vla_zoo_ros.log_recorder:main",
-    "vla_smoke_input_node": "vla_zoo_ros.smoke_input:main",
+    "vla_action_replay_node": "vla_ros2_ros.action_replay:main",
+    "vla_runtime_node": "vla_ros2_ros.node:main",
+    "vla_runtime_recorder": "vla_ros2_ros.log_recorder:main",
+    "vla_smoke_input_node": "vla_ros2_ros.smoke_input:main",
 }
 
 EXPECTED_SMOKE_TOPIC_ARGS = {
@@ -112,19 +112,19 @@ def _node_executables(source: str) -> set[str]:
     return executables
 
 
-def test_vla_zoo_package_xml() -> None:
+def test_vla_ros2_package_xml() -> None:
     meta = _parse_package_xml(ROS_PKG / "package.xml")
-    assert meta["name"] == "vla_zoo"
+    assert meta["name"] == "vla_ros2"
     assert meta["format"] == "3"
     assert meta["build_type"] == "ament_python"
-    assert {"rclpy", "sensor_msgs", "std_msgs", "diagnostic_msgs", "vla_zoo_msgs"}.issubset(
+    assert {"rclpy", "sensor_msgs", "std_msgs", "diagnostic_msgs", "vla_ros2_msgs"}.issubset(
         meta["exec_depend"]  # type: ignore[arg-type]
     )
 
 
-def test_vla_zoo_msgs_package_xml() -> None:
+def test_vla_ros2_msgs_package_xml() -> None:
     meta = _parse_package_xml(MSGS_PKG / "package.xml")
-    assert meta["name"] == "vla_zoo_msgs"
+    assert meta["name"] == "vla_ros2_msgs"
     assert meta["build_type"] == "ament_cmake"
     assert "rosidl_default_generators" in meta["build_depend"]  # type: ignore[operator]
     assert "rosidl_interface_packages" in meta["groups"]  # type: ignore[operator]
@@ -145,7 +145,7 @@ def test_msg_definitions_have_expected_fields() -> None:
     assert action.get("model_name") == "string"
 
     chunk = _parse_msg_fields(MSG_DIR / "VLAActionChunk.msg")
-    assert chunk.get("actions") == "vla_zoo_msgs/VLAAction[]"
+    assert chunk.get("actions") == "vla_ros2_msgs/VLAAction[]"
 
     status = _parse_msg_fields(MSG_DIR / "VLAStatus.msg")
     assert status.get("ready") == "bool"
@@ -166,7 +166,7 @@ def test_setup_py_declares_node_entry_points() -> None:
 
 def test_entry_point_modules_exist() -> None:
     for target in EXPECTED_ENTRY_POINTS.values():
-        module_path = target.split(":", 1)[0]  # e.g. vla_zoo_ros.node
+        module_path = target.split(":", 1)[0]  # e.g. vla_ros2_ros.node
         relative = Path(*module_path.split(".")).with_suffix(".py")
         assert (ROS_PKG / relative).is_file(), f"missing module for entry point: {target}"
 

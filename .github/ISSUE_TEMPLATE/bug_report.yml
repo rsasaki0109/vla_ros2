@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible vla_zoo bug.
+description: Report a reproducible vla_ros2 bug.
 title: "Bug: "
 labels: ["bug"]
 body:
@@ -17,7 +17,7 @@ body:
       description: Include exact commands and minimal code.
       placeholder: |
         pip install -e ".[dev,cli,server]"
-        vla-zoo predict --model dummy --instruction "hello"
+        vla-ros2 predict --model dummy --instruction "hello"
     validations:
       required: true
   - type: textarea

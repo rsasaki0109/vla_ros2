@@ -5,7 +5,7 @@
 ## Validation
 
 - [ ] `ruff check .`
-- [ ] `mypy src/vla_zoo`
+- [ ] `mypy src/vla_ros2`
 - [ ] `pytest`
 - [ ] ROS2 smoke checked, if ROS2 files changed
 

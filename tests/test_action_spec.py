@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from vla_zoo.core.types import ActionSpec, VLAAction
+from vla_ros2.core.types import ActionSpec, VLAAction
 
 
 def test_action_spec_validation() -> None:

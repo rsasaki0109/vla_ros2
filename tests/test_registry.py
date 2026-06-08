@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from vla_zoo import list_models
-from vla_zoo.core.registry import get_adapter_info
+from vla_ros2 import list_models
+from vla_ros2.core.registry import get_adapter_info
 
 
 def test_list_models_contains_dummy() -> None:

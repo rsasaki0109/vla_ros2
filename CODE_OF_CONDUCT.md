@@ -1,6 +1,6 @@
 # Code of Conduct
 
-`vla_zoo` is a robotics infrastructure project. We want technical disagreement to be direct, useful, and respectful.
+`vla_ros2` is a robotics infrastructure project. We want technical disagreement to be direct, useful, and respectful.
 
 ## Expected Behavior
 

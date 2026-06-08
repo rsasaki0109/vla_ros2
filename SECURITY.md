@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-`vla_zoo` is pre-1.0. Security fixes target the latest `main` branch until release branches exist.
+`vla_ros2` is pre-1.0. Security fixes target the latest `main` branch until release branches exist.
 
 ## Reporting Vulnerabilities
 
@@ -17,7 +17,7 @@ Include:
 
 ## Robotics Safety Boundary
 
-`vla_zoo` publishes action messages by default. It does not directly command hardware in the core package.
+`vla_ros2` publishes action messages by default. It does not directly command hardware in the core package.
 
 Security or safety-sensitive reports include:
 

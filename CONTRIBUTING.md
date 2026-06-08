@@ -1,13 +1,13 @@
 # Contributing
 
-Thanks for helping make `vla_zoo` a practical ROS2-native runtime layer for VLA policies.
+Thanks for helping make `vla_ros2` a practical ROS2-native runtime layer for VLA policies.
 
 ## Development Setup
 
 ```bash
 pip install -e ".[dev,cli,server,sim]"
 ruff check .
-mypy src/vla_zoo
+mypy src/vla_ros2
 pytest
 ```
 
@@ -17,7 +17,7 @@ ROS2 packages are built separately:
 pip install -e .
 colcon build --base-paths ros2 --symlink-install
 source install/setup.bash
-ros2 launch vla_zoo dummy.launch.py
+ros2 launch vla_ros2 dummy.launch.py
 ```
 
 ## Contribution Areas
@@ -56,7 +56,7 @@ Before opening a PR, run:
 
 ```bash
 ruff check .
-mypy src/vla_zoo
+mypy src/vla_ros2
 pytest
 ```
 

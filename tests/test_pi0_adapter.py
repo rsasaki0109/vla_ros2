@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from vla_zoo import load_model
-from vla_zoo.adapters.pi0 import _pi0_local_load_error, _pi0_tokenizer_repo
+from vla_ros2 import load_model
+from vla_ros2.adapters.pi0 import _pi0_local_load_error, _pi0_tokenizer_repo
 
 
 def test_pi0_default_is_remote_first_without_local_load() -> None:
