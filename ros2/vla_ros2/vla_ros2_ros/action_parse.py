@@ -84,3 +84,29 @@ def eef_delta_named_values(named_values: dict[str, float]) -> dict[str, float]:
     """Return canonical eef_delta keys present in the action."""
     keys = ("x", "y", "z", "roll", "pitch", "yaw", "gripper")
     return {key: float(named_values[key]) for key in keys if key in named_values}
+
+
+@dataclass(frozen=True)
+class ParsedTwist:
+    linear_x: float = 0.0
+    linear_y: float = 0.0
+    linear_z: float = 0.0
+    angular_x: float = 0.0
+    angular_y: float = 0.0
+    angular_z: float = 0.0
+
+
+def parsed_twist_from_eef_delta(parsed: ParsedVLAAction) -> ParsedTwist | None:
+    if parsed.action_space and parsed.action_space != "eef_delta":
+        return None
+    delta = eef_delta_named_values(parsed.named_values)
+    if not delta:
+        return None
+    return ParsedTwist(
+        linear_x=delta.get("x", 0.0),
+        linear_y=delta.get("y", 0.0),
+        linear_z=delta.get("z", 0.0),
+        angular_x=delta.get("roll", 0.0),
+        angular_y=delta.get("pitch", 0.0),
+        angular_z=delta.get("yaw", 0.0),
+    )
