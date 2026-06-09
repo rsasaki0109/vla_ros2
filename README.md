@@ -69,6 +69,30 @@ Demo GIF uses a fine-tuned checkpoint (`checkpoints/smolvla_so100_stacking_20k/`
 
 Reproduce: [`scripts/record_gz_smolvla_demo.sh`](scripts/record_gz_smolvla_demo.sh)
 
+#### base vs fine-tuned (same episode, 2026-06-09)
+
+Instruction: *Put the red cube on top of the blue cube.* (`svla_so100_stacking`
+episode 0). Metrics: [`docs/assets/gz_smolvla_compare_metrics.json`](docs/assets/gz_smolvla_compare_metrics.json).
+
+**Offline kinematic loop** (60 steps, blend 0.35) — policy difference is visible:
+
+| checkpoint | max joint Δ | GIF |
+|---|---:|---|
+| `lerobot/smolvla_base` | 175.5 | ![SmolVLA base offline](docs/assets/gz_smolvla_offline_base.gif) |
+| fine-tuned 20k | 7.6 | ![SmolVLA fine-tuned offline](docs/assets/gz_smolvla_offline_finetuned.gif) |
+
+**Gazebo closed loop** (60 s capture after runtime warmup, actuation on) —
+inference publishes `/vla/action` (42–44 msgs/run). Joint displacement in sim
+remains negligible (`max_joint_delta_rad` ≪ 1e-6); actuation scaling is still
+under investigation:
+
+| checkpoint | actions | max joint Δ (rad) | GIF |
+|---|---:|---:|---|
+| `lerobot/smolvla_base` | 42 | ~0 | ![SmolVLA base Gazebo](docs/assets/gz_smolvla_demo_base.gif) |
+| fine-tuned 20k | 44 | ~0 | ![SmolVLA fine-tuned Gazebo](docs/assets/gz_smolvla_demo_finetuned.gif) |
+
+Reproduce both: [`scripts/record_gz_smolvla_compare.sh`](scripts/record_gz_smolvla_compare.sh)
+
 Launch manually: [ros2/SIM.md](ros2/SIM.md) (`gz_smolvla.launch.py`; GPU required).
 
 ### VLA Playground (browser)

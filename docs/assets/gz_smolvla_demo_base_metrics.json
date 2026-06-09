@@ -1,0 +1,22 @@
+{
+  "pretrained": "lerobot/smolvla_base",
+  "episode": 0,
+  "instruction": "Put the red cube on top of the blue cube.",
+  "mode": "gazebo",
+  "warmup_sec": 180.0,
+  "duration_sec": 60.0,
+  "frames_captured": 1927,
+  "control_steps": 3853,
+  "actions_received": 42,
+  "max_joint_delta_rad": 7.984113370440582e-11,
+  "final_joint_positions": [
+    0.03999359742967372,
+    9.635529222716523e-06,
+    -0.35004771910705024,
+    0.5500602998463912,
+    -0.20001716647908338,
+    5.749386735123201e-11,
+    0.2499999999791806
+  ],
+  "enable_actuation": true
+}

@@ -1,0 +1,39 @@
+{
+  "instruction": "Put the red cube on top of the blue cube.",
+  "episode": 0,
+  "note": "Offline loop applies policy actions in the SO-100 kinematic stand-in. Gazebo metrics are from live joint_states after runtime warmup; not a formal success benchmark.",
+  "offline": {
+    "base": {
+      "pretrained": "lerobot/smolvla_base",
+      "mode": "offline",
+      "steps": 60,
+      "actions_received": 60,
+      "max_joint_delta_rad": 175.46
+    },
+    "finetuned": {
+      "pretrained": "checkpoints/smolvla_so100_stacking_20k/checkpoints/020000/pretrained_model",
+      "mode": "offline",
+      "steps": 60,
+      "actions_received": 60,
+      "max_joint_delta_rad": 7.56
+    }
+  },
+  "gazebo": {
+    "base": {
+      "pretrained": "lerobot/smolvla_base",
+      "warmup_sec": 180,
+      "duration_sec": 60,
+      "actions_received": 42,
+      "max_joint_delta_rad": 7.98e-11,
+      "runtime_ready": true
+    },
+    "finetuned": {
+      "pretrained": "checkpoints/smolvla_so100_stacking_20k/checkpoints/020000/pretrained_model",
+      "warmup_sec": 180,
+      "duration_sec": 60,
+      "actions_received": 44,
+      "max_joint_delta_rad": 1.88e-09,
+      "runtime_ready": true
+    }
+  }
+}

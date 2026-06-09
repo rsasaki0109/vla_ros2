@@ -1,0 +1,22 @@
+{
+  "pretrained": "checkpoints/smolvla_so100_stacking_20k/checkpoints/020000/pretrained_model",
+  "episode": 0,
+  "instruction": "Put the red cube on top of the blue cube.",
+  "mode": "gazebo",
+  "warmup_sec": 180.0,
+  "duration_sec": 60.0,
+  "frames_captured": 2730,
+  "control_steps": 5459,
+  "actions_received": 44,
+  "max_joint_delta_rad": 1.883114775225181e-09,
+  "final_joint_positions": [
+    0.03999359709763571,
+    9.63564458546888e-06,
+    -0.3500477140808655,
+    0.5500602970279524,
+    -0.20001716358705676,
+    2.0085964129961944e-09,
+    0.249999997554315
+  ],
+  "enable_actuation": true
+}
