@@ -31,6 +31,7 @@ EXPECTED_ENTRY_POINTS = {
     "vla_smoke_input_node": "vla_ros2_ros.smoke_input:main",
     "vla_controller_bridge_node": "vla_ros2_ros.controller_bridge:main",
     "vla_smolvla_input_node": "vla_ros2_ros.smolvla_input:main",
+    "vla_success_detector_node": "vla_ros2_ros.success_detector:main",
 }
 
 EXPECTED_SMOKE_TOPIC_ARGS = {
@@ -159,6 +160,11 @@ def test_msg_definitions_have_expected_fields() -> None:
     status = _parse_msg_fields(MSG_DIR / "VLAStatus.msg")
     assert status.get("ready") == "bool"
     assert status.get("dry_run") == "bool"
+
+    task_status = _parse_msg_fields(MSG_DIR / "VLATaskStatus.msg")
+    assert task_status.get("success") == "bool"
+    assert task_status.get("confidence") == "float32"
+    assert task_status.get("instruction") == "string"
 
     instruction = _parse_msg_fields(MSG_DIR / "VLAInstruction.msg")
     assert instruction.get("text") == "string"
@@ -359,3 +365,12 @@ def test_launch_dry_run_defaults_to_true() -> None:
             checked += 1
             assert args["dry_run"] == "true", f"{path.name} dry_run default is not 'true'"
     assert checked > 0, "expected at least one launch file to declare dry_run"
+
+
+def test_success_detector_launch_and_config() -> None:
+    source = (LAUNCH_DIR / "success_detector.launch.py").read_text(encoding="utf-8")
+    assert "vla_success_detector_node" in _node_executables(source)
+    assert {"vlm_name", "pretrained", "check_hz"}.issubset(_declared_launch_args(source))
+    config = (ROS_PKG / "config" / "success_detector.yaml").read_text(encoding="utf-8")
+    assert "vla_success_detector_node:" in config
+    assert "/vla/task_status" in config

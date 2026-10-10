@@ -28,6 +28,7 @@ setup(
             "vla_smoke_input_node = vla_ros2_ros.smoke_input:main",
             "vla_controller_bridge_node = vla_ros2_ros.controller_bridge:main",
             "vla_smolvla_input_node = vla_ros2_ros.smolvla_input:main",
+            "vla_success_detector_node = vla_ros2_ros.success_detector:main",
         ],
     },
 )

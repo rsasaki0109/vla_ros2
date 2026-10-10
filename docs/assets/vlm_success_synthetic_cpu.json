@@ -1,0 +1,21 @@
+{
+  "vlm": "smolvlm",
+  "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+  "device": "cpu",
+  "instruction": "put the red cube on top of the blue cube",
+  "load_sec": 5.616504698000199,
+  "results": [
+    {
+      "case": "synthetic:stacked",
+      "success": true,
+      "p_yes": 0.5373369218893699,
+      "latency_ms": 15742.339743000002
+    },
+    {
+      "case": "synthetic:not_stacked",
+      "success": false,
+      "p_yes": 0.40917666656480023,
+      "latency_ms": 16670.364556000095
+    }
+  ]
+}

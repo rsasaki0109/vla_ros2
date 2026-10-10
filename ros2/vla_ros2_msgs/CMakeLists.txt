@@ -14,6 +14,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/VLAAction.msg"
   "msg/VLAActionChunk.msg"
   "msg/VLAStatus.msg"
+  "msg/VLATaskStatus.msg"
   DEPENDENCIES std_msgs
 )
 

@@ -89,6 +89,11 @@ src/vla_ros2/                    Python package (the adapter runtime)
     main.py                      minimal off-robot CLI: `vla-ros2 list` / `predict`
   sim/
     so100_kinematic.py           SO-100 kinematic stand-in for SmolVLA closed-loop demo
+  vlm/                           VLMs beside the VLA (never produce actions)
+    base.py                      BaseVLM: generate() + optional yes_probability()
+    dummy.py, smolvlm.py         fixed-answer stand-in; SmolVLM2 via transformers ([vlm])
+    registry.py                  load_vlm / list_vlms (separate from the VLA adapter table)
+    success.py                   SuccessDetector (prompt + P(yes) threshold), SuccessLatch
 
 ros2/vla_ros2/                   ROS2 ament_python package
   vla_ros2_ros/
@@ -234,7 +239,9 @@ you reintroduce a non-local runtime you must re-add its plumbing here AND in
 
 ### Node executables (`setup.py` console_scripts)
 `vla_runtime_node`, `vla_smoke_input_node`, `vla_runtime_recorder`,
-`vla_action_replay_node`.
+`vla_action_replay_node`, `vla_controller_bridge_node`, `vla_smolvla_input_node`,
+`vla_success_detector_node` (VLM success check -> `/vla/task_status`, `VLATaskStatus`;
+`success_detector.launch.py`).
 
 ### Launch files
 `dummy.launch.py` (no GPU), `openvla.launch.py` (GPU + `[openvla]`),
@@ -361,6 +368,9 @@ colcon test-result --verbose
 - Some adapter `metadata` strings are descriptive only and may drift.
 
 ## 12. Possible next steps
+- **VLM success detector on real frames**: calibrate `threshold` on recorded camera
+  frames (synthetic-scene margin is only 0.54 vs 0.41 on SmolVLM2-500M), then feed
+  `/vla/task_status` into a planner that advances to the next sub-instruction.
 - **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware. Reference bridge:
   `vla_controller_bridge_node` + Phase C gate `./scripts/bringup_validate.sh c`
   (see `notes/2026-06-08_real_robot_bringup.md`).
