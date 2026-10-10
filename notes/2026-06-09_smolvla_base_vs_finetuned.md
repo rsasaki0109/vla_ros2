@@ -21,6 +21,11 @@
 ## 未確認/要確認項目
 
 - [ ] joint bridge の action scale / trajectory が Gazebo 関節を動かす条件
+  - 有力な根因（2026-10-10 修正、Gazebo 再検証待ち）: bridge が `JointTrajectory.header.stamp` に
+    wall-clock を入れていたため、sim time で動く `joint_trajectory_controller` から見て開始時刻が
+    遥か未来になり軌道が保留されていた。`header.stamp = Time()`（即時開始）に変更。
+    `gz_smoke` の eef bridge も同じ（joint_1 ~1e-5 rad）だったので同時修正し、
+    `gz_smoke_validate.sh 2` は `--require-motion`（>1e-3 rad）で関節が動かないと FAIL にした。
 - [ ] Playground × Gazebo ブラウザ E2E
 
 ## 次アクション

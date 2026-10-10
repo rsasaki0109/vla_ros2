@@ -33,7 +33,7 @@ jobs:
             ros-jazzy-robot-state-publisher ros-jazzy-xacro
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
-      - run: pip install "empy==3.3.4" catkin_pkg lark
+      - run: pip install "empy==3.3.4" catkin_pkg lark pyyaml
       - name: Gazebo smoke Phase 1 + 2
         shell: bash
         run: |
@@ -62,7 +62,7 @@ jobs:
             ros-jazzy-robot-state-publisher ros-jazzy-xacro
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev,smolvla]"
-      - run: pip install "empy==3.3.4" catkin_pkg lark
+      - run: pip install "empy==3.3.4" catkin_pkg lark pyyaml
       - name: SmolVLA × Gazebo infer gate
         shell: bash
         run: |

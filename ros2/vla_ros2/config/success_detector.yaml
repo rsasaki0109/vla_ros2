@@ -1,0 +1,16 @@
+vla_success_detector_node:
+  ros__parameters:
+    vlm_name: "smolvlm"
+    pretrained: "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
+    device: "auto"
+    # false: ~15x faster on CPU but much weaker success/failure separation.
+    image_splitting: true
+    image_topic: "/camera/image_raw"
+    instruction_topic: "/vla/instruction"
+    instruction_msg_type: "string"
+    task_status_topic: "/vla/task_status"
+    check_hz: 0.5
+    required_consecutive: 2
+    threshold: 0.5
+    use_logits: true
+    stale_image_timeout_sec: 2.0

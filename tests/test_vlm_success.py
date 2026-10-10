@@ -1,0 +1,119 @@
+from __future__ import annotations
+
+import importlib.util
+from collections.abc import Sequence
+
+import numpy as np
+import pytest
+
+from vla_ros2.core.errors import MissingDependencyError, UnknownModelError
+from vla_ros2.vlm import (
+    BaseVLM,
+    SuccessDetector,
+    SuccessJudgement,
+    SuccessLatch,
+    get_vlm_info,
+    list_vlms,
+    load_vlm,
+    parse_yes_no,
+)
+from vla_ros2.vlm.base import ImageArray
+
+FRAME = np.zeros((32, 32, 3), dtype=np.uint8)
+
+
+class TextOnlyVLM(BaseVLM):
+    name = "text-only"
+
+    def __init__(self, answer: str) -> None:
+        self.answer = answer
+        self.prompts: list[str] = []
+
+    def generate(
+        self, prompt: str, images: Sequence[ImageArray] = (), *, max_new_tokens: int = 16
+    ) -> str:
+        self.prompts.append(prompt)
+        return self.answer
+
+
+class FixedProbVLM(TextOnlyVLM):
+    def __init__(self, p_yes: float) -> None:
+        super().__init__("unused")
+        self.p_yes = p_yes
+
+    def yes_probability(self, prompt: str, images: Sequence[ImageArray] = ()) -> float | None:
+        return self.p_yes
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Yes.", True),
+        ("yes, the cube is stacked", True),
+        (" Done", True),
+        ("No", False),
+        ("not yet", False),
+        ("The red cube is on the table.", None),
+        ("", None),
+    ],
+)
+def test_parse_yes_no(text: str, expected: bool | None) -> None:
+    assert parse_yes_no(text) is expected
+
+
+def test_registry_lists_and_loads_dummy() -> None:
+    assert {"dummy", "smolvlm"} <= {info.name for info in list_vlms()}
+    vlm = load_vlm("dummy", answer="yes")
+    assert vlm.name == "dummy"
+    assert vlm.yes_probability("q", [FRAME]) == 1.0
+
+
+def test_registry_resolves_alias_and_rejects_unknown() -> None:
+    assert get_vlm_info("SmolVLM2").name == "smolvlm"
+    with pytest.raises(UnknownModelError):
+        load_vlm("not-a-vlm")
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("transformers") is not None,
+    reason="transformers installed; missing-dependency path not reachable",
+)
+def test_smolvlm_without_extras_raises_missing_dependency() -> None:
+    with pytest.raises(MissingDependencyError):
+        load_vlm("smolvlm2")
+
+
+def test_detector_uses_logits_against_threshold() -> None:
+    assert SuccessDetector(FixedProbVLM(0.7), threshold=0.6).judge("stack", [FRAME]).success
+    judgement = SuccessDetector(FixedProbVLM(0.55), threshold=0.6).judge("stack", [FRAME])
+    assert judgement.success is False
+    assert judgement.confidence == pytest.approx(0.55)
+
+
+def test_detector_falls_back_to_generated_text() -> None:
+    vlm = TextOnlyVLM("Yes, it is on top.")
+    judgement = SuccessDetector(vlm).judge("put the red cube on the blue cube", [FRAME])
+    assert judgement.success is True
+    assert judgement.confidence is None
+    assert "put the red cube on the blue cube" in vlm.prompts[0]
+
+
+def test_detector_rejects_template_without_instruction() -> None:
+    with pytest.raises(ValueError):
+        SuccessDetector(TextOnlyVLM("yes"), prompt_template="Is it done?")
+
+
+def _judgement(success: bool | None) -> SuccessJudgement:
+    return SuccessJudgement(success=success, confidence=None, answer="", latency_ms=0.0, prompt="")
+
+
+def test_latch_needs_consecutive_yes_and_resets() -> None:
+    latch = SuccessLatch(required_consecutive=2)
+    assert latch.update(_judgement(True)) is False
+    assert latch.update(_judgement(None)) is False  # unparseable answer breaks the streak
+    assert latch.update(_judgement(True)) is False
+    assert latch.update(_judgement(True)) is True
+    assert latch.update(_judgement(False)) is True  # stays latched for the task
+    latch.reset()
+    assert latch.success is False
+    assert latch.consecutive == 0

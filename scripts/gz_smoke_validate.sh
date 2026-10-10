@@ -110,7 +110,7 @@ phase_2() {
   launch_gz_smoke random true false
   wait_for_topic /vla/action "${STARTUP_TIMEOUT}" || fail "/vla/action did not appear"
   wait_for_controllers "${STARTUP_TIMEOUT}" || fail "joint_trajectory_controller did not become active"
-  python3 "${REPO_ROOT}/scripts/gz_smoke_probe.py" --phase 2 --timeout-sec 45
+  python3 "${REPO_ROOT}/scripts/gz_smoke_probe.py" --phase 2 --timeout-sec 45 --require-motion
   pass "Gazebo Phase 2 actuation"
   cleanup
   trap - EXIT

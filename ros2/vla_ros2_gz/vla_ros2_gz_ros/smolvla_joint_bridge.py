@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 import rclpy
-from builtin_interfaces.msg import Duration
+from builtin_interfaces.msg import Duration, Time
 from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import JointState
@@ -118,7 +118,10 @@ class SmolVLAJointBridgeNode(Node):
         )
 
         traj = JointTrajectory()
-        traj.header.stamp = self.get_clock().now().to_msg()
+        # A zero stamp tells joint_trajectory_controller to start immediately. A
+        # wall-clock stamp is far in the future of Gazebo sim time, so the
+        # controller would hold the trajectory and never move the joints.
+        traj.header.stamp = Time()
         traj.header.frame_id = action.frame_id or "base_link"
         traj.joint_names = list(self._joint_names)
         traj.points = [point]

@@ -174,6 +174,7 @@ pip install -e .                 # core runtime + minimal CLI
 pip install -e ".[openvla]"      # + OpenVLA dependencies
 pip install -e ".[smolvla]"      # + SmolVLA (LeRobot) dependencies
 pip install -e ".[playground]"   # + Gradio browser playground
+pip install -e ".[vlm]"          # + SmolVLM2 success detector
 pip install -e ".[dev]"          # + test/lint tooling
 ```
 
@@ -225,6 +226,7 @@ see [ros2/SIM.md](ros2/SIM.md).
 | out | `/vla/action` | `vla_ros2_msgs/VLAAction` |
 | out | `/vla/action_chunk` | `vla_ros2_msgs/VLAActionChunk` |
 | out | `/vla/status` | `vla_ros2_msgs/VLAStatus` |
+| out | `/vla/task_status` | `vla_ros2_msgs/VLATaskStatus` (VLM success detector, optional) |
 | out | `/diagnostics` | `diagnostic_msgs/DiagnosticArray` |
 
 ### Safety
@@ -232,6 +234,41 @@ see [ros2/SIM.md](ros2/SIM.md).
 - `dry_run` defaults to `true`; actions are not published until you opt in.
 - An action-clip guard bounds every action to `[action_low, action_high]`.
 - A watchdog flags stale/missing images and instructions and downgrades status.
+
+## VLM success detector (optional)
+
+A VLM can watch the same camera at a low rate and report whether the current
+instruction is done. It **never publishes actions**; the VLA stays the only
+policy. `vla_success_detector_node` asks SmolVLM2 (the VLM family SmolVLA is
+built on) a yes/no question per frame, uses P(yes) from the logits, and latches
+`success` after `required_consecutive` positive checks. A new instruction resets
+the latch.
+
+```bash
+pip install -e ".[vlm]"   # separate env from [openvla] (transformers pin differs)
+
+# off-robot check: synthetic stacked vs not-stacked scenes, or --image frame.png
+python scripts/vlm_success_check.py --device cuda
+
+# ROS2: publishes vla_ros2_msgs/VLATaskStatus on /vla/task_status
+ros2 launch vla_ros2 success_detector.launch.py
+ros2 launch vla_ros2 success_detector.launch.py vlm_name:=dummy   # no weights
+```
+
+Measured on **CPU** (4 cores, 2026-10-10) with `SmolVLM2-500M-Video-Instruct`,
+instruction *put the red cube on top of the blue cube*, synthetic 384×384 scenes
+([`docs/assets/vlm_success_synthetic_cpu.json`](docs/assets/vlm_success_synthetic_cpu.json)):
+
+| scene | P(yes) | judged | latency |
+|---|---:|---|---:|
+| red cube stacked on blue | 0.537 | success | 15.7 s |
+| red cube beside blue | 0.409 | not done | 16.7 s |
+
+The margin is small and these are cartoon scenes, not camera frames: calibrate
+`threshold` on real frames from your setup before trusting it.
+`SmolVLM2-256M` did not separate the two scenes (0.137 vs 0.123).
+`image_splitting:=false` cuts CPU latency to ~1 s but also collapses the margin
+(0.436 vs 0.413), so it stays on by default; on a GPU the default is fast enough.
 
 ## Adapters
 
