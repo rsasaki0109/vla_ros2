@@ -30,6 +30,7 @@ setup(
             "vla_smolvla_input_node = vla_ros2_ros.smolvla_input:main",
             "vla_success_detector_node = vla_ros2_ros.success_detector:main",
             "vla_state_success_node = vla_ros2_ros.state_success:main",
+            "vla_task_sequencer_node = vla_ros2_ros.task_sequencer:main",
         ],
     },
 )

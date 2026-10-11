@@ -347,6 +347,28 @@ before holding at 13; with 5 it fires on 40/46. Limits: it checks that a
 pick-and-place happened, not *where* the object ended up, and thresholds are in
 the robot's units (pass `config_json` for e.g. a gripper in metres).
 
+## Task sequencer (multi-step instructions)
+
+`vla_task_sequencer_node` runs a list of instructions in order: it publishes the
+current step as `VLAInstruction` (re-sent at `republish_hz` so the runtime's
+stale-instruction watchdog stays happy) and moves on when `/vla/task_status`
+reports success **for that step's `task_id`** (`<prefix>-<step>-<attempt>`), so a
+late "done" from the previous step cannot skip the next one and repeated texts
+still reset the detector. With `step_timeout_sec`, a step is retried
+`max_retries` times and the sequence then stops as `failed` instead of moving on.
+Progress is JSON on `/vla/sequence_status`.
+
+```bash
+ros2 run vla_ros2 vla_task_sequencer_node --ros-args \
+  -p steps:="['Put the red cube on the blue cube.', 'Put the green cube on the red cube.']"
+ros2 run vla_ros2 vla_state_success_node --ros-args -p instruction_msg_type:=vla_instruction
+ros2 launch vla_ros2 ... instruction_msg_type:=vla_instruction   # runtime node
+```
+
+`ros2-smoke` runs the sequencer with `vla_state_success_node` and plays two
+synthetic pick-and-places (`tests/test_task_sequencer_launch.py`): it must
+advance only after the first release and finish after the second.
+
 ## Offline evaluation (recorded demos)
 
 `scripts/eval_offline_lerobot.py` replays recorded LeRobot episodes: at every

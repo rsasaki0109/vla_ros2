@@ -91,6 +91,7 @@ src/vla_ros2/                    Python package (the adapter runtime)
     so100_kinematic.py           SO-100 kinematic stand-in for SmolVLA closed-loop demo
   eval_offline.py                open-loop eval vs recorded LeRobot actions + hold-state baseline
   task_success.py                GraspReleaseDetector: success from gripper/joint sequence
+  sequencer.py                   TaskSequencer: multi-step instructions, advance on task_id success
   vlm/                           VLMs beside the VLA (never produce actions)
     base.py                      BaseVLM: generate() + optional yes_probability()
     dummy.py, smolvlm.py         fixed-answer stand-in; SmolVLM2 via transformers ([vlm])
@@ -381,6 +382,9 @@ colcon test-result --verbose
   trained on start/end frames) is the cheaper route. Done for the gripper/joint route:
   `vla_state_success_node` (`task_success.py`) fires on 41/41 valid held-out stacking
   episodes with no false alarms; it does not check where the object landed.
+- **Instruction source for the sequencer**: steps are a fixed list today
+  (`vla_task_sequencer_node`); a VLM/LLM planner that writes the list from one goal
+  ("tidy the table") is the remaining half of the planner idea.
 - **Fine-tune with held-out episodes** and report `scripts/eval_offline_lerobot.py` on
   them (notebook 03); the 20k checkpoint was trained on every episode.
 - **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware. Reference bridge:
