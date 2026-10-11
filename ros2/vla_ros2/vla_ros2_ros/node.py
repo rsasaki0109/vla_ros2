@@ -17,6 +17,7 @@ from vla_ros2_msgs.msg import VLAStatus as VLAStatusMsg
 
 from vla_ros2 import load_model
 from vla_ros2.core.types import VLAAction, VLAActionChunk, VLAObservation
+from vla_ros2.runtime.chunking import ActionChunkBuffer, refill_threshold
 from vla_ros2.runtime.diagnostics import RuntimeDiagnostics
 from vla_ros2.runtime.guard import (
     ActionClipGuard,
@@ -44,6 +45,9 @@ class VLARuntimeNode(Node):
         self._latest_instruction_received_at: float | None = None
         self._pending: Future[VLAAction | VLAActionChunk] | None = None
         self._executor = ThreadPoolExecutor(max_workers=1)
+        self._chunk_buffer = ActionChunkBuffer()
+        self._tick_index = 0
+        self._pending_observed_tick = 0
         self._latencies_ms: list[float] = []
         self._dropped_frames = 0
         self._status_text = "starting"
@@ -59,6 +63,14 @@ class VLARuntimeNode(Node):
         }
         if self.params.model_name == "dummy" and self.params.runtime == "local":
             model_kwargs = {}
+        if self.params.async_chunks and self.params.model_name in {"smolvla", "pi0"}:
+            model_kwargs["return_action_chunk"] = True
+        if self.params.model_kwargs_json:
+            extra = json.loads(self.params.model_kwargs_json)
+            if not isinstance(extra, dict):
+                msg = "model_kwargs_json must be a JSON object"
+                raise ValueError(msg)
+            model_kwargs.update(extra)
         self.model = load_model(self.params.model_name, runtime=self.params.runtime, **model_kwargs)
 
         self.create_subscription(Image, self.params.image_topic, self._image_cb, image_qos())
@@ -148,6 +160,15 @@ class VLARuntimeNode(Node):
             "device": "cuda:0",
             "pretrained": "openvla/openvla-7b",
             "unnorm_key": "bridge_orig",
+            # Execute one buffered chunk action per tick and infer the next chunk in
+            # the background (see vla_ros2.runtime.chunking). Off keeps the original
+            # one-inference-per-published-action loop.
+            "async_chunks": False,
+            # Request the next chunk when this many actions remain; -1 = derive from
+            # measured inference latency.
+            "chunk_refill_steps": -1,
+            # Extra adapter kwargs as a JSON object, e.g. '{"chunk_size": 10}'.
+            "model_kwargs_json": "",
         }
         for name, value in defaults.items():
             self.declare_parameter(name, value)
@@ -198,6 +219,9 @@ class VLARuntimeNode(Node):
             device=str(value("device")),
             pretrained=str(value("pretrained")),
             unnorm_key=str(value("unnorm_key")),
+            async_chunks=as_bool("async_chunks"),
+            chunk_refill_steps=int(value("chunk_refill_steps")),
+            model_kwargs_json=str(value("model_kwargs_json") or ""),
         )
 
     def _image_cb(self, msg: Image) -> None:
@@ -230,6 +254,8 @@ class VLARuntimeNode(Node):
         metadata: dict[str, Any],
         source: str,
     ) -> None:
+        if text != self._latest_instruction:
+            self._chunk_buffer.clear()  # actions planned for the old instruction
         self._latest_instruction = text
         self._latest_instruction_task_id = task_id
         self._latest_instruction_metadata = metadata
@@ -276,6 +302,10 @@ class VLARuntimeNode(Node):
         return self._watchdog_status().reason
 
     def _tick(self) -> None:
+        if self.params.async_chunks:
+            self._tick_async()
+            self._tick_index += 1
+            return
         if self._pending is not None:
             if self._pending.done():
                 future = self._pending
@@ -304,6 +334,92 @@ class VLARuntimeNode(Node):
             return
         self._pending = self._executor.submit(self._predict_timed, observation)
         self._status_text = "inference pending"
+        self._publish_status()
+        self._publish_diagnostics()
+
+    def _chunk_refill_threshold(self) -> int:
+        if self.params.chunk_refill_steps >= 0:
+            return self.params.chunk_refill_steps
+        avg_latency = (
+            sum(self._latencies_ms) / len(self._latencies_ms) if self._latencies_ms else None
+        )
+        return refill_threshold(avg_latency_ms=avg_latency, control_hz=self.params.control_hz)
+
+    def _tick_async(self) -> None:
+        """One action per tick from the chunk buffer; infer the next chunk ahead of time."""
+
+        if self._pending is not None and self._pending.done():
+            future = self._pending
+            self._pending = None
+            try:
+                prediction = self._prepare_prediction(future.result())
+            except Exception as exc:
+                self._status_text = f"inference error: {exc}"
+                self.get_logger().error(self._status_text)
+            else:
+                self._chunk_buffer.push(
+                    prediction,
+                    observed_tick=self._pending_observed_tick,
+                    current_tick=self._tick_index,
+                )
+                threshold = self._chunk_refill_threshold()
+                if self._chunk_buffer.remaining < threshold:
+                    self.get_logger().warning(
+                        f"chunk leaves {self._chunk_buffer.remaining} fresh steps but the next "
+                        f"inference takes ~{threshold} ticks; output will starve. Use chunks "
+                        "of at least 2x the inference latency in ticks or lower control_hz.",
+                        throttle_duration_sec=10.0,
+                    )
+                if isinstance(prediction, VLAActionChunk) and self.params.publish_action_chunk:
+                    self.chunk_pub.publish(
+                        chunk_to_msg(
+                            prediction,
+                            stamp=self.get_clock().now().to_msg(),
+                            model_name=self.model.name,
+                            adapter_name=type(self.model).__name__,
+                        )
+                    )
+
+        blocked_reason = None
+        if self._latest_instruction is None:
+            blocked_reason = "waiting for instruction"
+        else:
+            blocked_reason = self._stale_reason()
+        if blocked_reason is not None:
+            # Never keep executing a plan whose inputs went stale.
+            self._chunk_buffer.clear()
+            self._status_text = blocked_reason
+            self._publish_status()
+            self._publish_diagnostics()
+            return
+
+        observation_error = None
+        if self._pending is None and self._chunk_buffer.needs_refill(
+            self._chunk_refill_threshold()
+        ):
+            try:
+                observation = self._make_observation()
+            except Exception as exc:
+                observation_error = f"waiting for valid observation: {exc}"
+            else:
+                self._pending_observed_tick = self._tick_index
+                self._pending = self._executor.submit(self._predict_timed, observation)
+
+        action = self._chunk_buffer.pop()
+        if action is None:
+            self._status_text = observation_error or "inference pending"
+        elif self.params.dry_run and not self.params.publish_actions_in_dry_run:
+            self._status_text = "dry_run: action suppressed"
+        else:
+            self.action_pub.publish(
+                action_to_msg(
+                    action,
+                    stamp=self.get_clock().now().to_msg(),
+                    model_name=self.model.name,
+                    adapter_name=type(self.model).__name__,
+                )
+            )
+            self._status_text = "ready"
         self._publish_status()
         self._publish_diagnostics()
 
@@ -432,6 +548,11 @@ class VLARuntimeNode(Node):
                     "image_age_sec": self._age_sec(self._latest_image_received_at),
                     "instruction_age_sec": self._age_sec(self._latest_instruction_received_at),
                     "pending_inference": self._pending is not None,
+                    "async_chunks": self.params.async_chunks,
+                    "chunk_buffer_remaining": self._chunk_buffer.remaining,
+                    "chunk_starved_ticks": self._chunk_buffer.starved_ticks,
+                    "chunk_stale_steps_dropped": self._chunk_buffer.stale_steps_dropped,
+                    "chunks_received": self._chunk_buffer.chunks_received,
                 },
             )
         )

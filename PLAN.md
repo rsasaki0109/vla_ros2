@@ -213,7 +213,8 @@ instruction_topic, joint_state_topic, action_topic, action_chunk_topic,
 status_topic, diagnostics_topic, publish_action_chunk, publish_diagnostics,
 publish_actions_in_dry_run, control_hz, max_queue_size, require_image,
 stale_image_timeout_sec, stale_instruction_timeout_sec, clip_actions,
-action_low, action_high, device, pretrained, unnorm_key`.
+action_low, action_high, device, pretrained, unnorm_key, async_chunks,
+chunk_refill_steps, model_kwargs_json` (async chunk execution: `runtime/chunking.py`).
 (`runtime` is effectively always `local`; there is no `remote_url` anymore — if
 you reintroduce a non-local runtime you must re-add its plumbing here AND in
 `registry.load_model`.)
