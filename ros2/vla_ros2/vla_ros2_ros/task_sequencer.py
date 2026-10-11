@@ -28,6 +28,8 @@ class TaskSequencerNode(Node):
     def __init__(self) -> None:
         super().__init__("vla_task_sequencer_node")
         self.declare_parameter("steps", [""])
+        # Same as `steps` but as a JSON array string; easier to pass through launch args.
+        self.declare_parameter("steps_json", "")
         self.declare_parameter("task_id_prefix", "seq")
         self.declare_parameter("instruction_topic", "/vla/instruction")
         self.declare_parameter("task_status_topic", "/vla/task_status")
@@ -39,8 +41,15 @@ class TaskSequencerNode(Node):
         def value(name: str) -> Any:
             return self.get_parameter(name).value
 
+        steps = [str(step) for step in value("steps")]
+        if str(value("steps_json")):
+            parsed = json.loads(str(value("steps_json")))
+            if not isinstance(parsed, list):
+                msg = "steps_json must be a JSON array of strings"
+                raise ValueError(msg)
+            steps = [str(step) for step in parsed]
         self._sequencer = TaskSequencer(
-            [str(step) for step in value("steps")],
+            steps,
             task_id_prefix=str(value("task_id_prefix")),
             step_timeout_sec=float(value("step_timeout_sec")),
             max_retries=int(value("max_retries")),
