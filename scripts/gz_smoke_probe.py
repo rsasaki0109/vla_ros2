@@ -86,6 +86,8 @@ def main(argv: list[str] | None = None) -> int:
                 first_trajectory_at = time.time()
             if first_trajectory_at is None or len(node.joint_samples) < 2:
                 continue
+            if not node.actions or not any(status.ready for status in node.statuses):
+                continue  # the checks below also need these; keep spinning until they arrive
             ranges = joint_ranges(node.joint_samples)
             if max(ranges.values(), default=0.0) >= args.motion_min_range:
                 break
