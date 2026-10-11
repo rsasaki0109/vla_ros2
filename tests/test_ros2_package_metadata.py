@@ -32,6 +32,7 @@ EXPECTED_ENTRY_POINTS = {
     "vla_controller_bridge_node": "vla_ros2_ros.controller_bridge:main",
     "vla_smolvla_input_node": "vla_ros2_ros.smolvla_input:main",
     "vla_success_detector_node": "vla_ros2_ros.success_detector:main",
+    "vla_state_success_node": "vla_ros2_ros.state_success:main",
 }
 
 EXPECTED_SMOKE_TOPIC_ARGS = {
