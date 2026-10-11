@@ -1,0 +1,49 @@
+name: Gazebo PR
+
+# Runs the Gazebo smoke (Phase 1 graph + Phase 2 actuation with --require-motion)
+# on pull requests that touch the sim path, so bridge regressions surface before
+# merge instead of waiting on the scheduled nightly.
+on:
+  pull_request:
+    paths:
+      - "ros2/**"
+      - "src/vla_ros2/sim/**"
+      - "src/vla_ros2/runtime/**"
+      - "scripts/gz_smoke_*"
+      - ".github/workflows/gazebo-pr.yml"
+
+jobs:
+  gz-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: jazzy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ROS Gazebo + control deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ros-jazzy-ros-gz-sim ros-jazzy-ros-gz-bridge ros-jazzy-gz-ros2-control \
+            ros-jazzy-ros2-control ros-jazzy-controller-manager \
+            ros-jazzy-joint-state-broadcaster ros-jazzy-joint-trajectory-controller \
+            ros-jazzy-robot-state-publisher ros-jazzy-xacro
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: pip install "empy==3.3.4" catkin_pkg lark pyyaml
+      - name: Gazebo smoke Phase 1 + 2
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          ./scripts/gz_smoke_validate.sh all
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vla-gz-build-log
+          path: /tmp/vla_gz_build.log
+          if-no-files-found: ignore
