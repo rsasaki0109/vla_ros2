@@ -28,6 +28,11 @@
   - → SmolVLM2-500M ではこの判定は無理。`compare_with_start` は既定 false のまま
 - 結果: `docs/assets/offline_eval_smolvla_base_ep0_cpu.json`, `docs/assets/vlm_success_two_frame_cpu.json`, `docs/assets/vlm_success_real_frames_cpu.json`
 
+- Gazebo: `Gazebo nightly` は 2026-09-14 以降一度も動いていなかった。PR で動く `gazebo-pr.yml` を追加。
+  初回は Phase 1 の Gazebo サーバが残留して Phase 2 が別ドメインの world に入りハング
+  → `GZ_PARTITION` を phase ごとに分離、cleanup で gz/bridge/state publisher も停止、ros2 CLI に timeout。
+  probe は最初の軌道から最大 15 s 観測。結果: Phase 2 で joint_4 0.40 rad、全関節が目標に追従 (PASS)。
+
 ## 未確認/要確認項目
 
 - [ ] fine-tune 済み checkpoint の held-out episode での offline MAE (20k は全 episode で学習済み)
