@@ -7,6 +7,8 @@ from vla_ros2.vlm.success import (
     SuccessDetector,
     SuccessJudgement,
     SuccessLatch,
+    ThresholdCalibration,
+    calibrate_threshold,
     parse_yes_no,
 )
 
@@ -16,7 +18,9 @@ __all__ = [
     "SuccessDetector",
     "SuccessJudgement",
     "SuccessLatch",
+    "ThresholdCalibration",
     "VLMInfo",
+    "calibrate_threshold",
     "get_vlm_info",
     "list_vlms",
     "load_vlm",

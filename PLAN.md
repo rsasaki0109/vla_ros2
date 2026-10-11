@@ -89,6 +89,7 @@ src/vla_ros2/                    Python package (the adapter runtime)
     main.py                      minimal off-robot CLI: `vla-ros2 list` / `predict`
   sim/
     so100_kinematic.py           SO-100 kinematic stand-in for SmolVLA closed-loop demo
+  eval_offline.py                open-loop eval vs recorded LeRobot actions + hold-state baseline
   vlm/                           VLMs beside the VLA (never produce actions)
     base.py                      BaseVLM: generate() + optional yes_probability()
     dummy.py, smolvlm.py         fixed-answer stand-in; SmolVLM2 via transformers ([vlm])
@@ -368,9 +369,13 @@ colcon test-result --verbose
 - Some adapter `metadata` strings are descriptive only and may drift.
 
 ## 12. Possible next steps
-- **VLM success detector on real frames**: calibrate `threshold` on recorded camera
-  frames (synthetic-scene margin is only 0.54 vs 0.41 on SmolVLM2-500M), then feed
-  `/vla/task_status` into a planner that advances to the next sub-instruction.
+- **VLM success detector on real frames**: SmolVLM2-500M/2.2B do not separate done vs
+  not-done `svla_so100_stacking` frames (AUROC 0.11–0.67 on 3+3 frames, CPU). Next: run
+  notebook 04 on a GPU with more episodes, larger VLMs (the adapter loads any
+  `AutoModelForImageTextToText` checkpoint, untested beyond SmolVLM2), and a two-frame
+  (start vs now) prompt, before feeding `/vla/task_status` to a planner.
+- **Fine-tune with held-out episodes** and report `scripts/eval_offline_lerobot.py` on
+  them (notebook 03); the 20k checkpoint was trained on every episode.
 - **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware. Reference bridge:
   `vla_controller_bridge_node` + Phase C gate `./scripts/bringup_validate.sh c`
   (see `notes/2026-06-08_real_robot_bringup.md`).

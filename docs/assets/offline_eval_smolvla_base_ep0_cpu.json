@@ -1,0 +1,65 @@
+{
+  "dataset": "lerobot/svla_so100_stacking",
+  "pretrained": "lerobot/smolvla_base",
+  "episodes": [
+    0
+  ],
+  "stride": 150,
+  "device": "cpu",
+  "load_sec": 150.546971128,
+  "model": "lerobot/smolvla_base",
+  "num_frames": 3,
+  "infer_ms_mean": 10424.131846333277,
+  "model_errors": {
+    "horizon": 50,
+    "mae": 39.80373764038086,
+    "rmse": 52.70176696777344,
+    "first_step_mae": 39.99822998046875,
+    "mae_per_dim": [
+      7.4650797843933105,
+      34.548954010009766,
+      42.8410530090332,
+      53.8977165222168,
+      91.25345611572266,
+      8.816137313842773
+    ]
+  },
+  "hold_state_baseline_errors": {
+    "horizon": 50,
+    "mae": 4.611489295959473,
+    "rmse": 7.389702320098877,
+    "first_step_mae": 1.915282130241394,
+    "mae_per_dim": [
+      1.4748046398162842,
+      6.207421779632568,
+      6.780468940734863,
+      6.994336128234863,
+      0.62109375,
+      5.590807914733887
+    ]
+  },
+  "per_frame": [
+    {
+      "episode": 0,
+      "frame": 0,
+      "mae": 53.9595947265625,
+      "first_step_mae": 53.34714126586914,
+      "hold_state_mae": 0.6865024566650391
+    },
+    {
+      "episode": 0,
+      "frame": 150,
+      "mae": 32.39902877807617,
+      "first_step_mae": 35.06865692138672,
+      "hold_state_mae": 4.951910018920898
+    },
+    {
+      "episode": 0,
+      "frame": 300,
+      "mae": 33.052589416503906,
+      "first_step_mae": 31.57889747619629,
+      "hold_state_mae": 8.196056365966797
+    }
+  ],
+  "note": "CPU run; smolvla_base outputs normalized (~\u00b11) actions and expects camera1..3, so it is not expected to fit SO-100 degrees without fine-tuning."
+}
