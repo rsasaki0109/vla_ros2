@@ -44,11 +44,26 @@ class GzSmokeProbe(Node):
         )
 
 
+def joint_ranges(samples: list[dict[str, float]]) -> dict[str, float]:
+    names = sorted({name for sample in samples for name in sample})
+    ranges: dict[str, float] = {}
+    for name in names:
+        values = [sample[name] for sample in samples if name in sample]
+        ranges[name] = max(values) - min(values)
+    return ranges
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--phase", choices=("1", "2"), default="1")
     parser.add_argument("--timeout-sec", type=float, default=45.0)
     parser.add_argument("--motion-min-range", type=float, default=1e-3)
+    parser.add_argument(
+        "--motion-window-sec",
+        type=float,
+        default=15.0,
+        help="phase 2: keep watching joint_states this long after the first trajectory",
+    )
     parser.add_argument(
         "--require-motion",
         action="store_true",
@@ -59,13 +74,24 @@ def main(argv: list[str] | None = None) -> int:
     rclpy.init()
     node = GzSmokeProbe()
     deadline = time.time() + args.timeout_sec
+    first_trajectory_at: float | None = None
     try:
         while time.time() < deadline:
             rclpy.spin_once(node, timeout_sec=0.2)
             if args.phase == "1":
                 if node.actions and any(status.ready for status in node.statuses):
                     break
-            elif node.trajectories and len(node.joint_samples) >= 10:
+                continue
+            if node.trajectories and first_trajectory_at is None:
+                first_trajectory_at = time.time()
+            if first_trajectory_at is None or len(node.joint_samples) < 2:
+                continue
+            if not node.actions or not any(status.ready for status in node.statuses):
+                continue  # the checks below also need these; keep spinning until they arrive
+            ranges = joint_ranges(node.joint_samples)
+            if max(ranges.values(), default=0.0) >= args.motion_min_range:
+                break
+            if time.time() - first_trajectory_at >= args.motion_window_sec:
                 break
     finally:
         node.destroy_node()
@@ -91,13 +117,22 @@ def main(argv: list[str] | None = None) -> int:
         if len(node.joint_samples) < 2:
             print(f"FAIL: insufficient joint_states samples ({len(node.joint_samples)})")
             return 1
-        names = sorted({name for sample in node.joint_samples for name in sample})
-        ranges = {}
-        for name in names:
-            values = [sample[name] for sample in node.joint_samples if name in sample]
-            ranges[name] = max(values) - min(values)
+        ranges = joint_ranges(node.joint_samples)
         joint_name, joint_range = max(ranges.items(), key=lambda item: item[1])
         print(f"max joint range={joint_range:.6f} ({joint_name}) samples={len(node.joint_samples)}")
+        print("joint ranges: " + ", ".join(f"{k}={v:.6f}" for k, v in ranges.items()))
+        last = node.trajectories[-1]
+        if last.points:
+            point = last.points[0]
+            targets = dict(zip(last.joint_names, point.positions, strict=False))
+            target_text = ", ".join(f"{k}={v:.4f}" for k, v in targets.items())
+            print(f"last trajectory target: {target_text}")
+            print(
+                f"last trajectory stamp={last.header.stamp.sec}.{last.header.stamp.nanosec:09d} "
+                f"time_from_start={point.time_from_start.sec}.{point.time_from_start.nanosec:09d}"
+            )
+        latest = node.joint_samples[-1]
+        print("last joint_states: " + ", ".join(f"{k}={v:.4f}" for k, v in latest.items()))
         if joint_range < args.motion_min_range:
             if args.require_motion:
                 print(f"FAIL: joint motion below {args.motion_min_range}")

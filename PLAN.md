@@ -372,8 +372,11 @@ colcon test-result --verbose
 - **VLM success detector on real frames**: SmolVLM2-500M/2.2B do not separate done vs
   not-done `svla_so100_stacking` frames (AUROC 0.11–0.67 on 3+3 frames, CPU). Next: run
   notebook 04 on a GPU with more episodes, larger VLMs (the adapter loads any
-  `AutoModelForImageTextToText` checkpoint, untested beyond SmolVLM2), and a two-frame
-  (start vs now) prompt, before feeding `/vla/task_status` to a planner.
+  `AutoModelForImageTextToText` checkpoint, untested beyond SmolVLM2) before feeding
+  `/vla/task_status` to a planner. The two-frame (start vs now) prompt is implemented
+  (`compare_with_start`) but only reached AUROC 0.39 on SmolVLM2-500M (episodes 0–5).
+  If larger VLMs also fail, a non-VLM signal (gripper/joint state, or a small classifier
+  trained on start/end frames) is the cheaper route.
 - **Fine-tune with held-out episodes** and report `scripts/eval_offline_lerobot.py` on
   them (notebook 03); the 20k checkpoint was trained on every episode.
 - **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware. Reference bridge:

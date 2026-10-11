@@ -318,6 +318,11 @@ def test_gazebo_nightly_workflow_exists() -> None:
     source = workflow.read_text(encoding="utf-8")
     assert "gz_smoke_validate.sh all" in source
     assert "gz_smolvla_validate.sh infer" in source
+    pr_workflow = (REPO_ROOT / ".github" / "workflows" / "gazebo-pr.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "pull_request:" in pr_workflow
+    assert "gz_smoke_validate.sh all" in pr_workflow
 
 
 def test_vla_ros2_gz_package_xml() -> None:

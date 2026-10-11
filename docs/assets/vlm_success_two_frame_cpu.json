@@ -1,0 +1,302 @@
+{
+  "dataset": "lerobot/svla_so100_stacking",
+  "episodes": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "labels": "not done = frames at 0% and 30% of the episode (30% = red cube in the gripper); done = last frame",
+  "device": "cpu (4 cores)",
+  "date": "2026-10-11",
+  "runs": [
+    {
+      "label": "500M top single-frame",
+      "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+      "camera": "observation.images.top",
+      "prompt_template": "You are watching a robot arm. The robot was asked to: \"{instruction}\". Look at the image. Has the robot fully completed this task? Answer yes or no.",
+      "compare_with_start": false,
+      "negative_fractions": [
+        0.0,
+        0.3
+      ],
+      "image_splitting": true,
+      "auroc": 0.2361111111111111,
+      "threshold": 0.36430785870896143,
+      "balanced_accuracy": 0.45833333333333337,
+      "rows": [
+        {
+          "episode": 0,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.43220126387927515,
+          "latency_ms": 35191.92361599997
+        },
+        {
+          "episode": 0,
+          "frame": 134,
+          "done": false,
+          "p_yes": 0.39898855886878837,
+          "latency_ms": 21530.041685000015
+        },
+        {
+          "episode": 0,
+          "frame": 446,
+          "done": true,
+          "p_yes": 0.38213922283038054,
+          "latency_ms": 16613.758384999983
+        },
+        {
+          "episode": 1,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.3931042378988804,
+          "latency_ms": 16524.057236000033
+        },
+        {
+          "episode": 1,
+          "frame": 124,
+          "done": false,
+          "p_yes": 0.4177890384906447,
+          "latency_ms": 16950.108236999993
+        },
+        {
+          "episode": 1,
+          "frame": 415,
+          "done": true,
+          "p_yes": 0.40897685255909577,
+          "latency_ms": 16318.401381999991
+        },
+        {
+          "episode": 2,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.44921212193648,
+          "latency_ms": 16170.593090000011
+        },
+        {
+          "episode": 2,
+          "frame": 129,
+          "done": false,
+          "p_yes": 0.40687139895581786,
+          "latency_ms": 16343.703747999996
+        },
+        {
+          "episode": 2,
+          "frame": 429,
+          "done": true,
+          "p_yes": 0.3840738615869533,
+          "latency_ms": 16335.20843299999
+        },
+        {
+          "episode": 3,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.43215189715151714,
+          "latency_ms": 16787.485946000004
+        },
+        {
+          "episode": 3,
+          "frame": 110,
+          "done": false,
+          "p_yes": 0.4398559069883137,
+          "latency_ms": 16445.883672999968
+        },
+        {
+          "episode": 3,
+          "frame": 367,
+          "done": true,
+          "p_yes": 0.408769534126149,
+          "latency_ms": 16344.252702999995
+        },
+        {
+          "episode": 4,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.4138917928502738,
+          "latency_ms": 17376.238364000015
+        },
+        {
+          "episode": 4,
+          "frame": 100,
+          "done": false,
+          "p_yes": 0.3987664024741573,
+          "latency_ms": 16571.391704999995
+        },
+        {
+          "episode": 4,
+          "frame": 332,
+          "done": true,
+          "p_yes": 0.34762032146998156,
+          "latency_ms": 16689.230744999975
+        },
+        {
+          "episode": 5,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.3776327767384242,
+          "latency_ms": 17307.63725500003
+        },
+        {
+          "episode": 5,
+          "frame": 109,
+          "done": false,
+          "p_yes": 0.3607495742423887,
+          "latency_ms": 16601.936858000045
+        },
+        {
+          "episode": 5,
+          "frame": 364,
+          "done": true,
+          "p_yes": 0.3678661431755341,
+          "latency_ms": 16333.901460000106
+        }
+      ]
+    },
+    {
+      "label": "500M top two-frame (start vs now)",
+      "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+      "camera": "observation.images.top",
+      "prompt_template": "The first image shows the scene when a robot arm was asked to: \"{instruction}\". The second image shows the scene now. Has the task been fully completed in the second image? Answer yes or no.",
+      "compare_with_start": true,
+      "negative_fractions": [
+        0.0,
+        0.3
+      ],
+      "image_splitting": true,
+      "auroc": 0.3888888888888889,
+      "threshold": 0.523284034673725,
+      "balanced_accuracy": 0.5833333333333334,
+      "rows": [
+        {
+          "episode": 0,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.569980966384814,
+          "latency_ms": 38706.32177899995
+        },
+        {
+          "episode": 0,
+          "frame": 134,
+          "done": false,
+          "p_yes": 0.545578872129805,
+          "latency_ms": 34181.361790999974
+        },
+        {
+          "episode": 0,
+          "frame": 446,
+          "done": true,
+          "p_yes": 0.5300885296748586,
+          "latency_ms": 38657.60551000005
+        },
+        {
+          "episode": 1,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.6069722152753418,
+          "latency_ms": 41325.23365000009
+        },
+        {
+          "episode": 1,
+          "frame": 124,
+          "done": false,
+          "p_yes": 0.5953585502005194,
+          "latency_ms": 34765.327744000046
+        },
+        {
+          "episode": 1,
+          "frame": 415,
+          "done": true,
+          "p_yes": 0.5525192659254409,
+          "latency_ms": 41078.420670000014
+        },
+        {
+          "episode": 2,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.5687019235212426,
+          "latency_ms": 39966.69357099995
+        },
+        {
+          "episode": 2,
+          "frame": 129,
+          "done": false,
+          "p_yes": 0.514201677284102,
+          "latency_ms": 40633.54372800006
+        },
+        {
+          "episode": 2,
+          "frame": 429,
+          "done": true,
+          "p_yes": 0.5469280052297807,
+          "latency_ms": 44358.06048799998
+        },
+        {
+          "episode": 3,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.5386804124439061,
+          "latency_ms": 38041.797380999924
+        },
+        {
+          "episode": 3,
+          "frame": 110,
+          "done": false,
+          "p_yes": 0.5164795396725913,
+          "latency_ms": 36823.11989599998
+        },
+        {
+          "episode": 3,
+          "frame": 367,
+          "done": true,
+          "p_yes": 0.5525275643925253,
+          "latency_ms": 37690.49243500001
+        },
+        {
+          "episode": 4,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.5746044118578829,
+          "latency_ms": 41507.015365999905
+        },
+        {
+          "episode": 4,
+          "frame": 100,
+          "done": false,
+          "p_yes": 0.5300911199634926,
+          "latency_ms": 37998.765706000086
+        },
+        {
+          "episode": 4,
+          "frame": 332,
+          "done": true,
+          "p_yes": 0.5486710467512123,
+          "latency_ms": 36244.021836
+        },
+        {
+          "episode": 5,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.5656367417429919,
+          "latency_ms": 33774.99664300012
+        },
+        {
+          "episode": 5,
+          "frame": 109,
+          "done": false,
+          "p_yes": 0.5516417451254028,
+          "latency_ms": 34479.323339000075
+        },
+        {
+          "episode": 5,
+          "frame": 364,
+          "done": true,
+          "p_yes": 0.5433816993872779,
+          "latency_ms": 35022.858309999945
+        }
+      ]
+    }
+  ]
+}

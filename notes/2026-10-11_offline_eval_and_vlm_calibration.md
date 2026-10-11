@@ -21,7 +21,17 @@
   - 500M top cube-relation prompt: AUROC 0.67
   - 2.2B top default: AUROC 0.56 (done / not-done の平均 P(yes) がともに 0.643)
   - 目視でラベルは正しい (最後のフレームは赤が青の上)。top カメラでは積んだ状態が「赤い四角＋青い縁」にしか見えない。
-- 結果: `docs/assets/offline_eval_smolvla_base_ep0_cpu.json`, `docs/assets/vlm_success_real_frames_cpu.json`
+- 2 フレーム比較 (開始フレーム + 現在フレーム、`--compare-with-start`)、episodes 0–5、
+  not done = 0% と 30% (赤キューブを把持中)、done = 最終フレーム:
+  - 500M single-frame: AUROC 0.24 (balanced acc 0.46)
+  - 500M two-frame: AUROC 0.39 (balanced acc 0.58)。開始フレーム同士 (変化なし) でも P(yes) が最も高い
+  - → SmolVLM2-500M ではこの判定は無理。`compare_with_start` は既定 false のまま
+- 結果: `docs/assets/offline_eval_smolvla_base_ep0_cpu.json`, `docs/assets/vlm_success_two_frame_cpu.json`, `docs/assets/vlm_success_real_frames_cpu.json`
+
+- Gazebo: `Gazebo nightly` は 2026-09-14 以降一度も動いていなかった。PR で動く `gazebo-pr.yml` を追加。
+  初回は Phase 1 の Gazebo サーバが残留して Phase 2 が別ドメインの world に入りハング
+  → `GZ_PARTITION` を phase ごとに分離、cleanup で gz/bridge/state publisher も停止、ros2 CLI に timeout。
+  probe は最初の軌道から最大 15 s 観測。結果: Phase 2 で joint_4 0.40 rad、全関節が目標に追従 (PASS)。
 
 ## 未確認/要確認項目
 

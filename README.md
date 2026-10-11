@@ -281,6 +281,12 @@ The margin is small and these are cartoon scenes, not camera frames: calibrate
 | SmolVLM2-500M | top | cube relation | 0.67 |
 | SmolVLM2-2.2B | top | default | 0.56 |
 
+A two-frame variant (`compare_with_start`: the start-of-task frame plus the
+current one) did not fix it either: on episodes 0–5 with harder negatives
+(start and 30%, when the red cube is in the gripper), SmolVLM2-500M scored
+AUROC 0.24 single-frame vs 0.39 two-frame
+([`docs/assets/vlm_success_two_frame_cpu.json`](docs/assets/vlm_success_two_frame_cpu.json)).
+
 AUROC 0.5 is chance, and with 3 + 3 frames these are noisy. Treat
 `/vla/task_status` as experimental until a VLM/prompt clears this on your camera:
 `python scripts/vlm_calibrate_lerobot.py` (or notebook 04 on a GPU) picks the

@@ -12,6 +12,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from time import monotonic
 from typing import Any
 
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -20,6 +21,7 @@ from vla_ros2_msgs.msg import VLAInstruction as VLAInstructionMsg
 from vla_ros2_msgs.msg import VLATaskStatus as VLATaskStatusMsg
 
 from vla_ros2.vlm import (
+    DEFAULT_COMPARE_PROMPT_TEMPLATE,
     DEFAULT_PROMPT_TEMPLATE,
     SuccessDetector,
     SuccessJudgement,
@@ -47,6 +49,9 @@ class SuccessDetectorNode(Node):
         self.declare_parameter("threshold", 0.5)
         self.declare_parameter("use_logits", True)
         self.declare_parameter("prompt_template", DEFAULT_PROMPT_TEMPLATE)
+        # Compare each frame with the first frame after the instruction arrived.
+        self.declare_parameter("compare_with_start", False)
+        self.declare_parameter("compare_prompt_template", DEFAULT_COMPARE_PROMPT_TEMPLATE)
         self.declare_parameter("stale_image_timeout_sec", 2.0)
 
         def value(name: str) -> Any:
@@ -65,11 +70,14 @@ class SuccessDetectorNode(Node):
         self._detector = SuccessDetector(
             self._vlm,
             prompt_template=str(value("prompt_template")),
+            compare_prompt_template=str(value("compare_prompt_template")),
             threshold=float(value("threshold")),
             use_logits=bool(value("use_logits")),
         )
         self._latch = SuccessLatch(int(value("required_consecutive")))
         self._stale_image_timeout_sec = float(value("stale_image_timeout_sec"))
+        self._compare_with_start = bool(value("compare_with_start"))
+        self._reference: np.ndarray | None = None
 
         self._latest_image: Image | None = None
         self._latest_image_received_at: float | None = None
@@ -115,6 +123,7 @@ class SuccessDetectorNode(Node):
         self._instruction = text
         self._task_id = task_id
         self._latch.reset()
+        self._reference = None
         self.get_logger().info(f"new instruction, success latch reset: {text!r}")
 
     def _image_is_fresh(self) -> bool:
@@ -134,8 +143,14 @@ class SuccessDetectorNode(Node):
             return
         if image.ndim == 3 and image.shape[2] == 4:
             image = image[..., :3]
+        if self._compare_with_start and self._reference is None:
+            self._reference = image  # start-of-task frame; judge from the next tick on
+            return
+        reference = self._reference if self._compare_with_start else None
         self._pending_instruction = self._instruction
-        self._pending = self._executor.submit(self._detector.judge, self._instruction, [image])
+        self._pending = self._executor.submit(
+            self._detector.judge, self._instruction, [image], reference=reference
+        )
         self._pending.add_done_callback(self._handle_judgement)
 
     def _handle_judgement(self, future: Future[SuccessJudgement]) -> None:
@@ -165,7 +180,10 @@ class SuccessDetectorNode(Node):
         msg.checks = self._checks
         msg.latency_ms = float(judgement.latency_ms)
         msg.metadata_json = json.dumps(
-            {**judgement.metadata, "required_consecutive": self._latch.required_consecutive}
+            {
+                **judgement.metadata,
+                "required_consecutive": self._latch.required_consecutive,
+            }
         )
         self._status_pub.publish(msg)
 
