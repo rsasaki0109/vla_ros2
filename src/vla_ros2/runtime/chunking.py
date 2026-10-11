@@ -4,7 +4,9 @@ Chunked policies (SmolVLA predicts 50 steps per call) are slow per call but cove
 many control ticks. Executing one buffered action per tick and requesting the
 next chunk before the buffer runs dry keeps the robot moving through inference.
 A chunk inferred from an observation taken ``k`` ticks ago starts ``k`` steps in,
-because those steps are already in the past (latency compensation).
+because those steps are already in the past (latency compensation). Continuous
+output therefore needs chunks of at least twice the inference latency in ticks:
+the first half goes stale in flight, the second half covers the next inference.
 """
 
 from __future__ import annotations

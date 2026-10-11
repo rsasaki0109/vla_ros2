@@ -362,6 +362,14 @@ class VLARuntimeNode(Node):
                     observed_tick=self._pending_observed_tick,
                     current_tick=self._tick_index,
                 )
+                threshold = self._chunk_refill_threshold()
+                if self._chunk_buffer.remaining < threshold:
+                    self.get_logger().warning(
+                        f"chunk leaves {self._chunk_buffer.remaining} fresh steps but the next "
+                        f"inference takes ~{threshold} ticks; output will starve. Use chunks "
+                        "of at least 2x the inference latency in ticks or lower control_hz.",
+                        throttle_duration_sec=10.0,
+                    )
                 if isinstance(prediction, VLAActionChunk) and self.params.publish_action_chunk:
                     self.chunk_pub.publish(
                         chunk_to_msg(

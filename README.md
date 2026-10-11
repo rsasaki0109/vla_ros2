@@ -237,7 +237,10 @@ for the whole inference if each call waits for the previous chunk to finish.
 the next chunk early (when the buffer is down to the measured inference latency
 in ticks, or `chunk_refill_steps`); a chunk inferred from an observation taken
 `k` ticks ago starts `k` steps in. The buffer is cleared on a new instruction
-or stale inputs.
+or stale inputs. Output is continuous only when a chunk spans at least **twice**
+the inference latency in ticks (half goes stale in flight, half covers the next
+inference): SmolVLA's 50-step chunk at ~1 s and 10 Hz (10 ticks) qualifies; the
+node warns when it does not.
 
 ```bash
 ros2 run vla_ros2 vla_runtime_node --ros-args -p async_chunks:=true \
@@ -246,7 +249,9 @@ ros2 run vla_ros2 vla_runtime_node --ros-args -p async_chunks:=true \
 
 `ros2-smoke` runs both modes side by side with a simulated 0.5 s inference
 (`tests/test_async_chunks_launch.py`) and requires the async node to hold ≥ 70 %
-of `control_hz` with no gap ≥ 0.35 s.
+of `control_hz` with no gap ≥ 0.35 s. First CI run, with 10-step chunks (below
+the 2× rule): sync 1.43 Hz (max gap 0.70 s) vs async 6.84 Hz (max gap 0.30 s);
+the test now uses 20-step chunks.
 
 ### Safety
 

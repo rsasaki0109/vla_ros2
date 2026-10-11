@@ -87,3 +87,10 @@ def test_async_execution_removes_inference_stalls() -> None:
     async_idle = _simulate(async_mode=True, ticks=200, latency_ticks=5, chunk=50)
     assert async_idle == 5  # first chunk only
     assert sync_idle > 3 * async_idle
+
+
+def test_chunks_shorter_than_twice_the_latency_starve() -> None:
+    # A chunk loses its first `latency` steps to staleness, so the rest must cover
+    # the next inference: continuous output needs chunk >= 2 * latency ticks.
+    assert _simulate(async_mode=True, ticks=200, latency_ticks=6, chunk=10) > 50
+    assert _simulate(async_mode=True, ticks=200, latency_ticks=6, chunk=12) == 6

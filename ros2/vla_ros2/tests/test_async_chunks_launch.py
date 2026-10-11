@@ -1,7 +1,7 @@
 """Launch test: async chunk execution keeps /vla/action flowing through inference.
 
 Two runtime nodes see the same smoke input. Both run the dummy adapter with
-10-step chunks and a simulated 0.5 s inference (latency_sec), at 10 Hz:
+20-step chunks and a simulated 0.5 s inference (latency_sec), at 10 Hz:
 
 - sync  (async_chunks=false): one inference per published action
 - async (async_chunks=true):  one buffered action per tick, next chunk inferred ahead
@@ -30,7 +30,8 @@ from vla_ros2_ros.qos import action_qos
 
 _REPO_SRC = Path(__file__).resolve().parents[3] / "src"
 _CONTROL_HZ = 10.0
-_MODEL_KWARGS = json.dumps({"chunk_size": 10, "latency_sec": 0.5})
+# 0.5 s inference is ~6 ticks at 10 Hz; chunks must be >= 2x that to never starve.
+_MODEL_KWARGS = json.dumps({"chunk_size": 20, "latency_sec": 0.5})
 
 
 def _pythonpath_for_vla_ros2() -> str:
