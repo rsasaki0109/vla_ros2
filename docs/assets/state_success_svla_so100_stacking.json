@@ -1,0 +1,440 @@
+{
+  "dataset": "lerobot/svla_so100_stacking",
+  "config": {
+    "gripper_index": 5,
+    "arm_indices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "hold_low": 6.0,
+    "hold_high": 19.0,
+    "hold_sec": 1.0,
+    "hold_range": 1.5,
+    "approach_delta": 2.5,
+    "release_delta": 3.0,
+    "closed": 3.0,
+    "settle_speed": 15.0,
+    "settle_sec": 0.5
+  },
+  "train": {
+    "episodes": 10,
+    "fired": 10,
+    "missed": [],
+    "false_alarm_by_30pct": 0,
+    "false_alarm_by_50pct": 0,
+    "fire_fraction_median": 0.8148451869880722,
+    "fire_fraction_min": 0.6959847318739963
+  },
+  "held_out": {
+    "episodes": 46,
+    "fired": 41,
+    "missed": [
+      20,
+      37,
+      38,
+      39,
+      55
+    ],
+    "false_alarm_by_30pct": 0,
+    "false_alarm_by_50pct": 0,
+    "fire_fraction_median": 0.8463073389518263,
+    "fire_fraction_min": 0.7126949199381891
+  },
+  "episodes": {
+    "0": {
+      "frames": 447,
+      "fired": true,
+      "fire_fraction": 0.8789237550220254,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "1": {
+      "frames": 416,
+      "fired": true,
+      "fire_fraction": 0.9277108417122816,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "2": {
+      "frames": 430,
+      "fired": true,
+      "fire_fraction": 0.8857808961964201,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "3": {
+      "frames": 368,
+      "fired": true,
+      "fire_fraction": 0.7983650852304176,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "4": {
+      "frames": 333,
+      "fired": true,
+      "fire_fraction": 0.8313252887457266,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "5": {
+      "frames": 365,
+      "fired": true,
+      "fire_fraction": 0.7582417504681781,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "6": {
+      "frames": 387,
+      "fired": true,
+      "fire_fraction": 0.8393782448706528,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "7": {
+      "frames": 421,
+      "fired": true,
+      "fire_fraction": 0.7738095011029925,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "8": {
+      "frames": 524,
+      "fired": true,
+      "fire_fraction": 0.6959847318739963,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "9": {
+      "frames": 422,
+      "fired": true,
+      "fire_fraction": 0.7600950104237053,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "10": {
+      "frames": 480,
+      "fired": true,
+      "fire_fraction": 0.7473904214740863,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "11": {
+      "frames": 462,
+      "fired": true,
+      "fire_fraction": 0.770065048862672,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "12": {
+      "frames": 459,
+      "fired": true,
+      "fire_fraction": 0.8864629260144451,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "13": {
+      "frames": 416,
+      "fired": true,
+      "fire_fraction": 0.8313253203087616,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "14": {
+      "frames": 432,
+      "fired": true,
+      "fire_fraction": 0.8468677640515059,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "15": {
+      "frames": 502,
+      "fired": true,
+      "fire_fraction": 0.8463073389518263,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "16": {
+      "frames": 477,
+      "fired": true,
+      "fire_fraction": 0.8592436825788828,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "17": {
+      "frames": 485,
+      "fired": true,
+      "fire_fraction": 0.9008264809665718,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "18": {
+      "frames": 420,
+      "fired": true,
+      "fire_fraction": 0.7852028571173001,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "19": {
+      "frames": 437,
+      "fired": true,
+      "fire_fraction": 0.864678868229227,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "20": {
+      "frames": 1,
+      "fired": false,
+      "fire_fraction": null,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "21": {
+      "frames": 577,
+      "fired": true,
+      "fire_fraction": 0.7326388564650672,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "22": {
+      "frames": 466,
+      "fired": true,
+      "fire_fraction": 0.8236558975711945,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "23": {
+      "frames": 430,
+      "fired": true,
+      "fire_fraction": 0.8135197937769351,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "24": {
+      "frames": 519,
+      "fired": true,
+      "fire_fraction": 0.7799227656349383,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "25": {
+      "frames": 507,
+      "fired": true,
+      "fire_fraction": 0.7371541484097406,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "26": {
+      "frames": 528,
+      "fired": true,
+      "fire_fraction": 0.8330170283517045,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "27": {
+      "frames": 473,
+      "fired": true,
+      "fire_fraction": 0.8199152167382447,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "28": {
+      "frames": 456,
+      "fired": true,
+      "fire_fraction": 0.8439560388427558,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "29": {
+      "frames": 422,
+      "fired": true,
+      "fire_fraction": 0.9026128206307883,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "30": {
+      "frames": 470,
+      "fired": true,
+      "fire_fraction": 0.8656716773000337,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "31": {
+      "frames": 382,
+      "fired": true,
+      "fire_fraction": 0.8740157911948826,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "32": {
+      "frames": 390,
+      "fired": true,
+      "fire_fraction": 0.8688946117521854,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "33": {
+      "frames": 390,
+      "fired": true,
+      "fire_fraction": 0.9280206317271276,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "34": {
+      "frames": 390,
+      "fired": true,
+      "fire_fraction": 0.8586118448560608,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "35": {
+      "frames": 422,
+      "fired": true,
+      "fire_fraction": 0.8812351355081683,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "36": {
+      "frames": 514,
+      "fired": true,
+      "fire_fraction": 0.8499025411794887,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "37": {
+      "frames": 14,
+      "fired": false,
+      "fire_fraction": null,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "38": {
+      "frames": 28,
+      "fired": false,
+      "fire_fraction": null,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "39": {
+      "frames": 434,
+      "fired": false,
+      "fire_fraction": null,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "40": {
+      "frames": 421,
+      "fired": true,
+      "fire_fraction": 0.8523809569222587,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "41": {
+      "frames": 501,
+      "fired": true,
+      "fire_fraction": 0.8780000258636484,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "42": {
+      "frames": 426,
+      "fired": true,
+      "fire_fraction": 0.875294071078714,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "43": {
+      "frames": 432,
+      "fired": true,
+      "fire_fraction": 0.8445475474793724,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "44": {
+      "frames": 383,
+      "fired": true,
+      "fire_fraction": 0.8219894774274281,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "45": {
+      "frames": 358,
+      "fired": true,
+      "fire_fraction": 0.795518195385274,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "46": {
+      "frames": 367,
+      "fired": true,
+      "fire_fraction": 0.7513661580221169,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "47": {
+      "frames": 454,
+      "fired": true,
+      "fire_fraction": 0.8388520969908229,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "48": {
+      "frames": 450,
+      "fired": true,
+      "fire_fraction": 0.7126949199381891,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "49": {
+      "frames": 519,
+      "fired": true,
+      "fire_fraction": 0.8803088822281426,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "50": {
+      "frames": 432,
+      "fired": true,
+      "fire_fraction": 0.8770301812029865,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "51": {
+      "frames": 344,
+      "fired": true,
+      "fire_fraction": 0.862973767255701,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "52": {
+      "frames": 377,
+      "fired": true,
+      "fire_fraction": 0.8164893530002276,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "53": {
+      "frames": 414,
+      "fired": true,
+      "fire_fraction": 0.9031477210600942,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "54": {
+      "frames": 441,
+      "fired": true,
+      "fire_fraction": 0.7659090916479915,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    },
+    "55": {
+      "frames": 141,
+      "fired": false,
+      "fire_fraction": null,
+      "fired_by_30pct": false,
+      "fired_by_50pct": false
+    }
+  }
+}

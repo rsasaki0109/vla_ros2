@@ -316,6 +316,37 @@ AUROC 0.5 is chance, and with 3 + 3 frames these are noisy. Treat
 `python scripts/vlm_calibrate_lerobot.py` (or notebook 04 on a GPU) picks the
 threshold and reports AUROC.
 
+## Proprioceptive success detector (grasp → release → settle)
+
+Because the VLM could not tell done from not-done frames, `vla_state_success_node`
+judges success from `joint_states` alone: the gripper closes onto something and
+holds a steady partly-closed value (the object stops it), later opens past that
+value (release), then closes or the arm goes still. One frame cannot separate
+start from end (the arm rests in both); the sequence can. It publishes the same
+`VLATaskStatus` on `/vla/task_status` (`answer_text` = phase:
+`searching` → `holding` → `released` → `done`) and resets on each new instruction.
+
+```bash
+ros2 run vla_ros2 vla_state_success_node --ros-args \
+  -p state_joint_names:="[shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper]"
+python scripts/state_success_eval_lerobot.py --train-episodes 0-9   # needs [smolvla]
+```
+
+On every `svla_so100_stacking` episode (thresholds in SO-100 units, tuned on
+episodes 0–9; [`docs/assets/state_success_svla_so100_stacking.json`](docs/assets/state_success_svla_so100_stacking.json)):
+
+| split | fired | false alarm by 30% / 50% | fires at (median, earliest) |
+|---|---:|---:|---|
+| tuning, ep 0–9 | 10 / 10 | 0 / 0 | 81 %, 70 % of the episode |
+| held out, ep 10–55 | 41 / 46 | 0 / 0 | 85 %, 71 % |
+
+The 5 held-out episodes it skips are broken recordings (1–28 frames, or a gripper
+that never moves), so no grasp happened. One threshold, `approach_delta` (5 → 2.5),
+was lowered after seeing held-out episode 40, whose gripper only opened to 16
+before holding at 13; with 5 it fires on 40/46. Limits: it checks that a
+pick-and-place happened, not *where* the object ended up, and thresholds are in
+the robot's units (pass `config_json` for e.g. a gripper in metres).
+
 ## Offline evaluation (recorded demos)
 
 `scripts/eval_offline_lerobot.py` replays recorded LeRobot episodes: at every
