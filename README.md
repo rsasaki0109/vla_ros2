@@ -362,7 +362,7 @@ Progress is JSON on `/vla/sequence_status`.
 ros2 run vla_ros2 vla_task_sequencer_node --ros-args \
   -p steps:="['Put the red cube on the blue cube.', 'Put the green cube on the red cube.']"
 ros2 run vla_ros2 vla_state_success_node --ros-args -p instruction_msg_type:=vla_instruction
-ros2 launch vla_ros2 ... instruction_msg_type:=vla_instruction   # runtime node
+ros2 launch vla_ros2 dummy.launch.py instruction_msg_type:=vla_instruction   # runtime node
 ```
 
 `ros2-smoke` runs the sequencer with `vla_state_success_node` and plays two
