@@ -372,6 +372,37 @@ ros2 launch vla_ros2 task_pipeline.launch.py \
 two synthetic pick-and-places, the runtime's actions carry step 0's instruction
 until the first release, then step 1's, then the sequence reports `done`.
 
+## Goal planner (experimental)
+
+`vla_task_sequencer_node` can also start from one goal instead of a step list:
+`planner:=static` (default) uses the goal as the single instruction;
+`planner:=hf` asks a local instruction-tuned LLM (`vla_ros2.planner.HFPlanner`,
+few-shot, JSON array out, validated by `parse_plan`) to break it into
+"Put the X cube on the Y cube." steps.
+
+```bash
+ros2 launch vla_ros2 task_pipeline.launch.py planner:=hf \
+  goal:="Build a tower with blue at the bottom, then green, then red on top."
+python scripts/planner_eval.py --pretrained Qwen/Qwen2.5-3B-Instruct --every 3
+```
+
+`vla_ros2.planner_eval` scores planners on tower goals that have exactly one
+correct plan (2–4 cubes, colors not used in the prompt examples; phrased
+bottom-up, top-down, or as a chain). On CPU, 20 towers × 3 phrasings
+([`docs/assets/planner_tower_eval_cpu.json`](docs/assets/planner_tower_eval_cpu.json)):
+
+| model | correct | bottom-up | top-down | chain | s/goal |
+|---|---:|---:|---:|---:|---:|
+| Qwen2.5-0.5B-Instruct | 16 / 60 | 11 / 20 | 1 / 20 | 4 / 20 | 1.8 |
+| Qwen2.5-1.5B-Instruct | 29 / 60 | 19 / 20 | 3 / 20 | 7 / 20 | 4.6 |
+| Qwen2.5-3B-Instruct | 33 / 60 | 20 / 20 | 2 / 20 | 11 / 20 | 8.6 |
+
+These models only follow goals already stated bottom-up; they reverse
+top-down ones ("blue on top, red under it" → "Put the red cube on the blue
+cube."). Spelling out the bottom-up rule in the system prompt made it worse
+(1.5B 25/60, 3B 27/60) and was reverted. Check the printed plan before running
+it, or pass `steps_json` yourself.
+
 ## Offline evaluation (recorded demos)
 
 `scripts/eval_offline_lerobot.py` replays recorded LeRobot episodes: at every
