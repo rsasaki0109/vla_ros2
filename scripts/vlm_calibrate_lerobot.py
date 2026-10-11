@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Calibrate the VLM success threshold on real frames from a LeRobot dataset.
 
-For each episode the first frame is labeled "not done" and the last frame
-"done" (this assumes the recorded demonstrations succeed). The VLM's P(yes) is
+For each episode the last frame is labeled "done" (this assumes the recorded
+demonstrations succeed) and frames at ``--negative-fractions`` of the episode
+"not done" (0.0 = first frame; 0.3 on svla_so100_stacking = cube in the gripper,
+not yet stacked). ``--compare-with-start`` sends the first frame as a reference
+alongside each judged frame. The VLM's P(yes) is
 collected for both and the threshold with the best balanced accuracy is chosen;
 AUROC says whether the VLM separates them at all (0.5 = chance).
 
@@ -53,6 +56,18 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_PROMPT_TEMPLATE,
         help="must contain {instruction}",
     )
+    parser.add_argument(
+        "--negative-fractions",
+        type=float,
+        nargs="+",
+        default=[0.0],
+        help="episode positions labeled not done (0.0 = first frame)",
+    )
+    parser.add_argument(
+        "--compare-with-start",
+        action="store_true",
+        help="judge each frame against the episode's first frame (two-image prompt)",
+    )
     parser.add_argument("--out", type=Path, default=None, help="write results as JSON")
     args = parser.parse_args(argv)
 
@@ -69,11 +84,15 @@ def main(argv: list[str] | None = None) -> int:
     rows: list[dict[str, Any]] = []
     for episode in args.episodes:
         dataset = LeRobotDataset(args.dataset, episodes=[episode])
-        for label, index in ((False, 0), (True, len(dataset) - 1)):
+        last = len(dataset) - 1
+        samples = [(False, int(round(fraction * last))) for fraction in args.negative_fractions]
+        samples.append((True, last))
+        reference = _to_uint8_hwc(dataset[0][args.camera]) if args.compare_with_start else None
+        for label, index in samples:
             item = dataset[index]
             image = _to_uint8_hwc(item[args.camera])
             start = time.perf_counter()
-            judgement = detector.judge(str(item["task"]), [image])
+            judgement = detector.judge(str(item["task"]), [image], reference=reference)
             latency_ms = (time.perf_counter() - start) * 1000.0
             rows.append(
                 {
@@ -107,7 +126,13 @@ def main(argv: list[str] | None = None) -> int:
             "model_id": vlm.model_id,
             "device": args.device,
             "image_splitting": not args.no_image_splitting,
-            "prompt_template": args.prompt_template,
+            "prompt_template": (
+                detector.compare_prompt_template
+                if args.compare_with_start
+                else args.prompt_template
+            ),
+            "compare_with_start": args.compare_with_start,
+            "negative_fractions": args.negative_fractions,
             "auroc": calibration.auroc,
             "threshold": calibration.threshold,
             "balanced_accuracy": calibration.balanced_accuracy,

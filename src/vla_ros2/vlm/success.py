@@ -15,6 +15,14 @@ DEFAULT_PROMPT_TEMPLATE = (
     "Look at the image. Has the robot fully completed this task? Answer yes or no."
 )
 
+# Two-image variant: the start-of-task frame first, the current frame second.
+# Asking what changed avoids judging a single top-down frame in isolation.
+DEFAULT_COMPARE_PROMPT_TEMPLATE = (
+    'The first image shows the scene when a robot arm was asked to: "{instruction}". '
+    "The second image shows the scene now. Has the task been fully completed in the "
+    "second image? Answer yes or no."
+)
+
 _YES_RE = re.compile(r"^\W*(yes|yeah|yep|true|completed|done|success)\b", re.IGNORECASE)
 _NO_RE = re.compile(r"^\W*(no|nope|false|not)\b", re.IGNORECASE)
 
@@ -44,6 +52,8 @@ class SuccessDetector:
 
     With ``use_logits`` (default) the adapter's P(yes) decides against
     ``threshold``; adapters without logits fall back to parsing generated text.
+    Passing ``reference`` (the frame from when the instruction started) switches
+    to ``compare_prompt_template`` and sends ``[reference, *images]``.
     """
 
     def __init__(
@@ -51,24 +61,37 @@ class SuccessDetector:
         vlm: BaseVLM,
         *,
         prompt_template: str = DEFAULT_PROMPT_TEMPLATE,
+        compare_prompt_template: str = DEFAULT_COMPARE_PROMPT_TEMPLATE,
         threshold: float = 0.5,
         use_logits: bool = True,
         max_new_tokens: int = 8,
     ) -> None:
-        if "{instruction}" not in prompt_template:
-            msg = "prompt_template must contain '{instruction}'"
-            raise ValueError(msg)
+        for template in (prompt_template, compare_prompt_template):
+            if "{instruction}" not in template:
+                msg = "prompt templates must contain '{instruction}'"
+                raise ValueError(msg)
         self.vlm = vlm
         self.prompt_template = prompt_template
+        self.compare_prompt_template = compare_prompt_template
         self.threshold = threshold
         self.use_logits = use_logits
         self.max_new_tokens = max_new_tokens
 
-    def prompt(self, instruction: str) -> str:
-        return self.prompt_template.format(instruction=instruction.strip())
+    def prompt(self, instruction: str, *, compare: bool = False) -> str:
+        template = self.compare_prompt_template if compare else self.prompt_template
+        return template.format(instruction=instruction.strip())
 
-    def judge(self, instruction: str, images: Sequence[ImageArray]) -> SuccessJudgement:
-        prompt = self.prompt(instruction)
+    def judge(
+        self,
+        instruction: str,
+        images: Sequence[ImageArray],
+        *,
+        reference: ImageArray | None = None,
+    ) -> SuccessJudgement:
+        compare = reference is not None
+        prompt = self.prompt(instruction, compare=compare)
+        if reference is not None:
+            images = [reference, *images]
         start = perf_counter()
         confidence = self.vlm.yes_probability(prompt, images) if self.use_logits else None
         if confidence is not None:
@@ -84,7 +107,7 @@ class SuccessDetector:
             answer=answer,
             latency_ms=latency_ms,
             prompt=prompt,
-            metadata={"vlm": self.vlm.name, "model_id": self.vlm.model_id},
+            metadata={"vlm": self.vlm.name, "model_id": self.vlm.model_id, "compare": compare},
         )
 
 

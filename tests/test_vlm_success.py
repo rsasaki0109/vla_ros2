@@ -29,11 +29,13 @@ class TextOnlyVLM(BaseVLM):
     def __init__(self, answer: str) -> None:
         self.answer = answer
         self.prompts: list[str] = []
+        self.image_counts: list[int] = []
 
     def generate(
         self, prompt: str, images: Sequence[ImageArray] = (), *, max_new_tokens: int = 16
     ) -> str:
         self.prompts.append(prompt)
+        self.image_counts.append(len(images))
         return self.answer
 
 
@@ -99,9 +101,25 @@ def test_detector_falls_back_to_generated_text() -> None:
     assert "put the red cube on the blue cube" in vlm.prompts[0]
 
 
+def test_detector_compares_with_reference_frame() -> None:
+    vlm = TextOnlyVLM("yes")
+    detector = SuccessDetector(vlm)
+    reference = np.ones((32, 32, 3), dtype=np.uint8)
+    judgement = detector.judge("stack the cubes", [FRAME], reference=reference)
+    assert judgement.success is True
+    assert judgement.metadata["compare"] is True
+    assert vlm.image_counts == [2]
+    assert "first image" in vlm.prompts[0]
+    detector.judge("stack the cubes", [FRAME])
+    assert vlm.image_counts == [2, 1]
+    assert "first image" not in vlm.prompts[1]
+
+
 def test_detector_rejects_template_without_instruction() -> None:
     with pytest.raises(ValueError):
         SuccessDetector(TextOnlyVLM("yes"), prompt_template="Is it done?")
+    with pytest.raises(ValueError):
+        SuccessDetector(TextOnlyVLM("yes"), compare_prompt_template="Changed?")
 
 
 def _judgement(success: bool | None) -> SuccessJudgement:
