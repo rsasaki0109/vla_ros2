@@ -358,16 +358,19 @@ still reset the detector. With `step_timeout_sec`, a step is retried
 `max_retries` times and the sequence then stops as `failed` instead of moving on.
 Progress is JSON on `/vla/sequence_status`.
 
+`task_pipeline.launch.py` starts the runtime, `vla_state_success_node` and the
+sequencer already wired together (`instruction_msg_type: vla_instruction`
+everywhere, `dry_run` defaults to true):
+
 ```bash
-ros2 run vla_ros2 vla_task_sequencer_node --ros-args \
-  -p steps:="['Put the red cube on the blue cube.', 'Put the green cube on the red cube.']"
-ros2 run vla_ros2 vla_state_success_node --ros-args -p instruction_msg_type:=vla_instruction
-ros2 launch vla_ros2 dummy.launch.py instruction_msg_type:=vla_instruction   # runtime node
+ros2 launch vla_ros2 task_pipeline.launch.py \
+  steps_json:='["Put the red cube on the blue cube.", "Put the green cube on the red cube."]' \
+  model_name:=smolvla async_chunks:=true   # default model_name:=dummy
 ```
 
-`ros2-smoke` runs the sequencer with `vla_state_success_node` and plays two
-synthetic pick-and-places (`tests/test_task_sequencer_launch.py`): it must
-advance only after the first release and finish after the second.
+`ros2-smoke` checks this end to end (`tests/test_task_pipeline_launch.py`): with
+two synthetic pick-and-places, the runtime's actions carry step 0's instruction
+until the first release, then step 1's, then the sequence reports `done`.
 
 ## Offline evaluation (recorded demos)
 
