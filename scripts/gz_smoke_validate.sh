@@ -26,6 +26,10 @@ LAUNCH_PID=""
 PROBE_TIMEOUT="${GZ_PROBE_TIMEOUT_SEC:-60}"
 STARTUP_TIMEOUT="${GZ_STARTUP_TIMEOUT_SEC:-90}"
 
+GZ_PROCESS_PATTERN='gz sim|ruby.*gz|parameter_bridge|robot_state_publisher|controller_manager/spawner|vla_action_bridge_node|vla_runtime_node|vla_smoke_input_node'
+# ros2 CLI calls block indefinitely when a service never appears; bound each one.
+ROS2_CALL_TIMEOUT="${GZ_ROS2_CALL_TIMEOUT_SEC:-15}"
+
 pass() { printf 'PASS: %s\n' "$*"; }
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 
@@ -34,7 +38,11 @@ cleanup() {
     kill "${LAUNCH_PID}" 2>/dev/null || true
     wait "${LAUNCH_PID}" 2>/dev/null || true
   fi
-  pkill -f 'gz sim.launch.py|vla_action_bridge_node|vla_runtime_node|vla_smoke_input_node' 2>/dev/null || true
+  # ros2 launch can exit before its children; kill the Gazebo server and the
+  # bridge/state publisher too, or Phase 2 attaches to Phase 1's world.
+  pkill -f "${GZ_PROCESS_PATTERN}" 2>/dev/null || true
+  sleep 2
+  pkill -9 -f "${GZ_PROCESS_PATTERN}" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -45,10 +53,13 @@ prepare() {
   source install/setup.bash
   set -u
   rm -f "${LOCK_FILE}"
-  pkill -9 -f 'gz sim.launch.py|ruby.*gz sim|vla_action_bridge_node|vla_runtime_node|vla_smoke_input_node|controller_manager/spawner' 2>/dev/null || true
+  pkill -9 -f "${GZ_PROCESS_PATTERN}" 2>/dev/null || true
   sleep 3
   export ROS_DOMAIN_ID="${GZ_ROS_DOMAIN_ID:-$((77 + RANDOM % 50))}"
-  echo "Using ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"
+  # Gazebo transport ignores ROS_DOMAIN_ID; a per-phase partition keeps a
+  # lingering server from a previous phase out of this one.
+  export GZ_PARTITION="vla_gz_smoke_${ROS_DOMAIN_ID}_$$"
+  echo "Using ROS_DOMAIN_ID=${ROS_DOMAIN_ID} GZ_PARTITION=${GZ_PARTITION}"
 }
 
 wait_for_topic() {
@@ -57,7 +68,7 @@ wait_for_topic() {
   local start
   start="$(date +%s)"
   while (( $(date +%s) - start < timeout_sec )); do
-    if ros2 topic list 2>/dev/null | grep -qx "$topic"; then
+    if timeout "${ROS2_CALL_TIMEOUT}" ros2 topic list 2>/dev/null | grep -qx "$topic"; then
       return 0
     fi
     sleep 0.5
@@ -70,8 +81,9 @@ wait_for_controllers() {
   local start
   start="$(date +%s)"
   while (( $(date +%s) - start < timeout_sec )); do
-    if ros2 control list_controllers 2>/dev/null | grep -q 'joint_trajectory_controller.*active'; then
-      ros2 control list_controllers 2>/dev/null
+    if timeout "${ROS2_CALL_TIMEOUT}" ros2 control list_controllers 2>/dev/null \
+      | grep -q 'joint_trajectory_controller.*active'; then
+      timeout "${ROS2_CALL_TIMEOUT}" ros2 control list_controllers 2>/dev/null || true
       return 0
     fi
     sleep 1
