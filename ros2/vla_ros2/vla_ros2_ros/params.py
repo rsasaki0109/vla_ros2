@@ -30,3 +30,6 @@ class RuntimeNodeParams:
     device: str
     pretrained: str
     unnorm_key: str
+    async_chunks: bool = False
+    chunk_refill_steps: int = -1
+    model_kwargs_json: str = ""

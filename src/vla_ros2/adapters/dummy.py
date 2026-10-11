@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import numpy as np
@@ -31,6 +32,7 @@ class DummyAdapter(VLAAdapter):
         action_spec: ActionSpec | None = None,
         chunk_size: int = 1,
         dt: float | None = 0.2,
+        latency_sec: float = 0.0,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -46,12 +48,16 @@ class DummyAdapter(VLAAdapter):
             msg = "chunk_size must be positive"
             raise ValueError(msg)
         self.dt = dt
+        # Simulated inference time, to exercise async chunk execution without a GPU.
+        self.latency_sec = max(0.0, float(latency_sec))
 
     @classmethod
     def from_config(cls, **kwargs: Any) -> DummyAdapter:
         return cls(**kwargs)
 
     def predict_observation(self, observation: VLAObservation) -> VLAAction | VLAActionChunk:
+        if self.latency_sec:
+            time.sleep(self.latency_sec)
         metadata = {
             "model": self.name,
             "adapter": type(self).__name__,
