@@ -270,6 +270,53 @@ The margin is small and these are cartoon scenes, not camera frames: calibrate
 `image_splitting:=false` cuts CPU latency to ~1 s but also collapses the margin
 (0.436 vs 0.413), so it stays on by default; on a GPU the default is fast enough.
 
+**On real frames it does not work yet.** Calibrating on `svla_so100_stacking`
+(first frame of an episode = not done, last = done; episodes 0–2, CPU,
+[`docs/assets/vlm_success_real_frames_cpu.json`](docs/assets/vlm_success_real_frames_cpu.json)):
+
+| VLM | camera | prompt | AUROC |
+|---|---|---|---:|
+| SmolVLM2-500M | top | default | 0.11 |
+| SmolVLM2-500M | wrist | default | 0.22 |
+| SmolVLM2-500M | top | cube relation | 0.67 |
+| SmolVLM2-2.2B | top | default | 0.56 |
+
+AUROC 0.5 is chance, and with 3 + 3 frames these are noisy. Treat
+`/vla/task_status` as experimental until a VLM/prompt clears this on your camera:
+`python scripts/vlm_calibrate_lerobot.py` (or notebook 04 on a GPU) picks the
+threshold and reports AUROC.
+
+## Offline evaluation (recorded demos)
+
+`scripts/eval_offline_lerobot.py` replays recorded LeRobot episodes: at every
+N-th frame the policy predicts a 50-step chunk from the recorded cameras and
+joints, scored against what the demonstrator did next, beside a **hold-state
+baseline** (keep the current joints). It measures imitation error, not task
+success; use episodes the checkpoint did not train on.
+
+```bash
+python scripts/eval_offline_lerobot.py --device cuda --episodes 50 51 52 \
+  --pretrained <your-finetuned-checkpoint>
+```
+
+On CPU, episode 0, every 150th frame
+([`docs/assets/offline_eval_smolvla_base_ep0_cpu.json`](docs/assets/offline_eval_smolvla_base_ep0_cpu.json)):
+`lerobot/smolvla_base` MAE **39.8°** vs hold-state **4.6°**. `smolvla_base`
+emits ±1-scale normalized actions and expects `camera1..3` rather than the
+dataset's `top`/`wrist`, so it must be fine-tuned before it means anything on
+SO-100. This also explains why `smolvla_base` barely moves the Gazebo arm.
+
+## Colab notebooks
+
+| notebook | what | runtime |
+|---|---|---|
+| [01 quickstart](notebooks/01_quickstart.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rsasaki0109/vla_ros2/blob/main/notebooks/01_quickstart.ipynb) | install, `dummy`/`scripted`, adapter compare | CPU |
+| [02 SmolVLA inference](notebooks/02_smolvla_inference.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rsasaki0109/vla_ros2/blob/main/notebooks/02_smolvla_inference.ipynb) | load + latency, SO-100 kinematic closed loop GIF | T4 |
+| [03 offline eval](notebooks/03_offline_eval.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rsasaki0109/vla_ros2/blob/main/notebooks/03_offline_eval.ipynb) | base vs your fine-tune vs hold-state on held-out episodes | T4 |
+| [04 VLM success](notebooks/04_vlm_success.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rsasaki0109/vla_ros2/blob/main/notebooks/04_vlm_success.ipynb) | calibrate the success threshold on real frames | T4 |
+
+ROS2 and Gazebo are not run in Colab; they stay in CI (`ros2-smoke`, `Gazebo nightly`).
+
 ## Adapters
 
 `dummy`, `random`, `scripted` always load (no ML dependencies) and are used for

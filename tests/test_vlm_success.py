@@ -12,6 +12,7 @@ from vla_ros2.vlm import (
     SuccessDetector,
     SuccessJudgement,
     SuccessLatch,
+    calibrate_threshold,
     get_vlm_info,
     list_vlms,
     load_vlm,
@@ -117,3 +118,22 @@ def test_latch_needs_consecutive_yes_and_resets() -> None:
     latch.reset()
     assert latch.success is False
     assert latch.consecutive == 0
+
+
+def test_calibrate_threshold_separable_scores() -> None:
+    calibration = calibrate_threshold([0.2, 0.3, 0.6, 0.8], [False, False, True, True])
+    assert calibration.auroc == 1.0
+    assert calibration.balanced_accuracy == 1.0
+    assert calibration.threshold == pytest.approx(0.45)
+    assert (calibration.num_positive, calibration.num_negative) == (2, 2)
+
+
+def test_calibrate_threshold_inseparable_scores() -> None:
+    calibration = calibrate_threshold([0.4, 0.4, 0.4, 0.4], [False, True, False, True])
+    assert calibration.auroc == 0.5
+    assert calibration.balanced_accuracy == 0.5
+
+
+def test_calibrate_threshold_needs_both_classes() -> None:
+    with pytest.raises(ValueError):
+        calibrate_threshold([0.1, 0.2], [True, True])

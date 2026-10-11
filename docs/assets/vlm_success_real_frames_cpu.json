@@ -1,0 +1,283 @@
+{
+  "dataset": "lerobot/svla_so100_stacking",
+  "episodes": [
+    0,
+    1,
+    2
+  ],
+  "labels": "first frame of each episode = not done, last frame = done",
+  "device": "cpu (4 cores)",
+  "date": "2026-10-11",
+  "runs": [
+    {
+      "label": "500M top default",
+      "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+      "camera": "observation.images.top",
+      "prompt_template": "You are watching a robot arm. The robot was asked to: \"{instruction}\". Look at the image. Has the robot fully completed this task? Answer yes or no.",
+      "image_splitting": true,
+      "auroc": 0.1111111111111111,
+      "threshold": 0.3831065422086669,
+      "balanced_accuracy": 0.3333333333333333,
+      "rows": [
+        {
+          "episode": 0,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.43220126387927515,
+          "latency_ms": 16523.346285000003
+        },
+        {
+          "episode": 0,
+          "frame": 446,
+          "done": true,
+          "p_yes": 0.38213922283038054,
+          "latency_ms": 15304.669042000001
+        },
+        {
+          "episode": 1,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.3931042378988804,
+          "latency_ms": 15438.68230999999
+        },
+        {
+          "episode": 1,
+          "frame": 415,
+          "done": true,
+          "p_yes": 0.40897685255909577,
+          "latency_ms": 15416.943956999945
+        },
+        {
+          "episode": 2,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.44921212193648,
+          "latency_ms": 15870.816708999995
+        },
+        {
+          "episode": 2,
+          "frame": 429,
+          "done": true,
+          "p_yes": 0.3840738615869533,
+          "latency_ms": 15278.356721000022
+        }
+      ]
+    },
+    {
+      "label": "500M wrist default",
+      "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+      "camera": "observation.images.wrist",
+      "prompt_template": "You are watching a robot arm. The robot was asked to: \"{instruction}\". Look at the image. Has the robot fully completed this task? Answer yes or no.",
+      "image_splitting": true,
+      "auroc": 0.2222222222222222,
+      "threshold": 0.39006021697701015,
+      "balanced_accuracy": 0.5,
+      "rows": [
+        {
+          "episode": 0,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.34970690290843326,
+          "latency_ms": 25588.10341100002
+        },
+        {
+          "episode": 0,
+          "frame": 446,
+          "done": true,
+          "p_yes": 0.34157464137564925,
+          "latency_ms": 17714.862625000023
+        },
+        {
+          "episode": 1,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.41414562869279686,
+          "latency_ms": 15030.02827299997
+        },
+        {
+          "episode": 1,
+          "frame": 415,
+          "done": true,
+          "p_yes": 0.3999819678219015,
+          "latency_ms": 15555.782592000014
+        },
+        {
+          "episode": 2,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.3801384661321188,
+          "latency_ms": 16107.677430000194
+        },
+        {
+          "episode": 2,
+          "frame": 429,
+          "done": true,
+          "p_yes": 0.3381187656420266,
+          "latency_ms": 14908.137329999818
+        }
+      ]
+    },
+    {
+      "label": "500M top goal-state",
+      "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+      "camera": "observation.images.top",
+      "prompt_template": "The goal is: \"{instruction}\" Look only at the red and blue cubes. Is the goal state reached in this image? Answer yes or no.",
+      "image_splitting": true,
+      "auroc": 0.1111111111111111,
+      "threshold": 0.3641883057723553,
+      "balanced_accuracy": 0.3333333333333333,
+      "rows": [
+        {
+          "episode": 0,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.4184075083804915,
+          "latency_ms": 15578.455781000002
+        },
+        {
+          "episode": 0,
+          "frame": 446,
+          "done": true,
+          "p_yes": 0.3862588049465267,
+          "latency_ms": 15195.116306000045
+        },
+        {
+          "episode": 1,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.386386664383121,
+          "latency_ms": 15944.453040000099
+        },
+        {
+          "episode": 1,
+          "frame": 415,
+          "done": true,
+          "p_yes": 0.41832266028373294,
+          "latency_ms": 14920.869267999933
+        },
+        {
+          "episode": 2,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.42781417176208664,
+          "latency_ms": 15419.085025999948
+        },
+        {
+          "episode": 2,
+          "frame": 429,
+          "done": true,
+          "p_yes": 0.3421178065981839,
+          "latency_ms": 15619.704391999903
+        }
+      ]
+    },
+    {
+      "label": "500M top cube-relation",
+      "model_id": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+      "camera": "observation.images.top",
+      "prompt_template": "Task: \"{instruction}\" Is the red cube sitting on top of the blue cube right now? Answer yes or no.",
+      "image_splitting": true,
+      "auroc": 0.6666666666666666,
+      "threshold": 0.39683543844278735,
+      "balanced_accuracy": 0.6666666666666666,
+      "rows": [
+        {
+          "episode": 0,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.4210073339287144,
+          "latency_ms": 15133.812103000082
+        },
+        {
+          "episode": 0,
+          "frame": 446,
+          "done": true,
+          "p_yes": 0.4252300822042447,
+          "latency_ms": 14979.827011999987
+        },
+        {
+          "episode": 1,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.3793726022299292,
+          "latency_ms": 16122.74833499987
+        },
+        {
+          "episode": 1,
+          "frame": 415,
+          "done": true,
+          "p_yes": 0.44731474083977324,
+          "latency_ms": 15491.752156000075
+        },
+        {
+          "episode": 2,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.4403144689367143,
+          "latency_ms": 15837.575157000174
+        },
+        {
+          "episode": 2,
+          "frame": 429,
+          "done": true,
+          "p_yes": 0.41429827465564556,
+          "latency_ms": 15531.081742000197
+        }
+      ]
+    },
+    {
+      "label": "2.2B top default",
+      "model_id": "HuggingFaceTB/SmolVLM2-2.2B-Instruct",
+      "camera": "observation.images.top",
+      "prompt_template": "You are watching a robot arm. The robot was asked to: \"{instruction}\". Look at the image. Has the robot fully completed this task? Answer yes or no.",
+      "image_splitting": true,
+      "auroc": 0.5555555555555556,
+      "threshold": 0.6078632867378734,
+      "balanced_accuracy": 0.6666666666666666,
+      "rows": [
+        {
+          "episode": 0,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.6287264446691165,
+          "latency_ms": 57639.98097199999
+        },
+        {
+          "episode": 0,
+          "frame": 446,
+          "done": true,
+          "p_yes": 0.6695691826313541,
+          "latency_ms": 48929.644425999984
+        },
+        {
+          "episode": 1,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.7032193238743041,
+          "latency_ms": 51121.77957599999
+        },
+        {
+          "episode": 1,
+          "frame": 415,
+          "done": true,
+          "p_yes": 0.6427276412471811,
+          "latency_ms": 48040.18668099991
+        },
+        {
+          "episode": 2,
+          "frame": 0,
+          "done": false,
+          "p_yes": 0.5980401093525484,
+          "latency_ms": 46626.64736300008
+        },
+        {
+          "episode": 2,
+          "frame": 429,
+          "done": true,
+          "p_yes": 0.6176864641231984,
+          "latency_ms": 47803.77386600003
+        }
+      ]
+    }
+  ]
+}

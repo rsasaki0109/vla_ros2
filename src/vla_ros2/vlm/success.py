@@ -115,3 +115,50 @@ class SuccessLatch:
     def reset(self) -> None:
         self.consecutive = 0
         self.success = False
+
+
+@dataclass(frozen=True)
+class ThresholdCalibration:
+    threshold: float
+    balanced_accuracy: float
+    auroc: float
+    num_positive: int
+    num_negative: int
+
+
+def calibrate_threshold(scores: Sequence[float], labels: Sequence[bool]) -> ThresholdCalibration:
+    """Pick the P(yes) threshold that maximizes balanced accuracy on labeled frames.
+
+    ``auroc`` is threshold-free: 1.0 means every done frame scored above every
+    not-done frame, 0.5 means the VLM cannot tell them apart.
+    """
+
+    if len(scores) != len(labels):
+        msg = "scores and labels must have the same length"
+        raise ValueError(msg)
+    positives = [float(s) for s, label in zip(scores, labels, strict=True) if label]
+    negatives = [float(s) for s, label in zip(scores, labels, strict=True) if not label]
+    if not positives or not negatives:
+        msg = "need at least one done and one not-done frame"
+        raise ValueError(msg)
+
+    pairs = [(p > n) + 0.5 * (p == n) for p in positives for n in negatives]
+    auroc = sum(pairs) / len(pairs)
+
+    ordered = sorted(set(positives + negatives))
+    candidates = [(a + b) / 2.0 for a, b in zip(ordered, ordered[1:], strict=False)]
+    candidates = candidates or [ordered[0]]
+    best_threshold, best_accuracy = candidates[0], -1.0
+    for threshold in candidates:
+        tpr = sum(p >= threshold for p in positives) / len(positives)
+        tnr = sum(n < threshold for n in negatives) / len(negatives)
+        accuracy = (tpr + tnr) / 2.0
+        if accuracy > best_accuracy:
+            best_threshold, best_accuracy = threshold, accuracy
+    return ThresholdCalibration(
+        threshold=best_threshold,
+        balanced_accuracy=best_accuracy,
+        auroc=auroc,
+        num_positive=len(positives),
+        num_negative=len(negatives),
+    )
