@@ -19,12 +19,8 @@ from vla_ros2.core.errors import MissingDependencyError, UnknownModelError
 
 DEFAULT_SYSTEM_PROMPT = (
     "You plan tasks for a robot arm that can only follow one short instruction at a "
-    'time, of the form "Put the <color> cube on the <color> cube." A stack is built '
-    "from the bottom up: first work out the order of the cubes from bottom to top, then "
-    "the first instruction puts the second cube from the bottom on the bottom cube, the "
-    "next puts the third on the second, and so on. A stack of N cubes needs N-1 "
-    "instructions. Reply with a JSON array of instruction strings, in execution order, "
-    "and nothing else."
+    'time, of the form "Put the <color> cube on the <color> cube." Reply with a JSON '
+    "array of instruction strings, in execution order, and nothing else."
 )
 
 DEFAULT_EXAMPLES: tuple[tuple[str, list[str]], ...] = (
