@@ -2,6 +2,8 @@
 
     ros2 launch vla_ros2 task_pipeline.launch.py \\
         steps_json:='["Put the red cube on the blue cube.", "Put the green cube on the red cube."]'
+    ros2 launch vla_ros2 task_pipeline.launch.py planner:=hf \\
+        goal:="Build a tower with blue at the bottom, then green, then red on top."
 
 The sequencer publishes each step as VLAInstruction (with task_id), the runtime
 acts on it, vla_state_success_node judges it from joint_states, and the
@@ -13,8 +15,6 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
-
-DEFAULT_STEPS_JSON = '["Put the red cube on the blue cube."]'
 
 
 def generate_launch_description():
@@ -28,7 +28,13 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            DeclareLaunchArgument("steps_json", default_value=DEFAULT_STEPS_JSON),
+            # Either an explicit step list, or a goal (used as-is by planner:=static,
+            # broken into steps by a local LLM with planner:=hf).
+            DeclareLaunchArgument("steps_json", default_value=""),
+            DeclareLaunchArgument("goal", default_value="Put the red cube on the blue cube."),
+            DeclareLaunchArgument("planner", default_value="static"),
+            DeclareLaunchArgument("planner_model", default_value="Qwen/Qwen2.5-3B-Instruct"),
+            DeclareLaunchArgument("planner_device", default_value="auto"),
             DeclareLaunchArgument("model_name", default_value="dummy"),
             DeclareLaunchArgument("pretrained", default_value="lerobot/smolvla_base"),
             DeclareLaunchArgument("device", default_value="cuda:0"),
@@ -85,6 +91,10 @@ def generate_launch_description():
                 parameters=[
                     {
                         "steps_json": text("steps_json"),
+                        "goal": text("goal"),
+                        "planner": text("planner"),
+                        "planner_model": text("planner_model"),
+                        "planner_device": text("planner_device"),
                         "step_timeout_sec": arg("step_timeout_sec"),
                         "max_retries": arg("max_retries"),
                     }

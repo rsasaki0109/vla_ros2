@@ -10,7 +10,8 @@ rather than moving on.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import json
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 
@@ -115,3 +116,32 @@ class TaskSequencer:
             "task_id": step.task_id if step else None,
             "completed": list(self.completed),
         }
+
+
+def resolve_steps(
+    *,
+    steps: Sequence[str] = (),
+    steps_json: str = "",
+    goal: str = "",
+    plan: Callable[[str], list[str]] | None = None,
+) -> tuple[list[str], str]:
+    """Pick the step list: explicit ``steps_json``, then ``steps``, then ``plan(goal)``.
+
+    Returns ``(steps, source)`` with source ``"steps_json"``, ``"steps"`` or ``"planner"``.
+    """
+
+    if steps_json.strip():
+        parsed = json.loads(steps_json)
+        if not isinstance(parsed, list):
+            msg = "steps_json must be a JSON array of strings"
+            raise ValueError(msg)
+        cleaned = [str(step).strip() for step in parsed if str(step).strip()]
+        if cleaned:
+            return cleaned, "steps_json"
+    cleaned = [step.strip() for step in steps if step.strip()]
+    if cleaned:
+        return cleaned, "steps"
+    if goal.strip() and plan is not None:
+        return plan(goal.strip()), "planner"
+    msg = "no steps: set steps, steps_json, or goal with a planner"
+    raise ValueError(msg)

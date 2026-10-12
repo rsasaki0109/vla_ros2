@@ -1,0 +1,74 @@
+"""Tower-building goals with a single correct plan, to score planners objectively.
+
+A tower bottom -> top (A, B, C) has exactly one valid instruction list:
+"Put the B cube on the A cube.", "Put the C cube on the B cube.". Goals are
+phrased bottom-up, top-down and as a chain, over colors that do not appear in the
+planner's few-shot examples.
+"""
+
+from __future__ import annotations
+
+import re
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
+from itertools import permutations
+
+EVAL_COLORS = ("red", "green", "blue", "gray")
+_STEP_RE = re.compile(
+    r"^\s*(?:put|place|stack)\s+the\s+(\w+)\s+(?:cube|block)\s+on\s+(?:top\s+of\s+)?"
+    r"the\s+(\w+)\s+(?:cube|block)\.?\s*$",
+    re.IGNORECASE,
+)
+
+
+@dataclass(frozen=True)
+class TowerTask:
+    goal: str
+    tower: tuple[str, ...]
+    """Colors from bottom to top."""
+    phrasing: str
+
+    @property
+    def expected(self) -> list[tuple[str, str]]:
+        return [(top, below) for below, top in zip(self.tower, self.tower[1:], strict=False)]
+
+
+def _phrase(tower: Sequence[str], phrasing: str) -> str:
+    if phrasing == "bottom_up":
+        middle = "".join(f", then {color}" for color in tower[1:-1])
+        return f"Build a tower with {tower[0]} at the bottom{middle}, then {tower[-1]} on top."
+    if phrasing == "top_down":
+        rest = ", ".join(f"{color} under it" for color in reversed(tower[:-1]))
+        return f"Make a stack with {tower[-1]} on top, {rest}."
+    if phrasing == "chain":
+        chain = " on ".join(f"the {color} cube" for color in reversed(tower))
+        return f"Stack {chain}."
+    msg = f"unknown phrasing {phrasing!r}"
+    raise ValueError(msg)
+
+
+def tower_tasks(
+    colors: Sequence[str] = EVAL_COLORS,
+    heights: Sequence[int] = (2, 3, 4),
+    phrasings: Sequence[str] = ("bottom_up", "top_down", "chain"),
+) -> Iterator[TowerTask]:
+    for height in heights:
+        for tower in permutations(colors, height):
+            for phrasing in phrasings:
+                yield TowerTask(goal=_phrase(tower, phrasing), tower=tower, phrasing=phrasing)
+
+
+def plan_pairs(steps: Sequence[str]) -> list[tuple[str, str]] | None:
+    """(moved, target) per step, or None if any step is not a put-X-on-Y instruction."""
+
+    pairs = []
+    for step in steps:
+        match = _STEP_RE.match(step)
+        if match is None:
+            return None
+        pairs.append((match.group(1).lower(), match.group(2).lower()))
+    return pairs
+
+
+def score_plan(task: TowerTask, steps: Sequence[str]) -> bool:
+    return plan_pairs(steps) == task.expected

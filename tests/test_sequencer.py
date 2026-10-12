@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from vla_ros2.sequencer import TaskSequencer
+from vla_ros2.sequencer import TaskSequencer, resolve_steps
 
 
 def test_advances_only_on_current_task_id() -> None:
@@ -52,3 +52,19 @@ def test_no_timeout_by_default_and_input_validation() -> None:
         TaskSequencer(["", "  "])
     with pytest.raises(ValueError):
         TaskSequencer(["a"], max_retries=-1)
+
+
+def test_resolve_steps_priority_and_planner_fallback() -> None:
+    def plan(goal: str) -> list[str]:
+        return [f"planned: {goal}"]
+
+    assert resolve_steps(steps_json='["a", " "]', steps=["b"], goal="g", plan=plan) == (
+        ["a"],
+        "steps_json",
+    )
+    assert resolve_steps(steps=["", "b"], goal="g", plan=plan) == (["b"], "steps")
+    assert resolve_steps(steps=[""], goal=" tidy ", plan=plan) == (["planned: tidy"], "planner")
+    with pytest.raises(ValueError):
+        resolve_steps(steps=[""], goal="g")  # no planner
+    with pytest.raises(ValueError):
+        resolve_steps(steps_json='{"a": 1}')

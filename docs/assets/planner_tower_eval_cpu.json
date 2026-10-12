@@ -1,0 +1,2968 @@
+{
+ "eval": "vla_ros2.planner_eval tower goals, every 3rd tower (20 towers x 3 phrasings)",
+ "device": "cpu (4 cores)",
+ "date": "2026-10-12",
+ "runs": [
+  {
+   "prompt": "few-shot prompt (shipped)",
+   "model": "Qwen/Qwen2.5-0.5B-Instruct",
+   "correct": 16,
+   "tasks": 60,
+   "parse_failures": 0,
+   "sec_per_goal": 1.8,
+   "by_group": {
+    "bottom_up": [
+     11,
+     20
+    ],
+    "chain": [
+     4,
+     20
+    ],
+    "height 2": [
+     5,
+     12
+    ],
+    "height 3": [
+     6,
+     24
+    ],
+    "height 4": [
+     5,
+     24
+    ],
+    "top_down": [
+     1,
+     20
+    ]
+   },
+   "rows": [
+    {
+     "goal": "Build a tower with red at the bottom, then blue on top.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it.",
+     "steps": [
+      "Put the blue cube on the red cube under it."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it.",
+     "steps": [
+      "Put the blue cube on the green cube under the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it.",
+     "steps": [
+      "Put the gray cube on the blue cube under the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, gray under it.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, red under it.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, red under it.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the green cube on the gray cube on the red cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, green under it.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, green under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it.",
+     "steps": [
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Put the green cube on the gray cube on the blue cube.",
+      "Put the green cube on the white cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it.",
+     "steps": [
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the red cube on the green cube on the gray cube.",
+      "Put the red cube on the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, blue under it, gray under it.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray, then green on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it, red under it.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green, then blue on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it, gray under it, red under it.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the red cube.",
+      "Put the blue cube on the green cube.",
+      "Put the blue cube on the green cube.",
+      "Put the blue cube on the green cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray, then red on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, blue under it, green under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red, then blue on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, gray under it, green under it.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Stack the blue cube on the red cube.",
+      "Stack the green cube on the blue cube.",
+      "Stack the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red, then gray on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, red under it, green under it, blue under it.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the blue cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green, then red on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it, blue under it.",
+     "steps": [
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube.",
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Stack the red cube on the green cube.",
+      "Stack the gray cube on the blue cube.",
+      "Stack the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red, then blue on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, green under it, gray under it.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green, then red on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it, gray under it.",
+     "steps": [
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    }
+   ]
+  },
+  {
+   "prompt": "few-shot prompt (shipped)",
+   "model": "Qwen/Qwen2.5-1.5B-Instruct",
+   "correct": 29,
+   "tasks": 60,
+   "parse_failures": 0,
+   "sec_per_goal": 4.6,
+   "by_group": {
+    "bottom_up": [
+     19,
+     20
+    ],
+    "chain": [
+     7,
+     20
+    ],
+    "height 2": [
+     6,
+     12
+    ],
+    "height 3": [
+     10,
+     24
+    ],
+    "height 4": [
+     13,
+     24
+    ],
+    "top_down": [
+     3,
+     20
+    ]
+   },
+   "rows": [
+    {
+     "goal": "Build a tower with red at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it.",
+     "steps": [
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it.",
+     "steps": [
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, gray under it.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, red under it.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, red under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, green under it.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red on top.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, green under it.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, blue under it, gray under it.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray, then green on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it, red under it.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green, then blue on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it, gray under it, red under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray, then red on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, blue under it, green under it.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red, then blue on top.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, gray under it, green under it.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red, then gray on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, red under it, green under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the green cube on the red cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green, then red on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red, then blue on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, green under it, gray under it.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green, then red on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it, gray under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    }
+   ]
+  },
+  {
+   "prompt": "few-shot prompt (shipped)",
+   "model": "Qwen/Qwen2.5-3B-Instruct",
+   "correct": 33,
+   "tasks": 60,
+   "parse_failures": 0,
+   "sec_per_goal": 8.6,
+   "by_group": {
+    "bottom_up": [
+     20,
+     20
+    ],
+    "chain": [
+     11,
+     20
+    ],
+    "height 2": [
+     8,
+     12
+    ],
+    "height 3": [
+     17,
+     24
+    ],
+    "height 4": [
+     8,
+     24
+    ],
+    "top_down": [
+     2,
+     20
+    ]
+   },
+   "rows": [
+    {
+     "goal": "Build a tower with red at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it.",
+     "steps": [
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it.",
+     "steps": [
+      "Put the green cube on the base.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray on top.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, gray under it.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, red under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, red under it.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, green under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red on top.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, green under it.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, blue under it, gray under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray, then green on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it, red under it.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green, then blue on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it, gray under it, red under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the gray cube on the green cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray, then red on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, blue under it, green under it.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red, then blue on top.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, gray under it, green under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the gray cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red, then gray on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, red under it, green under it, blue under it.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the red cube on the green cube.",
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green, then red on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it, blue under it.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube.",
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red, then blue on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, green under it, gray under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the red cube on the blue cube.",
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green, then red on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it, gray under it.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    }
+   ]
+  },
+  {
+   "prompt": "+ bottom-up rule in system prompt (reverted)",
+   "model": "Qwen/Qwen2.5-1.5B-Instruct",
+   "correct": 25,
+   "tasks": 60,
+   "parse_failures": 0,
+   "sec_per_goal": 5.3,
+   "by_group": {
+    "bottom_up": [
+     17,
+     20
+    ],
+    "chain": [
+     7,
+     20
+    ],
+    "height 2": [
+     5,
+     12
+    ],
+    "height 3": [
+     10,
+     24
+    ],
+    "height 4": [
+     10,
+     24
+    ],
+    "top_down": [
+     1,
+     20
+    ]
+   },
+   "rows": [
+    {
+     "goal": "Build a tower with red at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it.",
+     "steps": [
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, gray under it.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, red under it.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, red under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, green under it.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red on top.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, green under it.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, blue under it, gray under it.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray, then green on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it, red under it.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the blue cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green, then blue on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it, gray under it, red under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray, then red on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, blue under it, green under it.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the blue cube on the gray cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red, then blue on top.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, gray under it, green under it.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red, then gray on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, red under it, green under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the green cube on the red cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green, then red on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red, then blue on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, green under it, gray under it.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green, then red on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it, gray under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    }
+   ]
+  },
+  {
+   "prompt": "+ bottom-up rule in system prompt (reverted)",
+   "model": "Qwen/Qwen2.5-3B-Instruct",
+   "correct": 27,
+   "tasks": 60,
+   "parse_failures": 0,
+   "sec_per_goal": 10.4,
+   "by_group": {
+    "bottom_up": [
+     14,
+     20
+    ],
+    "chain": [
+     9,
+     20
+    ],
+    "height 2": [
+     8,
+     12
+    ],
+    "height 3": [
+     14,
+     24
+    ],
+    "height 4": [
+     5,
+     24
+    ],
+    "top_down": [
+     4,
+     20
+    ]
+   },
+   "rows": [
+    {
+     "goal": "Build a tower with red at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it.",
+     "steps": [
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube.",
+     "steps": [
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it.",
+     "steps": [
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray on top.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue on top.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, gray under it.",
+     "steps": [
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, red under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, red under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, blue under it, green under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red on top.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, green under it.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, blue under it, gray under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then blue, then gray, then green on top.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with green on top, gray under it, blue under it, red under it.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the green cube on the gray cube on the blue cube on the red cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the pink cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with red at the bottom, then gray, then green, then blue on top.",
+     "steps": [
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube.",
+      "Put the blue cube on the green cube.",
+      "Put the red cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, green under it, gray under it, red under it.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the gray cube on the green cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the green cube on the gray cube on the red cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the blue cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then blue, then gray, then red on top.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the red cube on the gray cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, gray under it, blue under it, green under it.",
+     "steps": [
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the gray cube on the blue cube on the green cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with green at the bottom, then gray, then red, then blue on top.",
+     "steps": [
+      "Put the gray cube on the green cube.",
+      "Put the red cube on the gray cube.",
+      "Put the blue cube on the red cube.",
+      "Put the green cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, gray under it, green under it.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the gray cube on the red cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the gray cube on the green cube.",
+     "steps": [
+      "Put the red cube on the gray cube.",
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then green, then red, then gray on top.",
+     "steps": [
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with gray on top, red under it, green under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the green cube.",
+      "Put the green cube on the red cube.",
+      "Put the red cube on the gray cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the gray cube on the red cube on the green cube on the blue cube.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with blue at the bottom, then gray, then green, then red on top.",
+     "steps": [
+      "Put the gray cube on the blue cube.",
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, gray under it, blue under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the gray cube on the green cube.",
+      "Put the green cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the gray cube on the blue cube.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then green, then red, then blue on top.",
+     "steps": [
+      "Put the green cube on the gray cube.",
+      "Put the red cube on the green cube.",
+      "Put the blue cube on the red cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with blue on top, red under it, green under it, gray under it.",
+     "steps": [
+      "Put the red cube on the blue cube.",
+      "Put the green cube on the red cube.",
+      "Put the gray cube on the green cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Stack the blue cube on the red cube on the green cube on the gray cube.",
+     "steps": [
+      "Put the green cube on the red cube.",
+      "Put the red cube on the blue cube.",
+      "Put the blue cube on the green cube.",
+      "Put the gray cube on the blue cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Build a tower with gray at the bottom, then blue, then green, then red on top.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube.",
+      "Put the gray cube on the red cube."
+     ],
+     "correct": false,
+     "error": null
+    },
+    {
+     "goal": "Make a stack with red on top, green under it, blue under it, gray under it.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    },
+    {
+     "goal": "Stack the red cube on the green cube on the blue cube on the gray cube.",
+     "steps": [
+      "Put the blue cube on the gray cube.",
+      "Put the green cube on the blue cube.",
+      "Put the red cube on the green cube."
+     ],
+     "correct": true,
+     "error": null
+    }
+   ]
+  }
+ ]
+}

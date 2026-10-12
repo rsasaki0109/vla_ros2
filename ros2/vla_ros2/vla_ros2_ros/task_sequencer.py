@@ -20,7 +20,8 @@ from std_msgs.msg import String
 from vla_ros2_msgs.msg import VLAInstruction as VLAInstructionMsg
 from vla_ros2_msgs.msg import VLATaskStatus as VLATaskStatusMsg
 
-from vla_ros2.sequencer import SequenceStep, TaskSequencer
+from vla_ros2.planner import load_planner
+from vla_ros2.sequencer import SequenceStep, TaskSequencer, resolve_steps
 from vla_ros2_ros.qos import instruction_qos, status_qos
 
 
@@ -30,6 +31,12 @@ class TaskSequencerNode(Node):
         self.declare_parameter("steps", [""])
         # Same as `steps` but as a JSON array string; easier to pass through launch args.
         self.declare_parameter("steps_json", "")
+        # With no steps, plan them from `goal` at startup (vla_ros2.planner). The default
+        # "static" planner uses the goal itself as the only step; "hf" runs a local LLM.
+        self.declare_parameter("goal", "")
+        self.declare_parameter("planner", "static")
+        self.declare_parameter("planner_model", "Qwen/Qwen2.5-3B-Instruct")
+        self.declare_parameter("planner_device", "auto")
         self.declare_parameter("task_id_prefix", "seq")
         self.declare_parameter("instruction_topic", "/vla/instruction")
         self.declare_parameter("task_status_topic", "/vla/task_status")
@@ -41,13 +48,23 @@ class TaskSequencerNode(Node):
         def value(name: str) -> Any:
             return self.get_parameter(name).value
 
-        steps = [str(step) for step in value("steps")]
-        if str(value("steps_json")):
-            parsed = json.loads(str(value("steps_json")))
-            if not isinstance(parsed, list):
-                msg = "steps_json must be a JSON array of strings"
-                raise ValueError(msg)
-            steps = [str(step) for step in parsed]
+        def plan(goal: str) -> list[str]:
+            planner = load_planner(
+                str(value("planner")),
+                pretrained=str(value("planner_model")),
+                device=str(value("planner_device")),
+            )
+            planned = planner.plan(goal)
+            self.get_logger().info(f"planned {len(planned)} steps for {goal!r}: {planned}")
+            return planned
+
+        steps, self._steps_source = resolve_steps(
+            steps=[str(step) for step in value("steps")],
+            steps_json=str(value("steps_json")),
+            goal=str(value("goal")),
+            plan=plan,
+        )
+        self._goal = str(value("goal"))
         self._sequencer = TaskSequencer(
             steps,
             task_id_prefix=str(value("task_id_prefix")),
@@ -80,7 +97,13 @@ class TaskSequencerNode(Node):
         self._instruction_pub.publish(msg)
 
     def _publish_progress(self) -> None:
-        self._sequence_pub.publish(String(data=json.dumps(self._sequencer.to_dict())))
+        progress = {
+            **self._sequencer.to_dict(),
+            "goal": self._goal,
+            "plan_source": self._steps_source,
+            "plan": list(self._sequencer.steps),
+        }
+        self._sequence_pub.publish(String(data=json.dumps(progress)))
 
     def _status_cb(self, msg: VLATaskStatusMsg) -> None:
         if not msg.success:
