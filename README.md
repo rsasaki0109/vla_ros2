@@ -377,10 +377,12 @@ until the first release, then step 1's, then the sequence reports `done`.
 `vla_task_sequencer_node` can also start from one goal instead of a step list:
 `planner:=static` (default) uses the goal as the single instruction;
 `planner:=hf_tower` asks a local instruction-tuned LLM
-(`vla_ros2.planner.HFTowerPlanner`) only for the tower's cube colors from bottom
-to top (a JSON array, validated by `parse_tower`) and writes the
-"Put the X cube on the Y cube." steps in code (`tower_steps`);
-`planner:=hf` (`HFPlanner`) asks the LLM for the steps themselves.
+(`vla_ros2.planner.HFTowerPlanner`) only to copy the tower's cube colors in the
+order the goal names them and say whether that order is `top_down` or
+`bottom_up` (`{"order": ..., "colors": [...]}`); `parse_tower` puts them bottom to
+top and `tower_steps` writes the "Put the X cube on the Y cube." steps, so the
+model never reorders anything. `planner:=hf` (`HFPlanner`) asks the LLM for the
+steps themselves.
 
 ```bash
 ros2 launch vla_ros2 task_pipeline.launch.py planner:=hf_tower \
@@ -389,26 +391,31 @@ python scripts/planner_eval.py --planner hf_tower --pretrained Qwen/Qwen2.5-1.5B
 ```
 
 `vla_ros2.planner_eval` scores planners on tower goals that have exactly one
-correct plan (2–4 cubes, colors not used in the prompt examples), phrased
-bottom-up, top-down, as a chain ("Stack the red cube on the green cube on the
-blue cube."), and as a top-to-bottom list that no few-shot example shows. On CPU,
-20 towers × 4 phrasings = 80 goals
+correct plan (2–4 cubes, colors not used in the prompt examples) in seven
+phrasings. Three (bottom-up, top-down, chain: "Stack the red cube on the green
+cube on the blue cube.") match a few-shot example; four are in no example
+(`HELD_OUT_PHRASINGS`: "From top to bottom, the tower is red, green, blue.", the
+bottom-to-top list, "Put red on top of green, green on top of blue.", "Red goes
+on top. Below it is green. Blue is at the base."). On CPU, 20 towers × 7
+phrasings = 140 goals
 ([`docs/assets/planner_tower_eval_cpu.json`](docs/assets/planner_tower_eval_cpu.json)):
 
-| model | `hf` (shipped examples) | `hf` (`--examples tower`) | `hf_tower` | `hf_tower` s/goal |
-|---|---:|---:|---:|---:|
-| Qwen2.5-0.5B-Instruct | 17 / 80 | 16 / 80 | 39 / 80 | 1.2 |
-| Qwen2.5-1.5B-Instruct | 29 / 80 | 33 / 80 | **63 / 80** | 3.3 |
-| Qwen2.5-3B-Instruct | 35 / 80 | 32 / 80 | 54 / 80 | 5.9 |
+| model | `hf` | bottom-to-top list (prototype) | `hf_tower` | `hf_tower` held-out | s/goal |
+|---|---:|---:|---:|---:|---:|
+| Qwen2.5-0.5B-Instruct | 21 / 140 | 67 / 140 | 119 / 140 | 63 / 80 | 2.1 |
+| Qwen2.5-1.5B-Instruct | 43 / 140 | 122 / 140 | **131 / 140** | 74 / 80 | 5.7 |
+| Qwen2.5-3B-Instruct | 54 / 140 | 113 / 140 | 128 / 140 | 71 / 80 | 11.0 |
 
-`--examples tower` gives `hf` the same three few-shot goals as `hf_tower`, so the
-gain comes from the output format, not the examples. The step planner gets
-bottom-up goals right and reverses top-down ones ("blue on top, red under it" →
-"Put the red cube on the blue cube."). `hf_tower` with 1.5B, per phrasing:
-bottom-up 20/20, top-down 16/20, chain 16/20, top-to-bottom list (unseen) 11/20.
-Asking instead for unordered (upper, lower) pairs and sorting them in code did
-not help (0.5B 14, 1.5B 18, 3B 34 / 80; prototype, not shipped). Check the
-printed plan before running it, or pass `steps_json` yourself.
+The step planner (`hf`) gets bottom-up goals right and reverses the others
+("blue on top, red under it" → "Put the red cube on the blue cube."). Asking for
+the colors bottom to top instead (the prototype column) fixed most of that but
+small models still copied top-down lists without reversing them; letting the
+model copy the list and only name its direction fixes that. Adding two more
+few-shot examples made both formats worse (1.5B: 112 and 125), and asking for
+unordered (upper, lower) pairs did not help either. The weakest cases left are
+"Red goes on top. … Blue is at the base." with 0.5B (3/20) and top-down lists
+with 3B (14/20). Check the printed plan before running it, or pass `steps_json`
+yourself.
 
 ## Offline evaluation (recorded demos)
 
