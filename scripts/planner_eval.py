@@ -3,6 +3,10 @@
 
 pip install -e ".[vlm]"
 python scripts/planner_eval.py --pretrained Qwen/Qwen2.5-1.5B-Instruct --every 3
+python scripts/planner_eval.py --planner hf_tower --pretrained Qwen/Qwen2.5-3B-Instruct --every 3
+
+--examples tower gives the step planner (hf) the same three few-shot goals as
+hf_tower, written as steps, to separate the effect of the examples from the format.
 """
 
 from __future__ import annotations
@@ -14,7 +18,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from vla_ros2.planner import PlanError, load_planner
+from vla_ros2.planner import TOWER_EXAMPLES, PlanError, load_planner, tower_steps
 from vla_ros2.planner_eval import score_plan, tower_tasks
 
 
@@ -26,10 +30,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--every", type=int, default=1, help="evaluate every Nth tower (all its phrasings)"
     )
+    parser.add_argument("--examples", choices=("default", "tower"), default="default")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args(argv)
 
-    planner = load_planner(args.planner, pretrained=args.pretrained, device=args.device)
+    kwargs: dict[str, Any] = {"pretrained": args.pretrained, "device": args.device}
+    if args.examples == "tower" and args.planner == "hf":
+        kwargs["examples"] = [(goal, tower_steps(tower)) for goal, tower in TOWER_EXAMPLES]
+    planner = load_planner(args.planner, **kwargs)
     towers = sorted({task.tower for task in tower_tasks()}, key=lambda t: (len(t), t))
     keep = set(towers[:: max(1, args.every)])
     tasks = [task for task in tower_tasks() if task.tower in keep]
@@ -51,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
     total = sum(row["correct"] for row in rows)
     parse_failures = sum(row["error"] is not None for row in rows)
     print(
-        f"{args.pretrained}: {total}/{len(rows)} correct "
+        f"{args.planner}/{args.examples} {args.pretrained}: {total}/{len(rows)} correct "
         f"({100 * total / len(rows):.0f}%), parse failures {parse_failures}, "
         f"{elapsed / len(rows):.1f} s/goal"
     )
@@ -60,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.out:
         payload = {
             "planner": args.planner,
+            "examples": args.examples,
             "pretrained": args.pretrained,
             "device": args.device,
             "correct": total,
