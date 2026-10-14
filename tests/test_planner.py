@@ -15,7 +15,16 @@ from vla_ros2.planner import (
     parse_tower,
     tower_steps,
 )
-from vla_ros2.planner_eval import TowerTask, plan_pairs, score_plan, tower_tasks
+from vla_ros2.planner_eval import (
+    MultiTowerTask,
+    TowerTask,
+    multi_tower_tasks,
+    plan_pairs,
+    score_multi_plan,
+    score_plan,
+    simulate,
+    tower_tasks,
+)
 
 
 def test_parse_plan_extracts_first_json_array() -> None:
@@ -111,3 +120,52 @@ def test_tower_planner_parses_reply_without_a_model() -> None:
     reply = '{"order": "top_down", "colors": ["red", "gray"]}'
     assert planner.parse(reply) == ["Put the red cube on the gray cube."]
     assert planner.last_tower == ["gray", "red"]
+
+
+def test_simulate_checks_each_step_and_returns_final_state() -> None:
+    assert simulate(
+        ["Put the green cube on the blue cube.", "Put the red cube on the green cube."]
+    ) == {
+        "green": "blue",
+        "red": "green",
+    }
+    # red onto green, then green (now covered) cannot move
+    assert (
+        simulate(["Put the red cube on the green cube.", "Put the green cube on the blue cube."])
+        is None
+    )
+    # blue is covered by green, so red cannot go on it
+    assert (
+        simulate(["Put the green cube on the blue cube.", "Put the red cube on the blue cube."])
+        is None
+    )
+    assert simulate(["Put the red cube on the red cube."]) is None
+    assert simulate(["Pick up the red cube."]) is None
+    # moving a clear cube again is allowed
+    assert simulate(
+        ["Put the red cube on the blue cube.", "Put the red cube on the gray cube."]
+    ) == {"red": "gray"}
+
+
+def test_multi_tower_plans_accept_any_valid_order() -> None:
+    task = MultiTowerTask(
+        goal="", towers=(("blue", "red"), ("gray", "green", "brown")), phrasing="x"
+    )
+    steps = [
+        "Put the green cube on the gray cube.",
+        "Put the red cube on the blue cube.",
+        "Put the brown cube on the green cube.",
+    ]
+    assert score_multi_plan(task, steps)
+    assert not score_multi_plan(task, steps[:2])
+    assert not score_multi_plan(task, list(reversed(steps)))
+
+
+def test_multi_tower_tasks() -> None:
+    tasks = list(multi_tower_tasks())
+    assert len(tasks) == 80
+    assert {t.phrasing for t in tasks} >= {"bottom_up", "top_list", "mixed"}
+    for task in tasks:
+        colors = [c for tower in task.towers for c in tower]
+        assert len(colors) == len(set(colors))
+        assert task.goal.startswith("Build two separate towers. First: ")

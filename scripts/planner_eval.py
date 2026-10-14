@@ -4,6 +4,7 @@
 pip install -e ".[vlm]"
 python scripts/planner_eval.py --pretrained Qwen/Qwen2.5-1.5B-Instruct --every 3
 python scripts/planner_eval.py --planner hf_tower --pretrained Qwen/Qwen2.5-1.5B-Instruct --every 3
+python scripts/planner_eval.py --planner hf_tower --goals multi
 
 --examples tower gives the step planner (hf) the same three few-shot goals as
 hf_tower, written as steps, to separate the effect of the examples from the format.
@@ -25,7 +26,7 @@ from vla_ros2.planner import (
     parse_tower,
     tower_steps,
 )
-from vla_ros2.planner_eval import score_plan, tower_tasks
+from vla_ros2.planner_eval import multi_tower_tasks, score_multi_plan, score_plan, tower_tasks
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,6 +38,12 @@ def main(argv: list[str] | None = None) -> int:
         "--every", type=int, default=1, help="evaluate every Nth tower (all its phrasings)"
     )
     parser.add_argument("--examples", choices=("default", "tower"), default="default")
+    parser.add_argument(
+        "--goals",
+        choices=("tower", "multi"),
+        default="tower",
+        help="one tower per goal (tower_tasks) or two towers (multi_tower_tasks)",
+    )
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args(argv)
 
@@ -46,9 +53,13 @@ def main(argv: list[str] | None = None) -> int:
             (goal, tower_steps(parse_tower(json.dumps(out)))) for goal, out in TOWER_EXAMPLES
         ]
     planner = load_planner(args.planner, **kwargs)
-    towers = sorted({task.tower for task in tower_tasks()}, key=lambda t: (len(t), t))
-    keep = set(towers[:: max(1, args.every)])
-    tasks = [task for task in tower_tasks() if task.tower in keep]
+    tasks: list[Any]
+    if args.goals == "multi":
+        tasks = list(multi_tower_tasks())[:: max(1, args.every)]
+    else:
+        towers = sorted({task.tower for task in tower_tasks()}, key=lambda t: (len(t), t))
+        keep = set(towers[:: max(1, args.every)])
+        tasks = [task for task in tower_tasks() if task.tower in keep]
     rows: list[dict[str, Any]] = []
     by_group: dict[str, list[bool]] = defaultdict(list)
     start = time.perf_counter()
@@ -58,9 +69,12 @@ def main(argv: list[str] | None = None) -> int:
             error = None
         except PlanError as exc:
             steps, error = [], str(exc)
-        correct = error is None and score_plan(task, steps)
+        if args.goals == "multi":
+            correct = error is None and score_multi_plan(task, steps)
+        else:
+            correct = error is None and score_plan(task, steps)
+            by_group[f"height {len(task.tower)}"].append(correct)
         rows.append({"goal": task.goal, "steps": steps, "correct": correct, "error": error})
-        by_group[f"height {len(task.tower)}"].append(correct)
         by_group[task.phrasing].append(correct)
     elapsed = time.perf_counter() - start
 
@@ -77,6 +91,7 @@ def main(argv: list[str] | None = None) -> int:
         payload = {
             "planner": args.planner,
             "examples": args.examples,
+            "goals": args.goals,
             "pretrained": args.pretrained,
             "device": args.device,
             "correct": total,
