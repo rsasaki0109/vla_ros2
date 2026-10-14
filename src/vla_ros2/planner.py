@@ -73,23 +73,35 @@ TOWER_EXAMPLES: tuple[tuple[str, list[dict[str, Any]]], ...] = tuple(
     )
 )
 
+# Cross-check prompts: plain bottom-to-top lists. A one-tower answer is checked with a
+# one-tower prompt, since a multi-tower example makes small models split single towers.
 CHECK_SYSTEM_PROMPT = (
+    "You read goals for a robot arm that stacks colored cubes into one tower. Reply "
+    "with a JSON array of the cube colors from the BOTTOM of the tower to the TOP, "
+    "one lowercase word per color, and nothing else."
+)
+
+CHECK_EXAMPLES: tuple[tuple[str, list[str]], ...] = tuple(
+    zip(
+        _EXAMPLE_GOALS[:3],
+        (
+            ["yellow", "purple", "orange"],
+            ["yellow", "pink", "white"],
+            ["purple", "white", "orange"],
+        ),
+        strict=True,
+    )
+)
+
+MULTI_CHECK_SYSTEM_PROMPT = (
     "You read goals for a robot arm that stacks colored cubes into towers. Reply with a "
     "JSON array holding one array per tower, each listing that tower's cube colors from "
     "the BOTTOM of the tower to the TOP, one lowercase word per color, and nothing else."
 )
 
-CHECK_EXAMPLES: tuple[tuple[str, list[list[str]]], ...] = tuple(
-    zip(
-        _EXAMPLE_GOALS,
-        (
-            [["yellow", "purple", "orange"]],
-            [["yellow", "pink", "white"]],
-            [["purple", "white", "orange"]],
-            [["white", "pink"], ["yellow", "orange"]],
-        ),
-        strict=True,
-    )
+MULTI_CHECK_EXAMPLES: tuple[tuple[str, list[list[str]]], ...] = (
+    *((goal, [colors]) for goal, colors in CHECK_EXAMPLES),
+    (_EXAMPLE_GOALS[3], [["white", "pink"], ["yellow", "orange"]]),
 )
 
 
@@ -340,7 +352,8 @@ class HFTowerPlanner(HFPlanner):
     """``HFPlanner`` that asks for each tower's colors and direction, not for steps.
 
     With ``cross_check`` (default) it asks a second time for plain bottom-to-top lists
-    and raises ``PlanError`` unless both answers give the same towers.
+    (``CHECK_*`` for one tower, ``MULTI_CHECK_*`` for more) and raises ``PlanError``
+    unless both answers give the same towers.
     """
 
     name = "hf_tower"
@@ -351,14 +364,10 @@ class HFTowerPlanner(HFPlanner):
         system_prompt: str = TOWER_SYSTEM_PROMPT,
         examples: Sequence[tuple[str, Any]] = TOWER_EXAMPLES,
         cross_check: bool = True,
-        check_system_prompt: str = CHECK_SYSTEM_PROMPT,
-        check_examples: Sequence[tuple[str, Any]] = CHECK_EXAMPLES,
         **kwargs: Any,
     ) -> None:
         super().__init__(system_prompt=system_prompt, examples=examples, **kwargs)
         self.cross_check = cross_check
-        self.check_system_prompt = check_system_prompt
-        self.check_examples = list(check_examples)
         self.last_towers: list[list[str]] = []
         self.last_check_towers: list[list[str]] = []
         self.last_check_reply = ""
@@ -375,10 +384,11 @@ class HFTowerPlanner(HFPlanner):
         self.last_unchecked = steps
         if not self.cross_check:
             return steps
-        self.last_check_reply = self.generate(
-            goal,
-            messages=self._messages(goal, self.check_system_prompt, self.check_examples),
-        )
+        if len(self.last_towers) == 1:
+            messages = self._messages(goal, CHECK_SYSTEM_PROMPT, CHECK_EXAMPLES)
+        else:
+            messages = self._messages(goal, MULTI_CHECK_SYSTEM_PROMPT, MULTI_CHECK_EXAMPLES)
+        self.last_check_reply = self.generate(goal, messages=messages)
         self.last_check_towers = parse_tower_lists(self.last_check_reply)
         if sorted(self.last_check_towers) != sorted(self.last_towers):
             msg = (

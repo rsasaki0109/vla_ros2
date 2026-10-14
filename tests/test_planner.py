@@ -8,6 +8,8 @@ from vla_ros2.core.errors import UnknownModelError
 from vla_ros2.planner import (
     CHECK_EXAMPLES,
     CHECK_SYSTEM_PROMPT,
+    MULTI_CHECK_EXAMPLES,
+    MULTI_CHECK_SYSTEM_PROMPT,
     TOWER_EXAMPLES,
     TOWER_SYSTEM_PROMPT,
     HFTowerPlanner,
@@ -143,7 +145,7 @@ def test_parse_tower_lists() -> None:
 
 
 def test_examples_agree_and_score_as_correct_plans() -> None:
-    for (goal, out), (check_goal, lists) in zip(TOWER_EXAMPLES, CHECK_EXAMPLES, strict=True):
+    for (goal, out), (check_goal, lists) in zip(TOWER_EXAMPLES, MULTI_CHECK_EXAMPLES, strict=True):
         assert goal == check_goal
         towers = parse_towers(json.dumps(out))
         assert towers == parse_tower_lists(json.dumps(lists))
@@ -154,8 +156,6 @@ def test_examples_agree_and_score_as_correct_plans() -> None:
 def _stub_planner(replies: list[str], *, cross_check: bool) -> HFTowerPlanner:
     planner = HFTowerPlanner.__new__(HFTowerPlanner)
     planner.system_prompt, planner.examples = TOWER_SYSTEM_PROMPT, list(TOWER_EXAMPLES)
-    planner.check_system_prompt = CHECK_SYSTEM_PROMPT
-    planner.check_examples = list(CHECK_EXAMPLES)
     planner.cross_check, planner.retries = cross_check, 0
     sent: list[str] = []
 
@@ -182,6 +182,15 @@ def test_tower_planner_cross_check() -> None:
 
     planner = _stub_planner([first], cross_check=False)
     assert planner.plan("goal") == ["Put the red cube on the gray cube."]
+
+    two = (
+        '[{"order": "bottom_up", "colors": ["blue", "red"]},'
+        ' {"order": "top_down", "colors": ["gray", "green"]}]'
+    )
+    planner = _stub_planner([two, '[["green", "gray"], ["blue", "red"]]'], cross_check=True)
+    assert len(planner.plan("goal")) == 2
+    assert planner.sent[1] == MULTI_CHECK_SYSTEM_PROMPT  # type: ignore[attr-defined]
+    assert [g for g, _ in CHECK_EXAMPLES] == [g for g, _ in MULTI_CHECK_EXAMPLES][:3]
 
 
 def test_simulate_checks_each_step_and_returns_final_state() -> None:
