@@ -80,6 +80,9 @@ def main(argv: list[str] | None = None) -> int:
         correct = error is None and score(task, steps)
         unchecked = getattr(planner, "last_unchecked", None)
         row = {"goal": task.goal, "steps": steps, "correct": correct, "error": error}
+        for key in ("last_reply", "last_check_reply"):
+            if getattr(planner, key, None) is not None:
+                row[key.removeprefix("last_")] = getattr(planner, key)
         if unchecked is not None:
             row["unchecked_steps"] = unchecked
             row["unchecked_correct"] = bool(unchecked) and score(task, unchecked)

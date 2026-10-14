@@ -95,6 +95,12 @@ def test_parse_towers_and_compile_steps() -> None:
         ' {"order": "top_down", "colors": ["gray", "green"]}]'
     )
     assert parse_towers(two) == [["blue", "red"], ["green", "gray"]]
+    # a reply that stops before the closing bracket
+    assert parse_towers('[{"order": "bottom_up", "colors": ["blue", "red"]}') == [["blue", "red"]]
+    assert parse_tower_lists('[["blue", "red"], ["gray", "green"]') == [
+        ["blue", "red"],
+        ["gray", "green"],
+    ]
     assert towers_steps(parse_towers(two)) == [
         "Put the red cube on the blue cube.",
         "Put the gray cube on the green cube.",

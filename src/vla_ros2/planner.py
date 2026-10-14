@@ -132,18 +132,25 @@ def parse_plan(text: str, *, max_steps: int = 10, max_words: int = 20) -> list[s
 
 
 def _first_json(text: str) -> Any:
-    """Decode the first JSON object or array in ``text``."""
+    """Decode the first JSON object or array in ``text``.
+
+    Small models often stop right before the closing ``]`` of an array (``[{...}``),
+    so a reply that ends inside an array gets up to two brackets appended.
+    """
 
     match = re.search(r"[\[{]", text)
     if match is None:
         msg = f"no JSON in planner reply: {text[:200]!r}"
         raise PlanError(msg)
-    try:
-        parsed, _ = json.JSONDecoder().raw_decode(text, match.start())
-    except json.JSONDecodeError as exc:
-        msg = f"planner reply is not valid JSON: {text[match.start() :][:200]!r}"
-        raise PlanError(msg) from exc
-    return parsed
+    body = text[match.start() :].rstrip()
+    for suffix in ("", "]", "]]"):
+        try:
+            parsed, _ = json.JSONDecoder().raw_decode(body + suffix)
+        except json.JSONDecodeError:
+            continue
+        return parsed
+    msg = f"planner reply is not valid JSON: {body[:200]!r}"
+    raise PlanError(msg)
 
 
 def _tower_colors(items: Any, *, max_height: int) -> list[str]:
@@ -354,6 +361,7 @@ class HFTowerPlanner(HFPlanner):
         self.check_examples = list(check_examples)
         self.last_towers: list[list[str]] = []
         self.last_check_towers: list[list[str]] = []
+        self.last_check_reply = ""
         self.last_unchecked: list[str] = []
 
     def parse(self, reply: str) -> list[str]:
@@ -362,15 +370,16 @@ class HFTowerPlanner(HFPlanner):
 
     def plan(self, goal: str) -> list[str]:
         self.last_towers, self.last_check_towers, self.last_unchecked = [], [], []
+        self.last_check_reply = ""
         steps = super().plan(goal)
         self.last_unchecked = steps
         if not self.cross_check:
             return steps
-        reply = self.generate(
+        self.last_check_reply = self.generate(
             goal,
             messages=self._messages(goal, self.check_system_prompt, self.check_examples),
         )
-        self.last_check_towers = parse_tower_lists(reply)
+        self.last_check_towers = parse_tower_lists(self.last_check_reply)
         if sorted(self.last_check_towers) != sorted(self.last_towers):
             msg = (
                 f"cross-check disagrees: {self.last_towers} vs {self.last_check_towers} "
