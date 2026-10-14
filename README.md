@@ -406,9 +406,9 @@ gain comes from the output format, not the examples. The step planner gets
 bottom-up goals right and reverses top-down ones ("blue on top, red under it" →
 "Put the red cube on the blue cube."). `hf_tower` with 1.5B, per phrasing:
 bottom-up 20/20, top-down 16/20, chain 16/20, top-to-bottom list (unseen) 11/20.
-Asking for unordered (upper, lower) pairs and sorting them in code did not help
-(3B: 34/80). Check the printed plan before running it, or pass `steps_json`
-yourself.
+Asking instead for unordered (upper, lower) pairs and sorting them in code did
+not help (0.5B 14, 1.5B 18, 3B 34 / 80; prototype, not shipped). Check the
+printed plan before running it, or pass `steps_json` yourself.
 
 ## Offline evaluation (recorded demos)
 
