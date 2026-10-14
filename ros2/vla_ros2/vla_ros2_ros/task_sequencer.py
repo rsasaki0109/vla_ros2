@@ -32,10 +32,11 @@ class TaskSequencerNode(Node):
         # Same as `steps` but as a JSON array string; easier to pass through launch args.
         self.declare_parameter("steps_json", "")
         # With no steps, plan them from `goal` at startup (vla_ros2.planner). The default
-        # "static" planner uses the goal itself as the only step; "hf" runs a local LLM.
+        # "static" planner uses the goal itself as the only step; "hf_tower" asks a local
+        # LLM for a tower's colors bottom to top and writes the steps; "hf" asks for steps.
         self.declare_parameter("goal", "")
         self.declare_parameter("planner", "static")
-        self.declare_parameter("planner_model", "Qwen/Qwen2.5-3B-Instruct")
+        self.declare_parameter("planner_model", "Qwen/Qwen2.5-1.5B-Instruct")
         self.declare_parameter("planner_device", "auto")
         self.declare_parameter("task_id_prefix", "seq")
         self.declare_parameter("instruction_topic", "/vla/instruction")
