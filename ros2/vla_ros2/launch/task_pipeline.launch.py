@@ -35,6 +35,7 @@ def generate_launch_description():
             DeclareLaunchArgument("planner", default_value="static"),
             DeclareLaunchArgument("planner_model", default_value="Qwen/Qwen2.5-1.5B-Instruct"),
             DeclareLaunchArgument("planner_device", default_value="auto"),
+            DeclareLaunchArgument("planner_cross_check", default_value="true"),
             DeclareLaunchArgument("model_name", default_value="dummy"),
             DeclareLaunchArgument("pretrained", default_value="lerobot/smolvla_base"),
             DeclareLaunchArgument("device", default_value="cuda:0"),
@@ -95,6 +96,7 @@ def generate_launch_description():
                         "planner": text("planner"),
                         "planner_model": text("planner_model"),
                         "planner_device": text("planner_device"),
+                        "planner_cross_check": LaunchConfiguration("planner_cross_check"),
                         "step_timeout_sec": arg("step_timeout_sec"),
                         "max_retries": arg("max_retries"),
                     }

@@ -6,8 +6,12 @@ python scripts/planner_eval.py --pretrained Qwen/Qwen2.5-1.5B-Instruct --every 3
 python scripts/planner_eval.py --planner hf_tower --pretrained Qwen/Qwen2.5-1.5B-Instruct --every 3
 python scripts/planner_eval.py --planner hf_tower --goals multi
 
---examples tower gives the step planner (hf) the same three few-shot goals as
-hf_tower, written as steps, to separate the effect of the examples from the format.
+--examples tower gives the step planner (hf) the same few-shot goals as hf_tower,
+written as steps, to separate the effect of the examples from the format.
+
+"wrong" counts plans that were returned but are not correct (what a robot would run);
+"refused" counts PlanError, including hf_tower's cross-check disagreeing. For
+hf_tower, "unchecked" scores the first answer alone, as with --no-cross-check.
 """
 
 from __future__ import annotations
@@ -23,8 +27,8 @@ from vla_ros2.planner import (
     TOWER_EXAMPLES,
     PlanError,
     load_planner,
-    parse_tower,
-    tower_steps,
+    parse_towers,
+    towers_steps,
 )
 from vla_ros2.planner_eval import multi_tower_tasks, score_multi_plan, score_plan, tower_tasks
 
@@ -44,13 +48,16 @@ def main(argv: list[str] | None = None) -> int:
         default="tower",
         help="one tower per goal (tower_tasks) or two towers (multi_tower_tasks)",
     )
+    parser.add_argument("--no-cross-check", action="store_true", help="hf_tower only")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args(argv)
 
     kwargs: dict[str, Any] = {"pretrained": args.pretrained, "device": args.device}
+    if args.planner == "hf_tower":
+        kwargs["cross_check"] = not args.no_cross_check
     if args.examples == "tower" and args.planner == "hf":
         kwargs["examples"] = [
-            (goal, tower_steps(parse_tower(json.dumps(out)))) for goal, out in TOWER_EXAMPLES
+            (goal, towers_steps(parse_towers(json.dumps(out)))) for goal, out in TOWER_EXAMPLES
         ]
     planner = load_planner(args.planner, **kwargs)
     tasks: list[Any]
@@ -63,27 +70,34 @@ def main(argv: list[str] | None = None) -> int:
     rows: list[dict[str, Any]] = []
     by_group: dict[str, list[bool]] = defaultdict(list)
     start = time.perf_counter()
+    score = score_multi_plan if args.goals == "multi" else score_plan
     for task in tasks:
         try:
             steps = planner.plan(task.goal)
             error = None
         except PlanError as exc:
             steps, error = [], str(exc)
-        if args.goals == "multi":
-            correct = error is None and score_multi_plan(task, steps)
-        else:
-            correct = error is None and score_plan(task, steps)
+        correct = error is None and score(task, steps)
+        unchecked = getattr(planner, "last_unchecked", None)
+        row = {"goal": task.goal, "steps": steps, "correct": correct, "error": error}
+        if unchecked is not None:
+            row["unchecked_steps"] = unchecked
+            row["unchecked_correct"] = bool(unchecked) and score(task, unchecked)
+        rows.append(row)
+        if args.goals != "multi":
             by_group[f"height {len(task.tower)}"].append(correct)
-        rows.append({"goal": task.goal, "steps": steps, "correct": correct, "error": error})
         by_group[task.phrasing].append(correct)
     elapsed = time.perf_counter() - start
 
     total = sum(row["correct"] for row in rows)
-    parse_failures = sum(row["error"] is not None for row in rows)
+    refused = sum(row["error"] is not None for row in rows)
+    wrong = len(rows) - total - refused
+    unchecked_total = sum(row.get("unchecked_correct", False) for row in rows)
     print(
-        f"{args.planner}/{args.examples} {args.pretrained}: {total}/{len(rows)} correct "
-        f"({100 * total / len(rows):.0f}%), parse failures {parse_failures}, "
-        f"{elapsed / len(rows):.1f} s/goal"
+        f"{args.planner}/{args.examples} {args.goals} {args.pretrained}: "
+        f"{total}/{len(rows)} correct, {wrong} wrong, {refused} refused"
+        + (f", unchecked {unchecked_total} correct" if "unchecked_correct" in rows[0] else "")
+        + f", {elapsed / len(rows):.1f} s/goal"
     )
     for group, results in sorted(by_group.items()):
         print(f"  {group:10} {sum(results)}/{len(results)}")
@@ -96,7 +110,9 @@ def main(argv: list[str] | None = None) -> int:
             "device": args.device,
             "correct": total,
             "tasks": len(rows),
-            "parse_failures": parse_failures,
+            "wrong": wrong,
+            "refused": refused,
+            "unchecked_correct": unchecked_total,
             "sec_per_goal": elapsed / len(rows),
             "by_group": {k: [sum(v), len(v)] for k, v in sorted(by_group.items())},
             "rows": rows,
