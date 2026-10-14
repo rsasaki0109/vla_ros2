@@ -384,10 +384,10 @@ colcon test-result --verbose
   `vla_state_success_node` (`task_success.py`) fires on 41/41 valid held-out stacking
   episodes with no false alarms; it does not check where the object landed.
 - **Goal planner**: `planner:=hf_tower` (`vla_ros2.planner`) asks a local LLM only for
-  the tower's colors bottom to top and writes the steps in code; on CPU Qwen2.5-1.5B gets
-  63/80 tower goals right (step-writing `hf`: 29/80; 3B: 54 vs 35). Weakest on a
-  top-to-bottom list phrasing no example shows (11/20). Next: larger models on a GPU
-  (`scripts/planner_eval.py`), and goals that are not a single tower.
+  the tower's colors in the order the goal names them plus that order's direction, and
+  writes the steps in code; on CPU Qwen2.5-1.5B gets 131/140 tower goals right, 74/80
+  on phrasings no example shows (step-writing `hf`: 43/140). Next: goals that are not a
+  single tower, and larger models on a GPU (`scripts/planner_eval.py`).
 - **Fine-tune with held-out episodes** and report `scripts/eval_offline_lerobot.py` on
   them (notebook 03); the 20k checkpoint was trained on every episode.
 - **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware. Reference bridge:

@@ -3,7 +3,7 @@
 
 pip install -e ".[vlm]"
 python scripts/planner_eval.py --pretrained Qwen/Qwen2.5-1.5B-Instruct --every 3
-python scripts/planner_eval.py --planner hf_tower --pretrained Qwen/Qwen2.5-3B-Instruct --every 3
+python scripts/planner_eval.py --planner hf_tower --pretrained Qwen/Qwen2.5-1.5B-Instruct --every 3
 
 --examples tower gives the step planner (hf) the same three few-shot goals as
 hf_tower, written as steps, to separate the effect of the examples from the format.
@@ -18,7 +18,13 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from vla_ros2.planner import TOWER_EXAMPLES, PlanError, load_planner, tower_steps
+from vla_ros2.planner import (
+    TOWER_EXAMPLES,
+    PlanError,
+    load_planner,
+    parse_tower,
+    tower_steps,
+)
 from vla_ros2.planner_eval import score_plan, tower_tasks
 
 
@@ -36,7 +42,9 @@ def main(argv: list[str] | None = None) -> int:
 
     kwargs: dict[str, Any] = {"pretrained": args.pretrained, "device": args.device}
     if args.examples == "tower" and args.planner == "hf":
-        kwargs["examples"] = [(goal, tower_steps(tower)) for goal, tower in TOWER_EXAMPLES]
+        kwargs["examples"] = [
+            (goal, tower_steps(parse_tower(json.dumps(out)))) for goal, out in TOWER_EXAMPLES
+        ]
     planner = load_planner(args.planner, **kwargs)
     towers = sorted({task.tower for task in tower_tasks()}, key=lambda t: (len(t), t))
     keep = set(towers[:: max(1, args.every)])

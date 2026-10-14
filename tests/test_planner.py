@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from vla_ros2.core.errors import UnknownModelError
@@ -46,8 +48,8 @@ def test_tower_goals_and_expected_plans() -> None:
     task = TowerTask(goal="", tower=("blue", "green", "red"), phrasing="bottom_up")
     assert task.expected == [("green", "blue"), ("red", "green")]
     tasks = list(tower_tasks())
-    # 4P2 + 4P3 + 4P4 towers, 4 phrasings each
-    assert len(tasks) == (12 + 24 + 24) * 4
+    # 4P2 + 4P3 + 4P4 towers, 7 phrasings each
+    assert len(tasks) == (12 + 24 + 24) * 7
     goals = {t.phrasing: t.goal for t in tasks if t.tower == ("blue", "green", "red")}
     assert goals["bottom_up"] == (
         "Build a tower with blue at the bottom, then green, then red on top."
@@ -55,6 +57,9 @@ def test_tower_goals_and_expected_plans() -> None:
     assert goals["top_down"] == "Make a stack with red on top, green under it, blue under it."
     assert goals["chain"] == "Stack the red cube on the green cube on the blue cube."
     assert goals["top_list"] == "From top to bottom, the tower is red, green, blue."
+    assert goals["bottom_list"] == "From bottom to top, the tower is blue, green, red."
+    assert goals["on_top_of"] == "Put red on top of green, green on top of blue."
+    assert goals["top_sentences"] == "Red goes on top. Below it is green. Blue is at the base."
 
 
 def test_score_plan_requires_exact_order() -> None:
@@ -67,11 +72,9 @@ def test_score_plan_requires_exact_order() -> None:
 
 
 def test_parse_tower_and_compile_steps() -> None:
-    assert parse_tower('Bottom to top: ["Blue", "green cube", " red "]') == [
-        "blue",
-        "green",
-        "red",
-    ]
+    reply = 'Sure: {"order": "top_down", "colors": ["Red", "green cube", " blue "]}'
+    assert parse_tower(reply) == ["blue", "green", "red"]
+    assert parse_tower('{"order": "bottom_up", "colors": ["blue", "red"]}') == ["blue", "red"]
     assert tower_steps(["blue", "green", "red"]) == [
         "Put the green cube on the blue cube.",
         "Put the red cube on the green cube.",
@@ -79,7 +82,17 @@ def test_parse_tower_and_compile_steps() -> None:
 
 
 @pytest.mark.parametrize(
-    "reply", ['["red"]', '["red", "red"]', '["light blue", "red"]', '["r2", "d2"]', "none"]
+    "reply",
+    [
+        '{"order": "up", "colors": ["red", "blue"]}',
+        '{"order": "top_down", "colors": "red, blue"}',
+        '{"order": "top_down", "colors": ["red"]}',
+        '{"order": "top_down", "colors": ["red", "red"]}',
+        '{"order": "top_down", "colors": ["light blue", "red"]}',
+        '["red", "blue"]',
+        "{not json}",
+        "none",
+    ],
 )
 def test_parse_tower_rejects_bad_replies(reply: str) -> None:
     with pytest.raises(PlanError):
@@ -87,12 +100,14 @@ def test_parse_tower_rejects_bad_replies(reply: str) -> None:
 
 
 def test_tower_examples_score_as_correct_plans() -> None:
-    for goal, tower in TOWER_EXAMPLES:
+    for goal, out in TOWER_EXAMPLES:
+        tower = parse_tower(json.dumps(out))
         task = TowerTask(goal=goal, tower=tuple(tower), phrasing="example")
         assert score_plan(task, tower_steps(tower))
 
 
 def test_tower_planner_parses_reply_without_a_model() -> None:
     planner = HFTowerPlanner.__new__(HFTowerPlanner)
-    assert planner.parse('["gray", "red"]') == ["Put the red cube on the gray cube."]
+    reply = '{"order": "top_down", "colors": ["red", "gray"]}'
+    assert planner.parse(reply) == ["Put the red cube on the gray cube."]
     assert planner.last_tower == ["gray", "red"]
