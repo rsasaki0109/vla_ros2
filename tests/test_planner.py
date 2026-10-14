@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from vla_ros2.core.errors import UnknownModelError
@@ -70,11 +72,9 @@ def test_score_plan_requires_exact_order() -> None:
 
 
 def test_parse_tower_and_compile_steps() -> None:
-    assert parse_tower('Bottom to top: ["Blue", "green cube", " red "]') == [
-        "blue",
-        "green",
-        "red",
-    ]
+    reply = 'Sure: {"order": "top_down", "colors": ["Red", "green cube", " blue "]}'
+    assert parse_tower(reply) == ["blue", "green", "red"]
+    assert parse_tower('{"order": "bottom_up", "colors": ["blue", "red"]}') == ["blue", "red"]
     assert tower_steps(["blue", "green", "red"]) == [
         "Put the green cube on the blue cube.",
         "Put the red cube on the green cube.",
@@ -82,7 +82,17 @@ def test_parse_tower_and_compile_steps() -> None:
 
 
 @pytest.mark.parametrize(
-    "reply", ['["red"]', '["red", "red"]', '["light blue", "red"]', '["r2", "d2"]', "none"]
+    "reply",
+    [
+        '{"order": "up", "colors": ["red", "blue"]}',
+        '{"order": "top_down", "colors": "red, blue"}',
+        '{"order": "top_down", "colors": ["red"]}',
+        '{"order": "top_down", "colors": ["red", "red"]}',
+        '{"order": "top_down", "colors": ["light blue", "red"]}',
+        '["red", "blue"]',
+        "{not json}",
+        "none",
+    ],
 )
 def test_parse_tower_rejects_bad_replies(reply: str) -> None:
     with pytest.raises(PlanError):
@@ -90,12 +100,14 @@ def test_parse_tower_rejects_bad_replies(reply: str) -> None:
 
 
 def test_tower_examples_score_as_correct_plans() -> None:
-    for goal, tower in TOWER_EXAMPLES:
+    for goal, out in TOWER_EXAMPLES:
+        tower = parse_tower(json.dumps(out))
         task = TowerTask(goal=goal, tower=tuple(tower), phrasing="example")
         assert score_plan(task, tower_steps(tower))
 
 
 def test_tower_planner_parses_reply_without_a_model() -> None:
     planner = HFTowerPlanner.__new__(HFTowerPlanner)
-    assert planner.parse('["gray", "red"]') == ["Put the red cube on the gray cube."]
+    reply = '{"order": "top_down", "colors": ["red", "gray"]}'
+    assert planner.parse(reply) == ["Put the red cube on the gray cube."]
     assert planner.last_tower == ["gray", "red"]

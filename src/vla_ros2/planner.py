@@ -4,9 +4,10 @@ The VLA executes single instructions in its training style ("Put the red cube on
 the blue cube."); a planner writes that list from a goal ("build a tower: blue at
 the bottom, then green, then red"). ``HFPlanner`` asks a local instruction-tuned
 LLM for a JSON array; ``parse_plan`` extracts and validates it. ``HFTowerPlanner``
-asks only for the tower's colors from bottom to top and writes the instructions in
-code (``tower_steps``), so the model never has to get the step order right. Plans
-are only suggestions for the sequencer: they never command the robot directly.
+asks only for the tower's colors in the order the goal names them plus whether that
+order runs top-down or bottom-up; code puts them bottom to top (``parse_tower``) and
+writes the instructions (``tower_steps``), so the model never reorders anything.
+Plans are only suggestions for the sequencer: they never command the robot directly.
 """
 
 from __future__ import annotations
@@ -38,23 +39,25 @@ DEFAULT_EXAMPLES: tuple[tuple[str, list[str]], ...] = (
 
 
 TOWER_SYSTEM_PROMPT = (
-    "You read goals for a robot arm that stacks colored cubes into one tower. Reply "
-    "with a JSON array of the cube colors from the BOTTOM of the tower to the TOP, "
+    "You read goals for a robot arm that stacks colored cubes into one tower. List the "
+    "cube colors in the order the goal mentions them, and say whether that order runs "
+    'from the top of the tower down ("top_down") or from the bottom up ("bottom_up"). '
+    'Reply with one JSON object {"order": "top_down" or "bottom_up", "colors": [...]}, '
     "one lowercase word per color, and nothing else."
 )
 
-TOWER_EXAMPLES: tuple[tuple[str, list[str]], ...] = (
+TOWER_EXAMPLES: tuple[tuple[str, dict[str, Any]], ...] = (
     (
         "Build a tower with yellow at the bottom, then purple, then orange on top.",
-        ["yellow", "purple", "orange"],
+        {"order": "bottom_up", "colors": ["yellow", "purple", "orange"]},
     ),
     (
         "Make a stack with white on top, pink under it, yellow under it.",
-        ["yellow", "pink", "white"],
+        {"order": "top_down", "colors": ["white", "pink", "yellow"]},
     ),
     (
         "Stack the orange cube on the white cube on the purple cube.",
-        ["purple", "white", "orange"],
+        {"order": "top_down", "colors": ["orange", "white", "purple"]},
     ),
 )
 
@@ -98,10 +101,26 @@ def parse_plan(text: str, *, max_steps: int = 10, max_words: int = 20) -> list[s
 
 
 def parse_tower(text: str, *, max_height: int = 8) -> list[str]:
-    """Extract a bottom-to-top list of distinct one-word colors from ``text``."""
+    """Bottom-to-top colors from the first ``{"order": ..., "colors": [...]}`` in ``text``."""
 
+    match = re.search(r"\{.*?\}", text, flags=re.DOTALL)
+    if match is None:
+        msg = f"no JSON object in planner reply: {text[:200]!r}"
+        raise PlanError(msg)
+    try:
+        parsed: Any = json.loads(match.group(0))
+    except json.JSONDecodeError as exc:
+        msg = f"planner reply is not valid JSON: {match.group(0)[:200]!r}"
+        raise PlanError(msg) from exc
+    if not isinstance(parsed, dict) or parsed.get("order") not in ("top_down", "bottom_up"):
+        msg = f'planner reply needs "order": "top_down" or "bottom_up": {parsed!r}'
+        raise PlanError(msg)
+    items = parsed.get("colors")
+    if not isinstance(items, list) or not all(isinstance(item, str) for item in items):
+        msg = f'planner reply needs "colors" as a list of strings: {parsed!r}'
+        raise PlanError(msg)
     colors = []
-    for item in _first_string_array(text):
+    for item in items:
         words = item.lower().replace("cube", " ").replace("block", " ").split()
         if len(words) != 1 or not words[0].isalpha():
             msg = f"tower entry is not one color word: {item!r}"
@@ -116,7 +135,7 @@ def parse_tower(text: str, *, max_height: int = 8) -> list[str]:
     if len(set(colors)) != len(colors):
         msg = f"tower repeats a color: {colors}"
         raise PlanError(msg)
-    return colors
+    return colors[::-1] if parsed["order"] == "top_down" else colors
 
 
 def tower_steps(tower: Sequence[str]) -> list[str]:
@@ -160,7 +179,7 @@ class HFPlanner(BasePlanner):
         pretrained: str = "Qwen/Qwen2.5-1.5B-Instruct",
         device: str = "auto",
         system_prompt: str = DEFAULT_SYSTEM_PROMPT,
-        examples: Sequence[tuple[str, list[str]]] = DEFAULT_EXAMPLES,
+        examples: Sequence[tuple[str, Any]] = DEFAULT_EXAMPLES,
         max_new_tokens: int = 160,
         retries: int = 1,
         **_: object,
@@ -224,7 +243,7 @@ class HFPlanner(BasePlanner):
 
 
 class HFTowerPlanner(HFPlanner):
-    """``HFPlanner`` that only asks for the tower order and writes the steps itself."""
+    """``HFPlanner`` that asks for the colors as named plus their direction, not steps."""
 
     name = "hf_tower"
 
@@ -232,7 +251,7 @@ class HFTowerPlanner(HFPlanner):
         self,
         *,
         system_prompt: str = TOWER_SYSTEM_PROMPT,
-        examples: Sequence[tuple[str, list[str]]] = TOWER_EXAMPLES,
+        examples: Sequence[tuple[str, Any]] = TOWER_EXAMPLES,
         **kwargs: Any,
     ) -> None:
         super().__init__(system_prompt=system_prompt, examples=examples, **kwargs)
