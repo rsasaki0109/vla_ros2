@@ -377,45 +377,56 @@ until the first release, then step 1's, then the sequence reports `done`.
 `vla_task_sequencer_node` can also start from one goal instead of a step list:
 `planner:=static` (default) uses the goal as the single instruction;
 `planner:=hf_tower` asks a local instruction-tuned LLM
-(`vla_ros2.planner.HFTowerPlanner`) only to copy the tower's cube colors in the
-order the goal names them and say whether that order is `top_down` or
-`bottom_up` (`{"order": ..., "colors": [...]}`); `parse_tower` puts them bottom to
-top and `tower_steps` writes the "Put the X cube on the Y cube." steps, so the
-model never reorders anything. `planner:=hf` (`HFPlanner`) asks the LLM for the
-steps themselves.
+(`vla_ros2.planner.HFTowerPlanner`), per tower, only to copy the cube colors in
+the order the goal names them and say whether that order is `top_down` or
+`bottom_up` (`[{"order": ..., "colors": [...]}, ...]`); `parse_towers` puts them
+bottom to top and `towers_steps` writes the "Put the X cube on the Y cube."
+steps, so the model never reorders anything. `planner:=hf` (`HFPlanner`) asks
+the LLM for the steps themselves.
+
+With `planner_cross_check:=true` (default) `hf_tower` asks a second time for
+plain bottom-to-top lists and refuses to plan (`PlanError`, the sequencer does
+not start) unless both answers give the same towers.
 
 ```bash
 ros2 launch vla_ros2 task_pipeline.launch.py planner:=hf_tower \
   goal:="Make a stack with red on top, green under it, blue under it."
-python scripts/planner_eval.py --planner hf_tower --pretrained Qwen/Qwen2.5-1.5B-Instruct --every 3
+python scripts/planner_eval.py --planner hf_tower --every 3            # one tower
+python scripts/planner_eval.py --planner hf_tower --goals multi        # two towers
 ```
 
-`vla_ros2.planner_eval` scores planners on tower goals that have exactly one
-correct plan (2–4 cubes, colors not used in the prompt examples) in seven
-phrasings. Three (bottom-up, top-down, chain: "Stack the red cube on the green
-cube on the blue cube.") match a few-shot example; four are in no example
+`vla_ros2.planner_eval` has two goal sets, both with colors not used in the
+prompt examples. `tower_tasks` are single towers (2–4 cubes) in seven phrasings:
+three (bottom-up, top-down, chain: "Stack the red cube on the green cube on the
+blue cube.") match a few-shot example, four are in no example
 (`HELD_OUT_PHRASINGS`: "From top to bottom, the tower is red, green, blue.", the
 bottom-to-top list, "Put red on top of green, green on top of blue.", "Red goes
-on top. Below it is green. Blue is at the base."). On CPU, 20 towers × 7
-phrasings = 140 goals
-([`docs/assets/planner_tower_eval_cpu.json`](docs/assets/planner_tower_eval_cpu.json)):
+on top. Below it is green. Blue is at the base."). `multi_tower_tasks` are 80
+"Build two separate towers. First: … Second: …" goals over six colors.
+`simulate` replays a plan from all cubes on the table and rejects a step that
+moves a covered cube or stacks onto one, so any valid order scores.
 
-| model | `hf` | bottom-to-top list (prototype) | `hf_tower` | `hf_tower` held-out | s/goal |
+On CPU ([`docs/assets/planner_cross_check_eval_cpu.json`](docs/assets/planner_cross_check_eval_cpu.json));
+*wrong* = a plan was returned but is not correct (what the robot would run),
+*refused* = cross-check disagreed or the reply was unusable:
+
+| model | one tower (140): correct / wrong / refused | unchecked | two towers (80): correct / wrong / refused | unchecked | `hf`, two towers |
 |---|---:|---:|---:|---:|---:|
-| Qwen2.5-0.5B-Instruct | 21 / 140 | 67 / 140 | 119 / 140 | 63 / 80 | 2.1 |
-| Qwen2.5-1.5B-Instruct | 43 / 140 | 122 / 140 | **131 / 140** | 74 / 80 | 5.7 |
-| Qwen2.5-3B-Instruct | 54 / 140 | 113 / 140 | 128 / 140 | 71 / 80 | 11.0 |
+| Qwen2.5-0.5B-Instruct | 62 / **0** / 78 | 114 | 8 / 8 / 64 | 13 | 0 / 79 / 1 |
+| Qwen2.5-1.5B-Instruct | **110** / **0** / 30 | 128 | 22 / 5 / 53 | 56 | 15 / 65 / 0 |
+| Qwen2.5-3B-Instruct | 90 / **0** / 50 | 111 | 27 / 0 / 53 | 51 | 2 / 78 / 0 |
 
-The step planner (`hf`) gets bottom-up goals right and reverses the others
-("blue on top, red under it" → "Put the red cube on the blue cube."). Asking for
-the colors bottom to top instead (the prototype column) fixed most of that but
-small models still copied top-down lists without reversing them; letting the
-model copy the list and only name its direction fixes that. Adding two more
-few-shot examples made both formats worse (1.5B: 112 and 125), and asking for
-unordered (upper, lower) pairs did not help either. The weakest cases left are
-"Red goes on top. … Blue is at the base." with 0.5B (3/20) and top-down lists
-with 3B (14/20). Check the printed plan before running it, or pass `steps_json`
-yourself.
+*unchecked* is the first answer alone (`--no-cross-check`). With the check no
+single-tower plan was wrong on any model; with 1.5B it refuses 30 goals, 18 of
+which the first answer had right. Two towers are much harder: the check
+format (bottom-to-top lists) fails on top-down phrasings, so most are refused,
+and both formats misread two-tower chains the same way, so 1.5B still returns
+5 wrong plans. Supporting several towers cost some single-tower accuracy
+(unchecked 1.5B 131 → 128, 3B 128 → 111; the earlier one-tower prompt is in
+[`docs/assets/planner_tower_eval_cpu.json`](docs/assets/planner_tower_eval_cpu.json)
+together with the `hf` and prototype comparisons). Small follow-up questions
+("is blue above or below red?") were no better than chance as a check on 1.5B.
+Check the printed plan before running it, or pass `steps_json` yourself.
 
 ## Offline evaluation (recorded demos)
 

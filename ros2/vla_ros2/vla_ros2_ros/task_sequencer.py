@@ -38,6 +38,8 @@ class TaskSequencerNode(Node):
         self.declare_parameter("planner", "static")
         self.declare_parameter("planner_model", "Qwen/Qwen2.5-1.5B-Instruct")
         self.declare_parameter("planner_device", "auto")
+        # hf_tower: ask twice in two formats and refuse to plan if the answers disagree.
+        self.declare_parameter("planner_cross_check", True)
         self.declare_parameter("task_id_prefix", "seq")
         self.declare_parameter("instruction_topic", "/vla/instruction")
         self.declare_parameter("task_status_topic", "/vla/task_status")
@@ -54,6 +56,7 @@ class TaskSequencerNode(Node):
                 str(value("planner")),
                 pretrained=str(value("planner_model")),
                 device=str(value("planner_device")),
+                cross_check=bool(value("planner_cross_check")),
             )
             planned = planner.plan(goal)
             self.get_logger().info(f"planned {len(planned)} steps for {goal!r}: {planned}")

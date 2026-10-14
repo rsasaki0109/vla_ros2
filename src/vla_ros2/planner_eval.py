@@ -86,3 +86,77 @@ def plan_pairs(steps: Sequence[str]) -> list[tuple[str, str]] | None:
 
 def score_plan(task: TowerTask, steps: Sequence[str]) -> bool:
     return plan_pairs(steps) == task.expected
+
+
+MULTI_TOWER_COLORS = EVAL_COLORS + ("brown", "black")
+
+
+@dataclass(frozen=True)
+class MultiTowerTask:
+    """Several towers from cubes that all start on the table; any valid order is fine."""
+
+    goal: str
+    towers: tuple[tuple[str, ...], ...]
+    """Each tower's colors from bottom to top."""
+    phrasing: str
+
+    @property
+    def expected_on(self) -> dict[str, str]:
+        return {
+            top: below
+            for tower in self.towers
+            for below, top in zip(tower, tower[1:], strict=False)
+        }
+
+
+def simulate(steps: Sequence[str]) -> dict[str, str] | None:
+    """Final {cube: cube it sits on} after ``steps``, starting with every cube on the table.
+
+    Returns None if a step is not a put-X-on-Y instruction or cannot be done: X or Y
+    has a cube on it, or X is Y.
+    """
+
+    pairs = plan_pairs(steps)
+    if pairs is None:
+        return None
+    on: dict[str, str] = {}
+    for moved, target in pairs:
+        covered = set(on.values())
+        if moved == target or moved in covered or target in covered:
+            return None
+        on[moved] = target
+    return on
+
+
+def score_multi_plan(task: MultiTowerTask, steps: Sequence[str]) -> bool:
+    return simulate(steps) == task.expected_on
+
+
+def multi_tower_tasks(
+    colors: Sequence[str] = MULTI_TOWER_COLORS,
+    heights: Sequence[tuple[int, int]] = ((2, 2), (2, 3), (3, 3)),
+    per_phrasing: int = 10,
+    phrasings: Sequence[str] = SEEN_PHRASINGS + HELD_OUT_PHRASINGS,
+) -> Iterator[MultiTowerTask]:
+    """Two-tower goals: both towers in one phrasing, then mixed-phrasing pairs."""
+
+    candidates = [
+        (perm[:first], perm[first:])
+        for first, second in heights
+        for perm in permutations(colors, first + second)
+    ]
+    count = per_phrasing * (len(phrasings) + 1)
+    picked = candidates[:: max(1, len(candidates) // count)][:count]
+    combos = [(p, p) for p in phrasings] + [
+        (phrasings[i], phrasings[(i + 3) % len(phrasings)]) for i in range(len(phrasings))
+    ]
+    for index, (first, second) in enumerate(picked):
+        if index < per_phrasing * len(phrasings):
+            p1, p2 = combos[index // per_phrasing]
+        else:
+            p1, p2 = combos[len(phrasings) + index % len(phrasings)]
+        goal = (
+            f"Build two separate towers. First: {_phrase(first, p1)} Second: {_phrase(second, p2)}"
+        )
+        label = p1 if p1 == p2 else "mixed"
+        yield MultiTowerTask(goal=goal, towers=(first, second), phrasing=label)

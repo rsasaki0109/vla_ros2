@@ -383,11 +383,13 @@ colcon test-result --verbose
   trained on start/end frames) is the cheaper route. Done for the gripper/joint route:
   `vla_state_success_node` (`task_success.py`) fires on 41/41 valid held-out stacking
   episodes with no false alarms; it does not check where the object landed.
-- **Goal planner**: `planner:=hf_tower` (`vla_ros2.planner`) asks a local LLM only for
-  the tower's colors in the order the goal names them plus that order's direction, and
-  writes the steps in code; on CPU Qwen2.5-1.5B gets 131/140 tower goals right, 74/80
-  on phrasings no example shows (step-writing `hf`: 43/140). Next: goals that are not a
-  single tower, and larger models on a GPU (`scripts/planner_eval.py`).
+- **Goal planner**: `planner:=hf_tower` (`vla_ros2.planner`) asks a local LLM, per tower,
+  for the colors in the order the goal names them plus that order's direction, writes the
+  steps in code, and by default cross-checks against plain bottom-to-top lists. On CPU
+  Qwen2.5-1.5B returns 110/140 single-tower plans with none wrong (30 refused); two-tower
+  goals are refused or wrong far more often (22 right, 5 wrong of 80). Next: a better
+  check for several towers, goals that start from a non-empty table, larger models on a
+  GPU (`scripts/planner_eval.py`).
 - **Fine-tune with held-out episodes** and report `scripts/eval_offline_lerobot.py` on
   them (notebook 03); the 20k checkpoint was trained on every episode.
 - **Real-robot validation**: follow `ros2/BRINGUP.md` on hardware. Reference bridge:

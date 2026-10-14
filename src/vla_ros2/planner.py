@@ -4,10 +4,12 @@ The VLA executes single instructions in its training style ("Put the red cube on
 the blue cube."); a planner writes that list from a goal ("build a tower: blue at
 the bottom, then green, then red"). ``HFPlanner`` asks a local instruction-tuned
 LLM for a JSON array; ``parse_plan`` extracts and validates it. ``HFTowerPlanner``
-asks only for the tower's colors in the order the goal names them plus whether that
-order runs top-down or bottom-up; code puts them bottom to top (``parse_tower``) and
-writes the instructions (``tower_steps``), so the model never reorders anything.
-Plans are only suggestions for the sequencer: they never command the robot directly.
+asks, per tower, only for the colors in the order the goal names them plus whether
+that order runs top-down or bottom-up; code puts them bottom to top (``parse_towers``)
+and writes the instructions (``towers_steps``), so the model never reorders anything.
+With ``cross_check`` it also asks for plain bottom-to-top lists
+(``parse_tower_lists``) and refuses the plan when the two answers disagree. Plans
+are only suggestions for the sequencer: they never command the robot directly.
 """
 
 from __future__ import annotations
@@ -39,26 +41,67 @@ DEFAULT_EXAMPLES: tuple[tuple[str, list[str]], ...] = (
 
 
 TOWER_SYSTEM_PROMPT = (
-    "You read goals for a robot arm that stacks colored cubes into one tower. List the "
-    "cube colors in the order the goal mentions them, and say whether that order runs "
-    'from the top of the tower down ("top_down") or from the bottom up ("bottom_up"). '
-    'Reply with one JSON object {"order": "top_down" or "bottom_up", "colors": [...]}, '
+    "You read goals for a robot arm that stacks colored cubes into towers. For each "
+    "tower, list the cube colors in the order the goal mentions them, and say whether "
+    'that order runs from the top of the tower down ("top_down") or from the bottom up '
+    '("bottom_up"). Reply with a JSON array holding one object {"order": "top_down" or '
+    '"bottom_up", "colors": [...]} per tower, one lowercase word per color, and nothing '
+    "else."
+)
+
+_EXAMPLE_GOALS = (
+    "Build a tower with yellow at the bottom, then purple, then orange on top.",
+    "Make a stack with white on top, pink under it, yellow under it.",
+    "Stack the orange cube on the white cube on the purple cube.",
+    "Make two stacks: one with white at the bottom and pink on top, and one with orange "
+    "on top of yellow.",
+)
+
+TOWER_EXAMPLES: tuple[tuple[str, list[dict[str, Any]]], ...] = tuple(
+    zip(
+        _EXAMPLE_GOALS,
+        (
+            [{"order": "bottom_up", "colors": ["yellow", "purple", "orange"]}],
+            [{"order": "top_down", "colors": ["white", "pink", "yellow"]}],
+            [{"order": "top_down", "colors": ["orange", "white", "purple"]}],
+            [
+                {"order": "bottom_up", "colors": ["white", "pink"]},
+                {"order": "top_down", "colors": ["orange", "yellow"]},
+            ],
+        ),
+        strict=True,
+    )
+)
+
+# Cross-check prompts: plain bottom-to-top lists. A one-tower answer is checked with a
+# one-tower prompt, since a multi-tower example makes small models split single towers.
+CHECK_SYSTEM_PROMPT = (
+    "You read goals for a robot arm that stacks colored cubes into one tower. Reply "
+    "with a JSON array of the cube colors from the BOTTOM of the tower to the TOP, "
     "one lowercase word per color, and nothing else."
 )
 
-TOWER_EXAMPLES: tuple[tuple[str, dict[str, Any]], ...] = (
-    (
-        "Build a tower with yellow at the bottom, then purple, then orange on top.",
-        {"order": "bottom_up", "colors": ["yellow", "purple", "orange"]},
-    ),
-    (
-        "Make a stack with white on top, pink under it, yellow under it.",
-        {"order": "top_down", "colors": ["white", "pink", "yellow"]},
-    ),
-    (
-        "Stack the orange cube on the white cube on the purple cube.",
-        {"order": "top_down", "colors": ["orange", "white", "purple"]},
-    ),
+CHECK_EXAMPLES: tuple[tuple[str, list[str]], ...] = tuple(
+    zip(
+        _EXAMPLE_GOALS[:3],
+        (
+            ["yellow", "purple", "orange"],
+            ["yellow", "pink", "white"],
+            ["purple", "white", "orange"],
+        ),
+        strict=True,
+    )
+)
+
+MULTI_CHECK_SYSTEM_PROMPT = (
+    "You read goals for a robot arm that stacks colored cubes into towers. Reply with a "
+    "JSON array holding one array per tower, each listing that tower's cube colors from "
+    "the BOTTOM of the tower to the TOP, one lowercase word per color, and nothing else."
+)
+
+MULTI_CHECK_EXAMPLES: tuple[tuple[str, list[list[str]]], ...] = (
+    *((goal, [colors]) for goal, colors in CHECK_EXAMPLES),
+    (_EXAMPLE_GOALS[3], [["white", "pink"], ["yellow", "orange"]]),
 )
 
 
@@ -100,24 +143,31 @@ def parse_plan(text: str, *, max_steps: int = 10, max_words: int = 20) -> list[s
     return steps
 
 
-def parse_tower(text: str, *, max_height: int = 8) -> list[str]:
-    """Bottom-to-top colors from the first ``{"order": ..., "colors": [...]}`` in ``text``."""
+def _first_json(text: str) -> Any:
+    """Decode the first JSON object or array in ``text``.
 
-    match = re.search(r"\{.*?\}", text, flags=re.DOTALL)
+    Small models often stop right before the closing ``]`` of an array (``[{...}``),
+    so a reply that ends inside an array gets up to two brackets appended.
+    """
+
+    match = re.search(r"[\[{]", text)
     if match is None:
-        msg = f"no JSON object in planner reply: {text[:200]!r}"
+        msg = f"no JSON in planner reply: {text[:200]!r}"
         raise PlanError(msg)
-    try:
-        parsed: Any = json.loads(match.group(0))
-    except json.JSONDecodeError as exc:
-        msg = f"planner reply is not valid JSON: {match.group(0)[:200]!r}"
-        raise PlanError(msg) from exc
-    if not isinstance(parsed, dict) or parsed.get("order") not in ("top_down", "bottom_up"):
-        msg = f'planner reply needs "order": "top_down" or "bottom_up": {parsed!r}'
-        raise PlanError(msg)
-    items = parsed.get("colors")
+    body = text[match.start() :].rstrip()
+    for suffix in ("", "]", "]]"):
+        try:
+            parsed, _ = json.JSONDecoder().raw_decode(body + suffix)
+        except json.JSONDecodeError:
+            continue
+        return parsed
+    msg = f"planner reply is not valid JSON: {body[:200]!r}"
+    raise PlanError(msg)
+
+
+def _tower_colors(items: Any, *, max_height: int) -> list[str]:
     if not isinstance(items, list) or not all(isinstance(item, str) for item in items):
-        msg = f'planner reply needs "colors" as a list of strings: {parsed!r}'
+        msg = f"tower colors must be a list of strings: {items!r}"
         raise PlanError(msg)
     colors = []
     for item in items:
@@ -132,10 +182,55 @@ def parse_tower(text: str, *, max_height: int = 8) -> list[str]:
     if len(colors) > max_height:
         msg = f"tower of {len(colors)} cubes (max {max_height})"
         raise PlanError(msg)
-    if len(set(colors)) != len(colors):
-        msg = f"tower repeats a color: {colors}"
+    return colors
+
+
+def _check_towers(towers: list[list[str]], *, max_towers: int) -> list[list[str]]:
+    if not towers:
+        msg = "planner returned no towers"
         raise PlanError(msg)
-    return colors[::-1] if parsed["order"] == "top_down" else colors
+    if len(towers) > max_towers:
+        msg = f"planner returned {len(towers)} towers (max {max_towers})"
+        raise PlanError(msg)
+    colors = [color for tower in towers for color in tower]
+    if len(set(colors)) != len(colors):
+        msg = f"towers repeat a color: {towers}"
+        raise PlanError(msg)
+    return towers
+
+
+def parse_towers(text: str, *, max_height: int = 8, max_towers: int = 4) -> list[list[str]]:
+    """Bottom-to-top towers from ``[{"order": ..., "colors": [...]}, ...]`` in ``text``.
+
+    A single object (no array) is one tower. ``"top_down"`` lists are reversed here.
+    """
+
+    parsed = _first_json(text)
+    objects = [parsed] if isinstance(parsed, dict) else parsed
+    if not isinstance(objects, list) or not all(isinstance(obj, dict) for obj in objects):
+        msg = f"planner reply must be an array of tower objects: {parsed!r}"
+        raise PlanError(msg)
+    towers = []
+    for obj in objects:
+        if obj.get("order") not in ("top_down", "bottom_up"):
+            msg = f'tower needs "order": "top_down" or "bottom_up": {obj!r}'
+            raise PlanError(msg)
+        colors = _tower_colors(obj.get("colors"), max_height=max_height)
+        towers.append(colors[::-1] if obj["order"] == "top_down" else colors)
+    return _check_towers(towers, max_towers=max_towers)
+
+
+def parse_tower_lists(text: str, *, max_height: int = 8, max_towers: int = 4) -> list[list[str]]:
+    """Bottom-to-top towers from ``[[...], ...]`` in ``text``; a flat list is one tower."""
+
+    parsed = _first_json(text)
+    if isinstance(parsed, list) and parsed and all(isinstance(item, str) for item in parsed):
+        parsed = [parsed]
+    if not isinstance(parsed, list):
+        msg = f"planner reply must be an array of color arrays: {parsed!r}"
+        raise PlanError(msg)
+    towers = [_tower_colors(items, max_height=max_height) for items in parsed]
+    return _check_towers(towers, max_towers=max_towers)
 
 
 def tower_steps(tower: Sequence[str]) -> list[str]:
@@ -145,6 +240,12 @@ def tower_steps(tower: Sequence[str]) -> list[str]:
         f"Put the {top} cube on the {below} cube."
         for below, top in zip(tower, tower[1:], strict=False)
     ]
+
+
+def towers_steps(towers: Sequence[Sequence[str]]) -> list[str]:
+    """Instructions that build each tower in turn, starting from cubes on the table."""
+
+    return [step for tower in towers for step in tower_steps(tower)]
 
 
 class BasePlanner(ABC):
@@ -208,17 +309,22 @@ class HFPlanner(BasePlanner):
     def parse(self, reply: str) -> list[str]:
         return parse_plan(reply)
 
-    def _messages(self, goal: str) -> list[dict[str, str]]:
-        messages = [{"role": "system", "content": self.system_prompt}]
-        for example_goal, example_steps in self.examples:
+    def _messages(
+        self,
+        goal: str,
+        system_prompt: str | None = None,
+        examples: Sequence[tuple[str, Any]] | None = None,
+    ) -> list[dict[str, str]]:
+        messages = [{"role": "system", "content": system_prompt or self.system_prompt}]
+        for example_goal, example_steps in self.examples if examples is None else examples:
             messages.append({"role": "user", "content": example_goal})
             messages.append({"role": "assistant", "content": json.dumps(example_steps)})
         messages.append({"role": "user", "content": goal.strip()})
         return messages
 
-    def generate(self, goal: str) -> str:
+    def generate(self, goal: str, *, messages: list[dict[str, str]] | None = None) -> str:
         inputs = self.tokenizer.apply_chat_template(
-            self._messages(goal),
+            messages if messages is not None else self._messages(goal),
             add_generation_prompt=True,
             return_tensors="pt",
             return_dict=True,
@@ -243,7 +349,12 @@ class HFPlanner(BasePlanner):
 
 
 class HFTowerPlanner(HFPlanner):
-    """``HFPlanner`` that asks for the colors as named plus their direction, not steps."""
+    """``HFPlanner`` that asks for each tower's colors and direction, not for steps.
+
+    With ``cross_check`` (default) it asks a second time for plain bottom-to-top lists
+    (``CHECK_*`` for one tower, ``MULTI_CHECK_*`` for more) and raises ``PlanError``
+    unless both answers give the same towers.
+    """
 
     name = "hf_tower"
 
@@ -252,14 +363,40 @@ class HFTowerPlanner(HFPlanner):
         *,
         system_prompt: str = TOWER_SYSTEM_PROMPT,
         examples: Sequence[tuple[str, Any]] = TOWER_EXAMPLES,
+        cross_check: bool = True,
         **kwargs: Any,
     ) -> None:
         super().__init__(system_prompt=system_prompt, examples=examples, **kwargs)
-        self.last_tower: list[str] = []
+        self.cross_check = cross_check
+        self.last_towers: list[list[str]] = []
+        self.last_check_towers: list[list[str]] = []
+        self.last_check_reply = ""
+        self.last_unchecked: list[str] = []
 
     def parse(self, reply: str) -> list[str]:
-        self.last_tower = parse_tower(reply)
-        return tower_steps(self.last_tower)
+        self.last_towers = parse_towers(reply)
+        return towers_steps(self.last_towers)
+
+    def plan(self, goal: str) -> list[str]:
+        self.last_towers, self.last_check_towers, self.last_unchecked = [], [], []
+        self.last_check_reply = ""
+        steps = super().plan(goal)
+        self.last_unchecked = steps
+        if not self.cross_check:
+            return steps
+        if len(self.last_towers) == 1:
+            messages = self._messages(goal, CHECK_SYSTEM_PROMPT, CHECK_EXAMPLES)
+        else:
+            messages = self._messages(goal, MULTI_CHECK_SYSTEM_PROMPT, MULTI_CHECK_EXAMPLES)
+        self.last_check_reply = self.generate(goal, messages=messages)
+        self.last_check_towers = parse_tower_lists(self.last_check_reply)
+        if sorted(self.last_check_towers) != sorted(self.last_towers):
+            msg = (
+                f"cross-check disagrees: {self.last_towers} vs {self.last_check_towers} "
+                "(bottom to top); not planning"
+            )
+            raise PlanError(msg)
+        return steps
 
 
 _PLANNERS: dict[str, type[BasePlanner]] = {

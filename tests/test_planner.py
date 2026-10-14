@@ -6,16 +6,32 @@ import pytest
 
 from vla_ros2.core.errors import UnknownModelError
 from vla_ros2.planner import (
+    CHECK_EXAMPLES,
+    CHECK_SYSTEM_PROMPT,
+    MULTI_CHECK_EXAMPLES,
+    MULTI_CHECK_SYSTEM_PROMPT,
     TOWER_EXAMPLES,
+    TOWER_SYSTEM_PROMPT,
     HFTowerPlanner,
     PlanError,
     StaticPlanner,
     load_planner,
     parse_plan,
-    parse_tower,
+    parse_tower_lists,
+    parse_towers,
     tower_steps,
+    towers_steps,
 )
-from vla_ros2.planner_eval import TowerTask, plan_pairs, score_plan, tower_tasks
+from vla_ros2.planner_eval import (
+    MultiTowerTask,
+    TowerTask,
+    multi_tower_tasks,
+    plan_pairs,
+    score_multi_plan,
+    score_plan,
+    simulate,
+    tower_tasks,
+)
 
 
 def test_parse_plan_extracts_first_json_array() -> None:
@@ -71,10 +87,26 @@ def test_score_plan_requires_exact_order() -> None:
     assert plan_pairs(["Pick up the red cube."]) is None
 
 
-def test_parse_tower_and_compile_steps() -> None:
-    reply = 'Sure: {"order": "top_down", "colors": ["Red", "green cube", " blue "]}'
-    assert parse_tower(reply) == ["blue", "green", "red"]
-    assert parse_tower('{"order": "bottom_up", "colors": ["blue", "red"]}') == ["blue", "red"]
+def test_parse_towers_and_compile_steps() -> None:
+    reply = 'Sure: [{"order": "top_down", "colors": ["Red", "green cube", " blue "]}]'
+    assert parse_towers(reply) == [["blue", "green", "red"]]
+    # a bare object is one tower
+    assert parse_towers('{"order": "bottom_up", "colors": ["blue", "red"]}') == [["blue", "red"]]
+    two = (
+        '[{"order": "bottom_up", "colors": ["blue", "red"]},'
+        ' {"order": "top_down", "colors": ["gray", "green"]}]'
+    )
+    assert parse_towers(two) == [["blue", "red"], ["green", "gray"]]
+    # a reply that stops before the closing bracket
+    assert parse_towers('[{"order": "bottom_up", "colors": ["blue", "red"]}') == [["blue", "red"]]
+    assert parse_tower_lists('[["blue", "red"], ["gray", "green"]') == [
+        ["blue", "red"],
+        ["gray", "green"],
+    ]
+    assert towers_steps(parse_towers(two)) == [
+        "Put the red cube on the blue cube.",
+        "Put the gray cube on the green cube.",
+    ]
     assert tower_steps(["blue", "green", "red"]) == [
         "Put the green cube on the blue cube.",
         "Put the red cube on the green cube.",
@@ -84,30 +116,127 @@ def test_parse_tower_and_compile_steps() -> None:
 @pytest.mark.parametrize(
     "reply",
     [
-        '{"order": "up", "colors": ["red", "blue"]}',
-        '{"order": "top_down", "colors": "red, blue"}',
-        '{"order": "top_down", "colors": ["red"]}',
-        '{"order": "top_down", "colors": ["red", "red"]}',
-        '{"order": "top_down", "colors": ["light blue", "red"]}',
+        '[{"order": "up", "colors": ["red", "blue"]}]',
+        '[{"order": "top_down", "colors": "red, blue"}]',
+        '[{"order": "top_down", "colors": ["red"]}]',
+        '[{"order": "top_down", "colors": ["red", "red"]}]',
+        '[{"order": "top_down", "colors": ["light blue", "red"]}]',
+        '[{"order": "top_down", "colors": ["red", "blue"]},'
+        ' {"order": "top_down", "colors": ["blue", "gray"]}]',
+        "[]",
         '["red", "blue"]',
         "{not json}",
         "none",
     ],
 )
-def test_parse_tower_rejects_bad_replies(reply: str) -> None:
+def test_parse_towers_rejects_bad_replies(reply: str) -> None:
     with pytest.raises(PlanError):
-        parse_tower(reply)
+        parse_towers(reply)
 
 
-def test_tower_examples_score_as_correct_plans() -> None:
-    for goal, out in TOWER_EXAMPLES:
-        tower = parse_tower(json.dumps(out))
-        task = TowerTask(goal=goal, tower=tuple(tower), phrasing="example")
-        assert score_plan(task, tower_steps(tower))
+def test_parse_tower_lists() -> None:
+    assert parse_tower_lists('[["blue", "red"], ["gray", "green"]]') == [
+        ["blue", "red"],
+        ["gray", "green"],
+    ]
+    assert parse_tower_lists('["blue", "red"]') == [["blue", "red"]]
+    with pytest.raises(PlanError):
+        parse_tower_lists('[["blue", "red"], ["red", "green"]]')
 
 
-def test_tower_planner_parses_reply_without_a_model() -> None:
+def test_examples_agree_and_score_as_correct_plans() -> None:
+    for (goal, out), (check_goal, lists) in zip(TOWER_EXAMPLES, MULTI_CHECK_EXAMPLES, strict=True):
+        assert goal == check_goal
+        towers = parse_towers(json.dumps(out))
+        assert towers == parse_tower_lists(json.dumps(lists))
+        task = MultiTowerTask(goal=goal, towers=tuple(map(tuple, towers)), phrasing="example")
+        assert score_multi_plan(task, towers_steps(towers))
+
+
+def _stub_planner(replies: list[str], *, cross_check: bool) -> HFTowerPlanner:
     planner = HFTowerPlanner.__new__(HFTowerPlanner)
-    reply = '{"order": "top_down", "colors": ["red", "gray"]}'
-    assert planner.parse(reply) == ["Put the red cube on the gray cube."]
-    assert planner.last_tower == ["gray", "red"]
+    planner.system_prompt, planner.examples = TOWER_SYSTEM_PROMPT, list(TOWER_EXAMPLES)
+    planner.cross_check, planner.retries = cross_check, 0
+    sent: list[str] = []
+
+    def generate(goal: str, *, messages: list[dict[str, str]] | None = None) -> str:
+        sent.append((messages or planner._messages(goal))[0]["content"])
+        return replies[len(sent) - 1]
+
+    planner.generate = generate  # type: ignore[method-assign]
+    planner.sent = sent  # type: ignore[attr-defined]
+    return planner
+
+
+def test_tower_planner_cross_check() -> None:
+    first = '[{"order": "top_down", "colors": ["red", "gray"]}]'
+    planner = _stub_planner([first, '[["gray", "red"]]'], cross_check=True)
+    assert planner.plan("goal") == ["Put the red cube on the gray cube."]
+    assert planner.sent == [TOWER_SYSTEM_PROMPT, CHECK_SYSTEM_PROMPT]  # type: ignore[attr-defined]
+    assert planner.last_towers == planner.last_check_towers == [["gray", "red"]]
+
+    planner = _stub_planner([first, '[["red", "gray"]]'], cross_check=True)
+    with pytest.raises(PlanError, match="cross-check disagrees"):
+        planner.plan("goal")
+    assert planner.last_unchecked == ["Put the red cube on the gray cube."]
+
+    planner = _stub_planner([first], cross_check=False)
+    assert planner.plan("goal") == ["Put the red cube on the gray cube."]
+
+    two = (
+        '[{"order": "bottom_up", "colors": ["blue", "red"]},'
+        ' {"order": "top_down", "colors": ["gray", "green"]}]'
+    )
+    planner = _stub_planner([two, '[["green", "gray"], ["blue", "red"]]'], cross_check=True)
+    assert len(planner.plan("goal")) == 2
+    assert planner.sent[1] == MULTI_CHECK_SYSTEM_PROMPT  # type: ignore[attr-defined]
+    assert [g for g, _ in CHECK_EXAMPLES] == [g for g, _ in MULTI_CHECK_EXAMPLES][:3]
+
+
+def test_simulate_checks_each_step_and_returns_final_state() -> None:
+    assert simulate(
+        ["Put the green cube on the blue cube.", "Put the red cube on the green cube."]
+    ) == {
+        "green": "blue",
+        "red": "green",
+    }
+    # red onto green, then green (now covered) cannot move
+    assert (
+        simulate(["Put the red cube on the green cube.", "Put the green cube on the blue cube."])
+        is None
+    )
+    # blue is covered by green, so red cannot go on it
+    assert (
+        simulate(["Put the green cube on the blue cube.", "Put the red cube on the blue cube."])
+        is None
+    )
+    assert simulate(["Put the red cube on the red cube."]) is None
+    assert simulate(["Pick up the red cube."]) is None
+    # moving a clear cube again is allowed
+    assert simulate(
+        ["Put the red cube on the blue cube.", "Put the red cube on the gray cube."]
+    ) == {"red": "gray"}
+
+
+def test_multi_tower_plans_accept_any_valid_order() -> None:
+    task = MultiTowerTask(
+        goal="", towers=(("blue", "red"), ("gray", "green", "brown")), phrasing="x"
+    )
+    steps = [
+        "Put the green cube on the gray cube.",
+        "Put the red cube on the blue cube.",
+        "Put the brown cube on the green cube.",
+    ]
+    assert score_multi_plan(task, steps)
+    assert not score_multi_plan(task, steps[:2])
+    assert not score_multi_plan(task, list(reversed(steps)))
+
+
+def test_multi_tower_tasks() -> None:
+    tasks = list(multi_tower_tasks())
+    assert len(tasks) == 80
+    assert {t.phrasing for t in tasks} >= {"bottom_up", "top_list", "mixed"}
+    for task in tasks:
+        colors = [c for tower in task.towers for c in tower]
+        assert len(colors) == len(set(colors))
+        assert task.goal.startswith("Build two separate towers. First: ")
