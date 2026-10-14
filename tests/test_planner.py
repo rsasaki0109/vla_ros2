@@ -46,8 +46,8 @@ def test_tower_goals_and_expected_plans() -> None:
     task = TowerTask(goal="", tower=("blue", "green", "red"), phrasing="bottom_up")
     assert task.expected == [("green", "blue"), ("red", "green")]
     tasks = list(tower_tasks())
-    # 4P2 + 4P3 + 4P4 towers, 4 phrasings each
-    assert len(tasks) == (12 + 24 + 24) * 4
+    # 4P2 + 4P3 + 4P4 towers, 7 phrasings each
+    assert len(tasks) == (12 + 24 + 24) * 7
     goals = {t.phrasing: t.goal for t in tasks if t.tower == ("blue", "green", "red")}
     assert goals["bottom_up"] == (
         "Build a tower with blue at the bottom, then green, then red on top."
@@ -55,6 +55,9 @@ def test_tower_goals_and_expected_plans() -> None:
     assert goals["top_down"] == "Make a stack with red on top, green under it, blue under it."
     assert goals["chain"] == "Stack the red cube on the green cube on the blue cube."
     assert goals["top_list"] == "From top to bottom, the tower is red, green, blue."
+    assert goals["bottom_list"] == "From bottom to top, the tower is blue, green, red."
+    assert goals["on_top_of"] == "Put red on top of green, green on top of blue."
+    assert goals["top_sentences"] == "Red goes on top. Below it is green. Blue is at the base."
 
 
 def test_score_plan_requires_exact_order() -> None:
