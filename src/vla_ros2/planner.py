@@ -3,8 +3,10 @@
 The VLA executes single instructions in its training style ("Put the red cube on
 the blue cube."); a planner writes that list from a goal ("build a tower: blue at
 the bottom, then green, then red"). ``HFPlanner`` asks a local instruction-tuned
-LLM for a JSON array; ``parse_plan`` extracts and validates it. Plans are only
-suggestions for the sequencer: they never command the robot directly.
+LLM for a JSON array; ``parse_plan`` extracts and validates it. ``HFTowerPlanner``
+asks only for the tower's colors from bottom to top and writes the instructions in
+code (``tower_steps``), so the model never has to get the step order right. Plans
+are only suggestions for the sequencer: they never command the robot directly.
 """
 
 from __future__ import annotations
@@ -35,13 +37,33 @@ DEFAULT_EXAMPLES: tuple[tuple[str, list[str]], ...] = (
 )
 
 
+TOWER_SYSTEM_PROMPT = (
+    "You read goals for a robot arm that stacks colored cubes into one tower. Reply "
+    "with a JSON array of the cube colors from the BOTTOM of the tower to the TOP, "
+    "one lowercase word per color, and nothing else."
+)
+
+TOWER_EXAMPLES: tuple[tuple[str, list[str]], ...] = (
+    (
+        "Build a tower with yellow at the bottom, then purple, then orange on top.",
+        ["yellow", "purple", "orange"],
+    ),
+    (
+        "Make a stack with white on top, pink under it, yellow under it.",
+        ["yellow", "pink", "white"],
+    ),
+    (
+        "Stack the orange cube on the white cube on the purple cube.",
+        ["purple", "white", "orange"],
+    ),
+)
+
+
 class PlanError(ValueError):
     """Raised when a planner reply cannot be turned into a usable plan."""
 
 
-def parse_plan(text: str, *, max_steps: int = 10, max_words: int = 20) -> list[str]:
-    """Extract the first JSON array of strings from ``text`` and validate it."""
-
+def _first_string_array(text: str) -> list[str]:
     match = re.search(r"\[.*?\]", text, flags=re.DOTALL)
     if match is None:
         msg = f"no JSON array in planner reply: {text[:200]!r}"
@@ -54,6 +76,13 @@ def parse_plan(text: str, *, max_steps: int = 10, max_words: int = 20) -> list[s
     if not isinstance(parsed, list) or not all(isinstance(step, str) for step in parsed):
         msg = "planner reply must be a JSON array of strings"
         raise PlanError(msg)
+    return parsed
+
+
+def parse_plan(text: str, *, max_steps: int = 10, max_words: int = 20) -> list[str]:
+    """Extract the first JSON array of strings from ``text`` and validate it."""
+
+    parsed = _first_string_array(text)
     steps = [" ".join(step.split()) for step in parsed if step.strip()]
     if not steps:
         msg = "planner returned an empty plan"
@@ -66,6 +95,37 @@ def parse_plan(text: str, *, max_steps: int = 10, max_words: int = 20) -> list[s
             msg = f"planner step too long ({len(step.split())} words): {step!r}"
             raise PlanError(msg)
     return steps
+
+
+def parse_tower(text: str, *, max_height: int = 8) -> list[str]:
+    """Extract a bottom-to-top list of distinct one-word colors from ``text``."""
+
+    colors = []
+    for item in _first_string_array(text):
+        words = item.lower().replace("cube", " ").replace("block", " ").split()
+        if len(words) != 1 or not words[0].isalpha():
+            msg = f"tower entry is not one color word: {item!r}"
+            raise PlanError(msg)
+        colors.append(words[0])
+    if len(colors) < 2:
+        msg = f"a tower needs at least 2 cubes, got {colors}"
+        raise PlanError(msg)
+    if len(colors) > max_height:
+        msg = f"tower of {len(colors)} cubes (max {max_height})"
+        raise PlanError(msg)
+    if len(set(colors)) != len(colors):
+        msg = f"tower repeats a color: {colors}"
+        raise PlanError(msg)
+    return colors
+
+
+def tower_steps(tower: Sequence[str]) -> list[str]:
+    """Instructions that build ``tower`` (colors bottom to top), one cube per step."""
+
+    return [
+        f"Put the {top} cube on the {below} cube."
+        for below, top in zip(tower, tower[1:], strict=False)
+    ]
 
 
 class BasePlanner(ABC):
@@ -126,6 +186,9 @@ class HFPlanner(BasePlanner):
         self.retries = retries
         self.last_reply = ""
 
+    def parse(self, reply: str) -> list[str]:
+        return parse_plan(reply)
+
     def _messages(self, goal: str) -> list[dict[str, str]]:
         messages = [{"role": "system", "content": self.system_prompt}]
         for example_goal, example_steps in self.examples:
@@ -153,14 +216,38 @@ class HFPlanner(BasePlanner):
         for _ in range(self.retries + 1):
             self.last_reply = self.generate(goal)
             try:
-                return parse_plan(self.last_reply)
+                return self.parse(self.last_reply)
             except PlanError as exc:
                 error = exc
         assert error is not None
         raise error
 
 
-_PLANNERS: dict[str, type[BasePlanner]] = {"static": StaticPlanner, "hf": HFPlanner}
+class HFTowerPlanner(HFPlanner):
+    """``HFPlanner`` that only asks for the tower order and writes the steps itself."""
+
+    name = "hf_tower"
+
+    def __init__(
+        self,
+        *,
+        system_prompt: str = TOWER_SYSTEM_PROMPT,
+        examples: Sequence[tuple[str, list[str]]] = TOWER_EXAMPLES,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(system_prompt=system_prompt, examples=examples, **kwargs)
+        self.last_tower: list[str] = []
+
+    def parse(self, reply: str) -> list[str]:
+        self.last_tower = parse_tower(reply)
+        return tower_steps(self.last_tower)
+
+
+_PLANNERS: dict[str, type[BasePlanner]] = {
+    "static": StaticPlanner,
+    "hf": HFPlanner,
+    "hf_tower": HFTowerPlanner,
+}
 
 
 def load_planner(name: str, **kwargs: Any) -> BasePlanner:

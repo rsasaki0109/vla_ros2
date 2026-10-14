@@ -376,32 +376,39 @@ until the first release, then step 1's, then the sequence reports `done`.
 
 `vla_task_sequencer_node` can also start from one goal instead of a step list:
 `planner:=static` (default) uses the goal as the single instruction;
-`planner:=hf` asks a local instruction-tuned LLM (`vla_ros2.planner.HFPlanner`,
-few-shot, JSON array out, validated by `parse_plan`) to break it into
-"Put the X cube on the Y cube." steps.
+`planner:=hf_tower` asks a local instruction-tuned LLM
+(`vla_ros2.planner.HFTowerPlanner`) only for the tower's cube colors from bottom
+to top (a JSON array, validated by `parse_tower`) and writes the
+"Put the X cube on the Y cube." steps in code (`tower_steps`);
+`planner:=hf` (`HFPlanner`) asks the LLM for the steps themselves.
 
 ```bash
-ros2 launch vla_ros2 task_pipeline.launch.py planner:=hf \
-  goal:="Build a tower with blue at the bottom, then green, then red on top."
-python scripts/planner_eval.py --pretrained Qwen/Qwen2.5-3B-Instruct --every 3
+ros2 launch vla_ros2 task_pipeline.launch.py planner:=hf_tower \
+  goal:="Make a stack with red on top, green under it, blue under it."
+python scripts/planner_eval.py --planner hf_tower --pretrained Qwen/Qwen2.5-1.5B-Instruct --every 3
 ```
 
 `vla_ros2.planner_eval` scores planners on tower goals that have exactly one
-correct plan (2–4 cubes, colors not used in the prompt examples; phrased
-bottom-up, top-down, or as a chain). On CPU, 20 towers × 3 phrasings
+correct plan (2–4 cubes, colors not used in the prompt examples), phrased
+bottom-up, top-down, as a chain ("Stack the red cube on the green cube on the
+blue cube."), and as a top-to-bottom list that no few-shot example shows. On CPU,
+20 towers × 4 phrasings = 80 goals
 ([`docs/assets/planner_tower_eval_cpu.json`](docs/assets/planner_tower_eval_cpu.json)):
 
-| model | correct | bottom-up | top-down | chain | s/goal |
-|---|---:|---:|---:|---:|---:|
-| Qwen2.5-0.5B-Instruct | 16 / 60 | 11 / 20 | 1 / 20 | 4 / 20 | 1.8 |
-| Qwen2.5-1.5B-Instruct | 29 / 60 | 19 / 20 | 3 / 20 | 7 / 20 | 4.6 |
-| Qwen2.5-3B-Instruct | 33 / 60 | 20 / 20 | 2 / 20 | 11 / 20 | 8.6 |
+| model | `hf` (shipped examples) | `hf` (`--examples tower`) | `hf_tower` | `hf_tower` s/goal |
+|---|---:|---:|---:|---:|
+| Qwen2.5-0.5B-Instruct | 17 / 80 | 16 / 80 | 39 / 80 | 1.2 |
+| Qwen2.5-1.5B-Instruct | 29 / 80 | 33 / 80 | **63 / 80** | 3.3 |
+| Qwen2.5-3B-Instruct | 35 / 80 | 32 / 80 | 54 / 80 | 5.9 |
 
-These models only follow goals already stated bottom-up; they reverse
-top-down ones ("blue on top, red under it" → "Put the red cube on the blue
-cube."). Spelling out the bottom-up rule in the system prompt made it worse
-(1.5B 25/60, 3B 27/60) and was reverted. Check the printed plan before running
-it, or pass `steps_json` yourself.
+`--examples tower` gives `hf` the same three few-shot goals as `hf_tower`, so the
+gain comes from the output format, not the examples. The step planner gets
+bottom-up goals right and reverses top-down ones ("blue on top, red under it" →
+"Put the red cube on the blue cube."). `hf_tower` with 1.5B, per phrasing:
+bottom-up 20/20, top-down 16/20, chain 16/20, top-to-bottom list (unseen) 11/20.
+Asking instead for unordered (upper, lower) pairs and sorting them in code did
+not help (0.5B 14, 1.5B 18, 3B 34 / 80; prototype, not shipped). Check the
+printed plan before running it, or pass `steps_json` yourself.
 
 ## Offline evaluation (recorded demos)
 

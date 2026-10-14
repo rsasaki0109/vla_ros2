@@ -29,11 +29,11 @@ def generate_launch_description():
     return LaunchDescription(
         [
             # Either an explicit step list, or a goal (used as-is by planner:=static,
-            # broken into steps by a local LLM with planner:=hf).
+            # broken into steps by a local LLM with planner:=hf_tower or planner:=hf).
             DeclareLaunchArgument("steps_json", default_value=""),
             DeclareLaunchArgument("goal", default_value="Put the red cube on the blue cube."),
             DeclareLaunchArgument("planner", default_value="static"),
-            DeclareLaunchArgument("planner_model", default_value="Qwen/Qwen2.5-3B-Instruct"),
+            DeclareLaunchArgument("planner_model", default_value="Qwen/Qwen2.5-1.5B-Instruct"),
             DeclareLaunchArgument("planner_device", default_value="auto"),
             DeclareLaunchArgument("model_name", default_value="dummy"),
             DeclareLaunchArgument("pretrained", default_value="lerobot/smolvla_base"),

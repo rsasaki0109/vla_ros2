@@ -2,8 +2,9 @@
 
 A tower bottom -> top (A, B, C) has exactly one valid instruction list:
 "Put the B cube on the A cube.", "Put the C cube on the B cube.". Goals are
-phrased bottom-up, top-down and as a chain, over colors that do not appear in the
-planner's few-shot examples.
+phrased bottom-up, top-down, as a chain and as a top-to-bottom list, over colors
+that do not appear in the planners' few-shot examples. The few-shot examples of
+``HFTowerPlanner`` cover the first three phrasings; ``top_list`` is in no example.
 """
 
 from __future__ import annotations
@@ -43,6 +44,8 @@ def _phrase(tower: Sequence[str], phrasing: str) -> str:
     if phrasing == "chain":
         chain = " on ".join(f"the {color} cube" for color in reversed(tower))
         return f"Stack {chain}."
+    if phrasing == "top_list":
+        return f"From top to bottom, the tower is {', '.join(reversed(tower))}."
     msg = f"unknown phrasing {phrasing!r}"
     raise ValueError(msg)
 
@@ -50,7 +53,7 @@ def _phrase(tower: Sequence[str], phrasing: str) -> str:
 def tower_tasks(
     colors: Sequence[str] = EVAL_COLORS,
     heights: Sequence[int] = (2, 3, 4),
-    phrasings: Sequence[str] = ("bottom_up", "top_down", "chain"),
+    phrasings: Sequence[str] = ("bottom_up", "top_down", "chain", "top_list"),
 ) -> Iterator[TowerTask]:
     for height in heights:
         for tower in permutations(colors, height):
