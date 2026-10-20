@@ -14,7 +14,7 @@ on:
 
 jobs:
   gz-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ROS 2 Jazzy: Ubuntu 24.04 only
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4

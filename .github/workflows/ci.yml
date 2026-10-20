@@ -23,7 +23,8 @@ jobs:
       - run: pytest
 
   ros2-smoke:
-    runs-on: ubuntu-latest
+    # ROS 2 Jazzy ships for Ubuntu 24.04 only; ubuntu-latest is 26.04 since Oct 2026.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: ros-tooling/setup-ros@v0.7
