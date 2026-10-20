@@ -3,7 +3,9 @@
 Runtime (dummy adapter) + vla_state_success_node + vla_task_sequencer_node from
 the launch file. The test plays a synthetic pick-and-place per step and checks
 that the runtime's actions carry step 0's instruction until the first release,
-step 1's after it, and that the sequence finishes.
+step 1's after it, and that the sequence finishes. Before each pick-and-place it
+holds the arm at rest until the detector reports joint states for that step's
+task_id, so a slow runner cannot start the motion before the detector listens.
 """
 
 from __future__ import annotations
@@ -27,7 +29,7 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from sensor_msgs.msg import JointState
 from std_msgs.msg import String
-from vla_ros2_msgs.msg import VLAAction
+from vla_ros2_msgs.msg import VLAAction, VLATaskStatus
 from vla_ros2_ros.qos import action_qos, status_qos
 
 _REPO_SRC = Path(__file__).resolve().parents[3] / "src"
@@ -96,6 +98,10 @@ class TestTaskPipeline(unittest.TestCase):
             lambda msg: cls._progress.append(json.loads(msg.data)),
             status_qos(10),
         )
+        cls._task_status: list[VLATaskStatus] = []
+        cls._node.create_subscription(
+            VLATaskStatus, "/vla/task_status", cls._task_status.append, status_qos(10)
+        )
         cls._joint_pub = cls._node.create_publisher(JointState, "/joint_states", action_qos(50))
         cls._arm = 0.0
 
@@ -111,21 +117,37 @@ class TestTaskPipeline(unittest.TestCase):
             rclpy.spin_once(self._node, timeout_sec=0.02)
         return condition()
 
+    def _publish_joints(self, gripper: float) -> None:
+        msg = JointState()
+        msg.header.stamp = self._node.get_clock().now().to_msg()
+        msg.name = list(_JOINTS)
+        msg.position = [self._arm] * 5 + [gripper]
+        self._joint_pub.publish(msg)
+        deadline = time.monotonic() + 1.0 / 30
+        while time.monotonic() < deadline:
+            rclpy.spin_once(self._node, timeout_sec=0.005)
+
+    def _detector_status(self) -> str:
+        if not self._task_status:
+            return "no /vla/task_status yet"
+        last = self._task_status[-1]
+        return f"task_id={last.task_id!r} phase={last.answer_text!r} checks={last.checks}"
+
+    def _hold_rest_until_detector_listens(self, task_id: str) -> None:
+        deadline = time.monotonic() + 15.0
+        while time.monotonic() < deadline:
+            if any(s.task_id == task_id and s.checks > 0 for s in self._task_status):
+                return
+            self._publish_joints(0.0)
+        self.fail(f"detector never saw joint states for {task_id}; {self._detector_status()}")
+
     def _play_pick_and_place(self) -> None:
         for start, end, seconds in _PICK_AND_PLACE:
             steps = int(seconds * 30)
             for k in range(steps):
-                gripper = start + (end - start) * k / steps
                 if start != end:
                     type(self)._arm += 0.5
-                msg = JointState()
-                msg.header.stamp = self._node.get_clock().now().to_msg()
-                msg.name = list(_JOINTS)
-                msg.position = [self._arm] * 5 + [gripper]
-                self._joint_pub.publish(msg)
-                deadline = time.monotonic() + 1.0 / 30
-                while time.monotonic() < deadline:
-                    rclpy.spin_once(self._node, timeout_sec=0.005)
+                self._publish_joints(start + (end - start) * k / steps)
 
     def test_runtime_follows_the_sequence(self) -> None:
         self.assertTrue(
@@ -135,16 +157,19 @@ class TestTaskPipeline(unittest.TestCase):
         self._spin_until(lambda: False, 1.0)
         self.assertNotIn(_STEPS[1], self._acted_on)
 
+        self._hold_rest_until_detector_listens("seq-0-0")
         self._play_pick_and_place()
         self.assertTrue(
             self._spin_until(lambda: self._acted_on[-1:] == [_STEPS[1]], 5.0),
-            f"runtime did not switch to step 1; progress={self._progress[-1:]}",
+            f"runtime did not switch to step 1; progress={self._progress[-1:]}; "
+            f"{self._detector_status()}",
         )
 
+        self._hold_rest_until_detector_listens("seq-1-0")
         self._play_pick_and_place()
         self.assertTrue(
             self._spin_until(lambda: any(p["state"] == "done" for p in self._progress), 5.0),
-            f"sequence did not finish; progress={self._progress[-1:]}",
+            f"sequence did not finish; progress={self._progress[-1:]}; {self._detector_status()}",
         )
 
 

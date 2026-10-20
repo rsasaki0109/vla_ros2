@@ -1,6 +1,8 @@
 # vla_ros2 — Plan and Handoff
 
 Updated: 2026-06-08 JST (integration wave: smoke test, bring-up, Gazebo, workspace, SmolVLA demo)
+Latest handoff (2026-10-20, PRs #10–#20: success detectors, async chunks, sequencer, goal
+planner): `notes/2026-10-20_handoff.md`.
 
 This document is the working handoff for `vla_ros2`. Read it before making
 changes. It captures the mission, what the codebase looks like today, the
@@ -345,6 +347,9 @@ colcon test-result --verbose
 - **test** — Python 3.10/3.11/3.12: `pip install -e ".[dev]"`, ruff, mypy, pytest.
 - **ros2-smoke** — Jazzy: colcon build + `launch_testing` smoke test on `vla_ros2`.
 - `tests/test_ros2_package_metadata.py` guards ROS2 package shape without a ROS2 install.
+- **gz-smoke** (`.github/workflows/gazebo-pr.yml`) — Gazebo smoke Phase 1 + 2 on PRs that
+  touch `ros2/`, `src/vla_ros2/sim|runtime/` or `scripts/gz_smoke_*`. The scheduled
+  `gazebo-nightly.yml` has been disabled since 2026-09-14.
 
 ---
 
@@ -366,7 +371,8 @@ colcon test-result --verbose
   a kinematic stand-in; task success is not guaranteed with `smolvla_base` alone.
 - `openvla` / `smolvla` / `pi0` are not exercised end-to-end in CI (no GPU);
   only metadata, guard, and kinematic-unit paths are tested locally.
-- Gazebo (`vla_ros2_gz`) is not in CI; validate with `./scripts/gz_smoke_validate.sh`
+- Gazebo (`vla_ros2_gz`) runs in CI only on PRs that touch the sim path (`gz-smoke`);
+  validate locally with `./scripts/gz_smoke_validate.sh`
   (see `notes/2026-06-08_gazebo_closed_loop.md`).
 - The Gazebo action bridge maps `eef_delta` to joint increments for sim convenience;
   real robots need their own Cartesian IK / controller bridge (`ros2/BRINGUP.md`).
